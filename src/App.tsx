@@ -75,9 +75,9 @@ const translations = {
     deckN1: 'N1/N2 词汇',
     deckExpression: '表达/活用',
     deckName: '人名读法',
-    meaning: '词义判断',
-    kanaToKanji: '假名选汉字',
-    kanjiToKana: '汉字选假名',
+    meaning: '言い換え類義',
+    kanaToKanji: '表記',
+    kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
     reset: '重置本地进度',
     items: '词条',
@@ -106,7 +106,7 @@ const translations = {
     heroTitle: '把每天的日语疑问变成可复习的 JLPT 题库',
     heroBody: '聊天负责输入和整理，网页负责分模块复习。现在先做本地浏览器版，后续可以接账号系统。',
     moduleVocabularyTitle: '单词模块',
-    moduleVocabularyBody: '处理词义、读音、假名到汉字、JLPT 文字・語彙。',
+    moduleVocabularyBody: '处理 JLPT 文字・語彙、言い換え類義、表記、漢字読み。',
     moduleGrammarTitle: '语法模块',
     moduleGrammarBody: '处理句型、接续、语感差异和例句解析。',
     moduleListeningTitle: '听力模块',
@@ -141,12 +141,12 @@ const translations = {
     noQuestion: '没有可练习题目',
     noQuestionBody: '当前筛选条件下没有题目。',
     beforeAnswer: '作答后会显示对错评判、正确答案和完整解析。',
-    meaningTitle: '单词意思判断',
-    meaningPrompt: '请选择最符合「{word}」的中文核心意思。',
-    kanaToKanjiTitle: '假名判断汉字',
-    kanaToKanjiPrompt: '「{reading}」对应哪一个汉字词？',
-    kanjiToKanaTitle: '汉字判断假名',
-    kanjiToKanaPrompt: '「{word}」的正确读音是哪一个？',
+    meaningTitle: '言い換え類義',
+    meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
+    kanaToKanjiTitle: '表記',
+    kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
+    kanjiToKanaTitle: '漢字読み',
+    kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
     originalSentence: '原句是',
@@ -159,16 +159,16 @@ const translations = {
     next: '下一题',
     analysis: '解析',
     contact: '联系',
-    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习 JLPT 語彙、词义判断、假名选汉字和汉字选假名。',
+    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习 JLPT 文字・語彙、言い換え類義、表記和漢字読み。',
   },
   ja: {
     deckAll: 'すべて',
     deckN1: 'N1/N2 語彙',
     deckExpression: '表現・活用',
     deckName: '人名読み',
-    meaning: '意味判定',
-    kanaToKanji: 'かなから漢字',
-    kanjiToKana: '漢字からかな',
+    meaning: '言い換え類義',
+    kanaToKanji: '表記',
+    kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
     reset: 'ローカル進捗をリセット',
     items: '項目',
@@ -197,7 +197,7 @@ const translations = {
     heroTitle: '毎日の疑問を復習できる JLPT デッキへ',
     heroBody: 'チャットで入力と整理を行い、Web アプリで分野別に復習します。今はローカルブラウザ版で、将来はアカウント連携も想定しています。',
     moduleVocabularyTitle: '語彙モジュール',
-    moduleVocabularyBody: '意味、読み、かなから漢字、JLPT 文字・語彙を扱います。',
+    moduleVocabularyBody: 'JLPT 文字・語彙、言い換え類義、表記、漢字読みを扱います。',
     moduleGrammarTitle: '文法モジュール',
     moduleGrammarBody: '文型、接続、ニュアンス差、例文解説を扱います。',
     moduleListeningTitle: '聴解モジュール',
@@ -232,12 +232,12 @@ const translations = {
     noQuestion: '問題がありません',
     noQuestionBody: '現在の条件では問題がありません。',
     beforeAnswer: '回答後、判定・正解・解説が表示されます。',
-    meaningTitle: '意味判定',
-    meaningPrompt: '「{word}」の中心的な意味として最も近いものを選んでください。',
-    kanaToKanjiTitle: 'かなから漢字',
-    kanaToKanjiPrompt: '「{reading}」に対応する漢字語を選んでください。',
-    kanjiToKanaTitle: '漢字からかな',
-    kanjiToKanaPrompt: '「{word}」の正しい読みを選んでください。',
+    meaningTitle: '言い換え類義',
+    meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
+    kanaToKanjiTitle: '表記',
+    kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
+    kanjiToKanaTitle: '漢字読み',
+    kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
     originalSentence: '元の文',
@@ -250,16 +250,16 @@ const translations = {
     next: '次へ',
     analysis: '解説',
     contact: '連絡先',
-    intro: 'Codex や Claude Code で整理した学習記録を使い、JLPT 語彙・意味判定・かなから漢字・漢字からかなをブラウザ内で復習します。',
+    intro: 'Codex や Claude Code で整理した学習記録を使い、JLPT 文字・語彙・言い換え類義・表記・漢字読みをブラウザ内で復習します。',
   },
   en: {
     deckAll: 'All',
     deckN1: 'N1/N2 Vocab',
     deckExpression: 'Expressions',
     deckName: 'Name Readings',
-    meaning: 'Meaning Check',
-    kanaToKanji: 'Kana to Kanji',
-    kanjiToKana: 'Kanji to Kana',
+    meaning: 'Paraphrase',
+    kanaToKanji: 'Orthography',
+    kanjiToKana: 'Kanji Reading',
     mojiGoi: 'JLPT Vocabulary',
     reset: 'Reset local progress',
     items: 'Items',
@@ -288,7 +288,7 @@ const translations = {
     heroTitle: 'Turn daily Japanese questions into a reviewable JLPT deck',
     heroBody: 'Use chat for capture and structuring, then use the web app for module-based review. It is local-first now and ready for accounts later.',
     moduleVocabularyTitle: 'Vocabulary Module',
-    moduleVocabularyBody: 'Meaning, readings, kana-to-kanji, and JLPT vocabulary questions.',
+    moduleVocabularyBody: 'JLPT vocabulary, paraphrase, orthography, and kanji-reading questions.',
     moduleGrammarTitle: 'Grammar Module',
     moduleGrammarBody: 'Patterns, connections, nuance differences, and sentence explanations.',
     moduleListeningTitle: 'Listening Module',
@@ -323,12 +323,12 @@ const translations = {
     noQuestion: 'No questions',
     noQuestionBody: 'No questions match the current filters.',
     beforeAnswer: 'After answering, scoring, the correct answer, and explanation will appear.',
-    meaningTitle: 'Meaning Check',
-    meaningPrompt: 'Choose the closest core meaning of "{word}".',
-    kanaToKanjiTitle: 'Kana to Kanji',
-    kanaToKanjiPrompt: 'Which kanji word matches "{reading}"?',
-    kanjiToKanaTitle: 'Kanji to Kana',
-    kanjiToKanaPrompt: 'Choose the correct reading of "{word}".',
+    meaningTitle: 'Paraphrase',
+    meaningPrompt: 'Choose the closest meaning of "{word}" in the sentence. {sentence}',
+    kanaToKanjiTitle: 'Orthography',
+    kanaToKanjiPrompt: 'Which kanji form best matches "{reading}" in the sentence? {sentence}',
+    kanjiToKanaTitle: 'Kanji Reading',
+    kanjiToKanaPrompt: 'Choose the best reading of "{word}" in the sentence. {sentence}',
     mojiGoiTitle: 'JLPT Vocabulary',
     mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
     originalSentence: 'Original sentence',
@@ -341,7 +341,7 @@ const translations = {
     next: 'Next',
     analysis: 'Analysis',
     contact: 'Contact',
-    intro: 'Turn your Codex or Claude Code study chats into a local browser deck for JLPT vocabulary, meaning checks, kana-to-kanji, and kanji-to-kana practice.',
+    intro: 'Turn your Codex or Claude Code study chats into a local browser deck for JLPT vocabulary, paraphrase, orthography, and kanji-reading practice.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -724,16 +724,19 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
     const meaning = itemMeaning(item, locale);
     const memory = itemMemory(item, locale);
     const analysis = itemAnalysis(item, locale);
+    const example = item.examples?.[0]?.ja;
+    const sentence = questionSentence(item);
+    const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
 
     questions.push({
       id: `${item.id}-meaning`,
       itemId: item.id,
       kind: 'meaning',
       title: labels.meaningTitle,
-      prompt: template(labels.meaningPrompt, { word: item.original }),
+      prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
       choices: choices(shortMeaning(meaning), meanings, index + 1),
       answer: shortMeaning(meaning),
-      explanation: `${meaning} ${analysis ?? memory}`,
+      explanation: `${labels.originalSentence}「${example ?? sentence}」。${labels.coreMeaning}：${meaning} ${analysis ?? memory}`,
     });
 
     if (item.reading) {
@@ -742,20 +745,20 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
         itemId: item.id,
         kind: 'kana_to_kanji',
         title: labels.kanaToKanjiTitle,
-        prompt: template(labels.kanaToKanjiPrompt, { reading: item.reading }),
+        prompt: template(labels.kanaToKanjiPrompt, { reading: item.reading, sentence: kanaSentence }),
         choices: choices(item.original, surfaces, index + 2),
         answer: item.original,
-        explanation: `「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
+        explanation: `${labels.originalSentence}「${example ?? sentence}」。空欄の語は「${item.original}」で、${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
       });
       questions.push({
         id: `${item.id}-kanji-to-kana`,
         itemId: item.id,
         kind: 'kanji_to_kana',
         title: labels.kanjiToKanaTitle,
-        prompt: template(labels.kanjiToKanaPrompt, { word: item.original }),
+        prompt: template(labels.kanjiToKanaPrompt, { word: item.original, sentence }),
         choices: choices(item.reading, readings, index + 3),
         answer: item.reading,
-        explanation: `「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
+        explanation: `${labels.originalSentence}「${example ?? sentence}」。「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
       });
     }
 
@@ -833,6 +836,18 @@ function unique<T>(items: T[]) {
 
 function shortMeaning(meaning: string) {
   return meaning.split('，')[0].split('。')[0];
+}
+
+function questionSentence(item: VocabItem, replacement = item.original) {
+  const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
+  if (example) {
+    return example.replace(item.original, replacement);
+  }
+  const collocation = item.collocations?.find((candidate) => candidate.includes(item.original));
+  if (collocation) {
+    return collocation.replace(item.original, replacement);
+  }
+  return `「${replacement}」`;
 }
 
 function readStorage<T>(key: string, fallback: T): T {

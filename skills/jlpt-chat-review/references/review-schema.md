@@ -149,11 +149,11 @@ Rules:
 The app generates these vocabulary practice types from item data:
 
 - `moji_goi`: JLPT-style `文字・語彙` sentence completion or vocabulary selection.
-- `meaning`: choose the correct learner-facing core meaning.
-- `kana_to_kanji`: choose the kanji word that matches a kana reading.
-- `kanji_to_kana`: choose the kana reading that matches a kanji word.
+- `meaning`: `言い換え類義`; choose the closest meaning for the target word in a sentence context.
+- `kana_to_kanji`: `表記`; choose the correct kanji form for a kana word in a sentence context.
+- `kanji_to_kana`: `漢字読み`; choose the correct kana reading for a kanji word in a sentence context.
 
-Question prompts, choices, and answer keys should stay plain text. Full explanations may use kanji and can be annotated by the app when the learner enables explanation furigana.
+Question prompts, choices, and answer keys should stay plain text. Prefer sentence-context prompts over isolated word prompts. Full explanations may use kanji and can be annotated by the app when the learner enables explanation furigana.
 
 ## Localizations
 

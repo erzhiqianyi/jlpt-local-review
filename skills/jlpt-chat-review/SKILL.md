@@ -41,9 +41,9 @@ For each item:
 The app can generate these practice modes from each item:
 
 - `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
-- Meaning check: choose the correct core meaning for a Japanese word.
-- Kana to kanji: choose the kanji word for a kana reading.
-- Kanji to kana: choose the kana reading for a kanji word.
+- `言い換え類義`: choose the closest meaning for the target word in a sentence context.
+- `表記`: choose the correct kanji form for a kana word in a sentence context.
+- `漢字読み`: choose the correct kana reading for a kanji word in a sentence context.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
 
