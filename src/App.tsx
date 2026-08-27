@@ -66,7 +66,9 @@ type Question = {
   itemId: string;
   kind: QuestionKind;
   title: string;
+  instruction?: string;
   prompt: string;
+  promptTarget?: string;
   choices: string[];
   answer: string;
   context: string;
@@ -170,9 +172,9 @@ const translations = {
     kanaToKanjiTitle: '表記',
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
-    kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    kanjiToKanaInstruction: '下線の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。',
     nameReadingTitle: '人名読み',
-    nameReadingPrompt: '「{word}」作为人名或地名时，读法是什么？{sentence}',
+    nameReadingInstruction: '下線の人名・地名の読み方として、最もよいものを一つ選んでください。',
     grammar: '文法・表現',
     grammarTitle: '语法选择',
     mojiGoiTitle: 'JLPT 文字・語彙',
@@ -281,9 +283,9 @@ const translations = {
     kanaToKanjiTitle: '表記',
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
-    kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    kanjiToKanaInstruction: '下線の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。',
     nameReadingTitle: '人名読み',
-    nameReadingPrompt: '「{word}」を人名または地名として読む場合、最も適切な読みはどれですか。{sentence}',
+    nameReadingInstruction: '下線の人名・地名の読み方として、最もよいものを一つ選んでください。',
     grammar: '文法・表現',
     grammarTitle: '文法・表現',
     mojiGoiTitle: 'JLPT 文字・語彙',
@@ -392,9 +394,9 @@ const translations = {
     kanaToKanjiTitle: 'Orthography',
     kanaToKanjiPrompt: 'Which kanji form best matches "{reading}" in the sentence? {sentence}',
     kanjiToKanaTitle: 'Kanji Reading',
-    kanjiToKanaPrompt: 'Choose the best reading of "{word}" in the sentence. {sentence}',
+    kanjiToKanaInstruction: 'Choose the best reading of the underlined word from options 1, 2, 3, and 4.',
     nameReadingTitle: 'Name Reading',
-    nameReadingPrompt: 'How is "{word}" read when used as a personal or place name? {sentence}',
+    nameReadingInstruction: 'Choose the best recorded reading of the underlined personal or place name.',
     grammar: 'Grammar & Usage',
     grammarTitle: 'Grammar Choice',
     mojiGoiTitle: 'JLPT Vocabulary',
@@ -989,7 +991,9 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
         itemId: item.id,
         kind: 'kanji_to_kana',
         title: isProperName ? labels.nameReadingTitle : labels.kanjiToKanaTitle,
-        prompt: template(isProperName ? labels.nameReadingPrompt : labels.kanjiToKanaPrompt, { word: item.original, sentence }),
+        instruction: isProperName ? labels.nameReadingInstruction : labels.kanjiToKanaInstruction,
+        prompt: sentence,
+        promptTarget: item.original,
         choices: kanjiToKanaChoices,
         answer: item.reading,
         ...buildQuestionExplanation(item, kanjiToKanaChoices, 'kanji_to_kana', items, locale, context),
@@ -1777,6 +1781,25 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+function QuestionPrompt({ text, target }: { text: string; target?: string }) {
+  if (!target) {
+    return text;
+  }
+
+  const targetIndex = text.indexOf(target);
+  if (targetIndex < 0) {
+    return text;
+  }
+
+  return (
+    <>
+      {text.slice(0, targetIndex)}
+      <span className="font-semibold underline decoration-2 underline-offset-4">{target}</span>
+      {text.slice(targetIndex + target.length)}
+    </>
+  );
+}
+
 function PracticePanel({
   activeQuestion,
   questionsLength,
@@ -1830,8 +1853,11 @@ function PracticePanel({
 
       <div className="mt-4">
         <h2 className="text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
-        <p className="mt-3 break-words text-lg leading-8 text-[#353b37]">
-          {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
+        {activeQuestion?.instruction ? (
+          <p className="mt-3 text-sm leading-6 text-[#68716c]">{activeQuestion.instruction}</p>
+        ) : null}
+        <p className={`${activeQuestion?.instruction ? 'mt-4' : 'mt-3'} break-words text-lg leading-8 text-[#353b37]`}>
+          {activeQuestion ? <QuestionPrompt text={activeQuestion.prompt} target={activeQuestion.promptTarget} /> : labels.noQuestionBody}
         </p>
       </div>
 

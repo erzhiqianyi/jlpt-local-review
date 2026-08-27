@@ -9,6 +9,9 @@
       "jlpt_level": "N1",
       "original": "測定",
       "reading": "そくてい",
+      "question_distractors": {
+        "kanji_to_kana": ["そってい", "そくじょう", "しょくてい"]
+      },
       "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
       "core_memory": "按标准、用仪器把客观数据测出来。",
       "part_of_speech": "名词・サ变动词",
@@ -71,6 +74,9 @@
       "jlpt_level": "N1",
       "original": "認定",
       "reading": "にんてい",
+      "question_distractors": {
+        "kanji_to_kana": ["じんてい", "にんじょう", "じんじょう"]
+      },
       "meaning_zh": "认定，根据标准正式判断其资格、事实或状态。",
       "core_memory": "按标准正式盖章认可。",
       "part_of_speech": "名词・サ变动词",
@@ -131,6 +137,9 @@
       "jlpt_level": "N2",
       "original": "年々",
       "reading": "ねんねん",
+      "question_distractors": {
+        "kanji_to_kana": ["ねんぜん", "ねんれん", "としねん"]
+      },
       "meaning_zh": "逐年，一年比一年，强调随年份推进发生变化。",
       "core_memory": "每过一年，趋势更明显。",
       "part_of_speech": "副词",
@@ -187,6 +196,9 @@
       "jlpt_level": "N2",
       "original": "経過",
       "reading": "けいか",
+      "question_distractors": {
+        "kanji_to_kana": ["きょうか", "けいが", "けか"]
+      },
       "meaning_zh": "时间经过；事情发展过程或后续情况。",
       "core_memory": "时间过去，事情一路发展到现在。",
       "part_of_speech": "名词・サ变动词",
@@ -245,6 +257,9 @@
       "jlpt_level": "N1",
       "original": "概観",
       "reading": "がいかん",
+      "question_distractors": {
+        "kanji_to_kana": ["かいかん", "がいけん", "かいけん"]
+      },
       "meaning_zh": "概观、概览，从整体上大致把握全貌。",
       "core_memory": "站远一点看整体。",
       "part_of_speech": "名词・サ变动词",
@@ -305,6 +320,9 @@
       "jlpt_level": "N1",
       "original": "養成",
       "reading": "ようせい",
+      "question_distractors": {
+        "kanji_to_kana": ["ようじょう", "そうせい", "ようしょう"]
+      },
       "meaning_zh": "培养、养成，通过教育训练把能力、习惯或人才培养出来。",
       "core_memory": "经过训练，让能力或人才成形。",
       "part_of_speech": "名词・サ变动词",
@@ -427,6 +445,9 @@
       "jlpt_level": "N2",
       "original": "豊富",
       "reading": "ほうふ",
+      "question_distractors": {
+        "kanji_to_kana": ["ほうぶ", "ぼうふ", "ほうほ"]
+      },
       "meaning_zh": "丰富、充足，数量或种类多而且内容充实。",
       "core_memory": "不仅多，而且够充实、选择多。",
       "part_of_speech": "ナ形容词・名词",
@@ -743,6 +764,9 @@
       "jlpt_level": "N1",
       "original": "遥",
       "reading": "はるか",
+      "question_distractors": {
+        "kanji_to_kana": ["はらか", "はるが", "ようか"]
+      },
       "meaning_zh": "作为名字常读 はるか；普通词「遥か」表示遥远、远远地。",
       "core_memory": "距离、时间、程度上相隔很远。",
       "collocations": [
@@ -789,6 +813,9 @@
       "jlpt_level": "N1",
       "original": "辛抱",
       "reading": "しんぼう",
+      "question_distractors": {
+        "kanji_to_kana": ["しんぽう", "しんほう", "からぼう"]
+      },
       "meaning_zh": "忍耐、忍住，面对痛苦或不便咬牙撑过去。",
       "core_memory": "不是单纯忍一下，而是困难时期熬住。",
       "part_of_speech": "名词・サ变动词",
@@ -846,6 +873,9 @@
       "jlpt_level": "N2",
       "original": "目次",
       "reading": "もくじ",
+      "question_distractors": {
+        "kanji_to_kana": ["もくし", "めじ", "もくつぎ"]
+      },
       "meaning_zh": "目录，书、报告、论文前按章节或项目排列的内容列表。",
       "core_memory": "按章节看整本书结构。",
       "part_of_speech": "名词",

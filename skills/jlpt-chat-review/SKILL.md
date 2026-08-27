@@ -51,6 +51,8 @@ The app supports these practice modes, but each item should opt into only the su
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
 
+For `漢字読み`, follow the official JLPT booklet structure: keep the task instruction separate from the item, show one complete natural Japanese sentence, visually mark only the target kanji word for underlining, and provide four kana-only choices. Wrong choices should be plausible reading confusions for the same kanji, such as alternate on/kun readings, voicing, gemination, or long-vowel mistakes, rather than readings borrowed from unrelated vocabulary. Do not repeat the target in a meta-prompt such as `次の文の「認定」の読み方...` before the sentence.
+
 For grammar expressions, prefer a sentence with a blank plus controlled distractors that test connection or function. Do not turn a grammar item into an isolated reading, spelling, or dictionary-meaning question unless that was the learner's actual confusion.
 
 Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support. Question prompts and answer choices must stay plain so readings do not leak into the test.
