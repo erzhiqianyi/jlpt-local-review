@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
-type AppView = 'practice' | 'library' | 'settings';
+type AppView = 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
 type ProgressEntry = {
@@ -90,6 +90,37 @@ const translations = {
     practice: '今日练习',
     library: '词库',
     settings: '设置',
+    brand: 'JLPT Review',
+    navVocabulary: '单词',
+    navGrammar: '语法',
+    navListening: '听力',
+    navReading: '阅读',
+    navMixed: '综合',
+    navAbout: '介绍',
+    countdownTitle: '下一次 JLPT',
+    countdownDate: '2026年12月6日',
+    countdownSource: '日期来自 JLPT 官方 2026 年考试安排。',
+    days: '天',
+    hours: '小时',
+    minutes: '分钟',
+    heroTitle: '把每天的日语疑问变成可复习的 JLPT 题库',
+    heroBody: '聊天负责输入和整理，网页负责分模块复习。现在先做本地浏览器版，后续可以接账号系统。',
+    moduleVocabularyTitle: '单词模块',
+    moduleVocabularyBody: '处理词义、读音、假名到汉字、JLPT 文字・語彙。',
+    moduleGrammarTitle: '语法模块',
+    moduleGrammarBody: '处理句型、接续、语感差异和例句解析。',
+    moduleListeningTitle: '听力模块',
+    moduleListeningBody: '预留给音频、关键词、场景判断和听解错题。',
+    moduleReadingTitle: '阅读模块',
+    moduleReadingBody: '预留给短文结构、指示词、主旨和细节题。',
+    moduleMixedTitle: '综合练习',
+    moduleMixedBody: '混合所有模块，适合考前复盘和弱项检查。',
+    moduleEmptyTitle: '这个模块还没有内容',
+    moduleEmptyBody: '后续用技能输入对应材料后，这里会单独生成练习和解析。',
+    aboutTitle: '应用介绍',
+    aboutBody: '这是一个本地优先的 JLPT 学习工具。你在 Codex 或 Claude Code 里输入不懂的内容，技能把内容整理成结构化数据，网页只负责复习、判分和本地进度。',
+    deployTitle: '自己部署',
+    deployBody: 'Fork GitHub 仓库，选择使用示例数据或 npm run data:blank 创建空白数据，然后部署到 Cloudflare Pages。',
     practiceTitle: '开始一组复习',
     practiceCopy: '按题型练习，作答后看对错和完整解析。',
     libraryTitle: '查看整理好的词条',
@@ -150,6 +181,37 @@ const translations = {
     practice: '今日の復習',
     library: '語彙帳',
     settings: '設定',
+    brand: 'JLPT Review',
+    navVocabulary: '語彙',
+    navGrammar: '文法',
+    navListening: '聴解',
+    navReading: '読解',
+    navMixed: '総合',
+    navAbout: '紹介',
+    countdownTitle: '次の JLPT',
+    countdownDate: '2026年12月6日',
+    countdownSource: '日付は JLPT 公式の 2026 年試験日程に基づきます。',
+    days: '日',
+    hours: '時間',
+    minutes: '分',
+    heroTitle: '毎日の疑問を復習できる JLPT デッキへ',
+    heroBody: 'チャットで入力と整理を行い、Web アプリで分野別に復習します。今はローカルブラウザ版で、将来はアカウント連携も想定しています。',
+    moduleVocabularyTitle: '語彙モジュール',
+    moduleVocabularyBody: '意味、読み、かなから漢字、JLPT 文字・語彙を扱います。',
+    moduleGrammarTitle: '文法モジュール',
+    moduleGrammarBody: '文型、接続、ニュアンス差、例文解説を扱います。',
+    moduleListeningTitle: '聴解モジュール',
+    moduleListeningBody: '音声、キーワード、場面判断、聴解の誤答を扱う予定です。',
+    moduleReadingTitle: '読解モジュール',
+    moduleReadingBody: '文章構造、指示語、主旨、細部問題を扱う予定です。',
+    moduleMixedTitle: '総合練習',
+    moduleMixedBody: 'すべての分野を混ぜて、試験前の復習や弱点確認に使います。',
+    moduleEmptyTitle: 'このモジュールにはまだ内容がありません',
+    moduleEmptyBody: '該当する学習素材をスキルで入力すると、ここに練習と解説が生成されます。',
+    aboutTitle: 'アプリ紹介',
+    aboutBody: 'これはローカル優先の JLPT 学習ツールです。Codex や Claude Code に分からない内容を入力し、スキルが構造化データに変換し、Web アプリが復習・採点・ローカル進捗を担当します。',
+    deployTitle: '自分でデプロイ',
+    deployBody: 'GitHub リポジトリを fork し、サンプルデータを使うか npm run data:blank で空データを作成して、Cloudflare Pages にデプロイします。',
     practiceTitle: '復習を始める',
     practiceCopy: '問題に答えて、判定と解説を確認します。',
     libraryTitle: '整理済みの語彙を見る',
@@ -210,6 +272,37 @@ const translations = {
     practice: 'Practice',
     library: 'Library',
     settings: 'Settings',
+    brand: 'JLPT Review',
+    navVocabulary: 'Vocabulary',
+    navGrammar: 'Grammar',
+    navListening: 'Listening',
+    navReading: 'Reading',
+    navMixed: 'Mixed',
+    navAbout: 'About',
+    countdownTitle: 'Next JLPT',
+    countdownDate: 'December 6, 2026',
+    countdownSource: 'Date based on the official 2026 JLPT schedule.',
+    days: 'days',
+    hours: 'hours',
+    minutes: 'minutes',
+    heroTitle: 'Turn daily Japanese questions into a reviewable JLPT deck',
+    heroBody: 'Use chat for capture and structuring, then use the web app for module-based review. It is local-first now and ready for accounts later.',
+    moduleVocabularyTitle: 'Vocabulary Module',
+    moduleVocabularyBody: 'Meaning, readings, kana-to-kanji, and JLPT vocabulary questions.',
+    moduleGrammarTitle: 'Grammar Module',
+    moduleGrammarBody: 'Patterns, connections, nuance differences, and sentence explanations.',
+    moduleListeningTitle: 'Listening Module',
+    moduleListeningBody: 'Reserved for audio, keywords, scene judgment, and listening mistakes.',
+    moduleReadingTitle: 'Reading Module',
+    moduleReadingBody: 'Reserved for passage structure, references, main ideas, and detail questions.',
+    moduleMixedTitle: 'Mixed Practice',
+    moduleMixedBody: 'Mix all modules for exam review and weak-point checks.',
+    moduleEmptyTitle: 'No content in this module yet',
+    moduleEmptyBody: 'Add matching study material through the skill, then this area will generate practice and explanations.',
+    aboutTitle: 'About This App',
+    aboutBody: 'This is a local-first JLPT study tool. You enter confusing material in Codex or Claude Code, the skill turns it into structured data, and the web app handles review, scoring, and browser-local progress.',
+    deployTitle: 'Deploy Your Own',
+    deployBody: 'Fork the GitHub repo, keep the sample data or run npm run data:blank, then deploy it to Cloudflare Pages.',
     practiceTitle: 'Start a review set',
     practiceCopy: 'Practice by question type, then review scoring and explanations.',
     libraryTitle: 'Browse structured entries',
@@ -262,6 +355,9 @@ const defaultSettings: DisplaySettings = {
   showExplanationRuby: true,
   locale: 'zh-CN',
 };
+
+const NEXT_JLPT_AT = '2026-12-06T09:00:00+09:00';
+const JLPT_OFFICIAL_URL = 'https://www.jlpt.jp/e/';
 
 const defaultRubyTerms: RubyTerm[] = [
   { text: '測定機器', reading: 'そくていきき' },
@@ -381,7 +477,8 @@ export default function App() {
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
-  const [activeView, setActiveView] = useState<AppView>('practice');
+  const [activeView, setActiveView] = useState<AppView>('vocabulary');
+  const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
 
   useEffect(() => {
     fetch('/data/review-data.json')
@@ -394,12 +491,12 @@ export default function App() {
     setSettings(normalizeSettings(readStorage(STORAGE_SETTINGS, defaultSettings)));
   }, []);
 
-  const items = useMemo(() => {
-    if (selectedDeck === 'all') {
-      return data.items;
-    }
-    return data.items.filter((item) => item.deck === selectedDeck);
-  }, [data.items, selectedDeck]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setCountdown(getCountdown(NEXT_JLPT_AT)), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const items = useMemo(() => moduleItems(data.items, activeView, selectedDeck), [activeView, data.items, selectedDeck]);
 
   const locale = normalizeLocale(settings.locale);
   const allQuestions = useMemo(() => buildQuestions(items, locale), [items, locale]);
@@ -414,10 +511,11 @@ export default function App() {
   const labels = translations[locale];
   const deckLabels = deckLabelsFor(locale);
   const kindLabels = kindLabelsFor(locale);
+  const moduleStats = moduleSummaries(data.items, labels);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [selectedDeck, selectedKind]);
+  }, [activeView, selectedDeck, selectedKind]);
 
   function answerQuestion(question: Question, selected: string) {
     const correct = selected === question.answer;
@@ -461,32 +559,39 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f1e8] text-[#1f2522]">
-      <header className="border-b border-[#d9d0c3] bg-[#fffaf2]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-5 md:px-8 lg:px-10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h1 className="text-4xl font-semibold leading-tight md:text-5xl">JLPT Master Deck</h1>
-              <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">
-                {labels.intro}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <LanguageSelect
-                value={settings.locale}
-                onChange={(locale) => updateSettings({ ...settings, locale })}
-              />
-              <button
-                type="button"
-                onClick={resetLocalProgress}
-                className="h-11 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold text-[#574f48] hover:bg-[#f7efe5]"
-              >
-                {labels.reset}
-              </button>
-            </div>
+    <main className="min-h-screen bg-[#f5f7f3] text-[#1f2522]">
+      <header className="sticky top-0 z-20 border-b border-[#d7dfd6] bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={() => setActiveView('vocabulary')} className="text-lg font-semibold tracking-normal text-[#173d35]">
+              {labels.brand}
+            </button>
+            <a className="rounded-md border border-[#d7dfd6] px-3 py-2 text-sm font-semibold text-[#24473f] lg:hidden" href="https://github.com/erzhiqianyi/jlpt-master-deck" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
           </div>
+          <nav className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
+            {navItems(labels).map((item) => (
+              <NavButton key={item.view} active={activeView === item.view} onClick={() => setActiveView(item.view)}>
+                {item.label}
+              </NavButton>
+            ))}
+          </nav>
+          <div className="flex flex-wrap gap-2">
+            <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
+            <button type="button" onClick={resetLocalProgress} className="h-10 rounded-md border border-[#cbd6cf] bg-white px-3 text-sm font-semibold text-[#574f48] hover:bg-[#f2f6f1]">
+              {labels.reset}
+            </button>
+          </div>
+        </div>
+      </header>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="mx-auto grid max-w-7xl gap-4 px-4 py-5 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-10">
+        <div className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm md:p-6">
+          <p className="text-sm font-semibold text-[#7d6032]">Local-first JLPT system</p>
+          <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight md:text-4xl">{labels.heroTitle}</h1>
+          <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">{labels.heroBody}</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Metric label={labels.items} value={data.items.length.toString()} />
             <Metric label={labels.questions} value={allQuestions.length.toString()} />
             <Metric label={labels.answered} value={answeredCount.toString()} />
@@ -494,120 +599,56 @@ export default function App() {
             <Metric label={labels.mastered} value={masteredCount.toString()} />
           </div>
         </div>
-      </header>
-
-      <section className="mx-auto grid max-w-7xl gap-4 px-5 py-5 md:grid-cols-3 md:px-8 lg:px-10">
-        <HomeAction
-          active={activeView === 'practice'}
-          title={labels.practiceTitle}
-          eyebrow={labels.practice}
-          body={labels.practiceCopy}
-          onClick={() => setActiveView('practice')}
-        />
-        <HomeAction
-          active={activeView === 'library'}
-          title={labels.libraryTitle}
-          eyebrow={labels.library}
-          body={labels.libraryCopy}
-          onClick={() => setActiveView('library')}
-        />
-        <HomeAction
-          active={activeView === 'settings'}
-          title={labels.settingsTitle}
-          eyebrow={labels.settings}
-          body={labels.settingsCopy}
-          onClick={() => setActiveView('settings')}
-        />
+        <CountdownCard countdown={countdown} labels={labels} />
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-5 md:grid-cols-[280px_minmax(0,1fr)] md:px-8 lg:px-10">
-        <aside className="space-y-4">
-          <Panel title={labels.deck}>
-            <div className="grid gap-2">
-              {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
-                <SegmentButton key={deck} active={selectedDeck === deck} onClick={() => setSelectedDeck(deck)}>
-                  {deckLabels[deck]}
-                </SegmentButton>
-              ))}
-            </div>
-          </Panel>
+      <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
+        {moduleStats.map((module) => (
+          <ModuleCard key={module.view} module={module} active={activeView === module.view} onClick={() => setActiveView(module.view)} />
+        ))}
+      </section>
 
-          <Panel title={labels.questionType}>
-            <div className="grid grid-cols-2 gap-2">
-              {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
-                <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
-                  {kindLabels[kind]}
-                </SegmentButton>
-              ))}
-            </div>
-          </Panel>
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
+        {activeView !== 'about' && activeView !== 'settings' ? (
+          <aside className="space-y-4">
+            {(activeView === 'vocabulary' || activeView === 'mixed') ? (
+              <Panel title={labels.deck}>
+                <div className="grid gap-2">
+                  {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
+                    <SegmentButton key={deck} active={selectedDeck === deck} onClick={() => setSelectedDeck(deck)}>
+                      {deckLabels[deck]}
+                    </SegmentButton>
+                  ))}
+                </div>
+              </Panel>
+            ) : null}
 
-          <Panel title={labels.display}>
-            <div className="space-y-3">
-              <Toggle
-                checked={settings.showReviewRuby}
-                label={labels.reviewRuby}
-                onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
-              />
-              <Toggle
-                checked={settings.showExplanationRuby}
-                label={labels.explanationRuby}
-                onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })}
-              />
-            </div>
-          </Panel>
+            <Panel title={labels.questionType}>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
+                  <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
+                    {kindLabels[kind]}
+                  </SegmentButton>
+                ))}
+              </div>
+            </Panel>
 
-          <Panel title={labels.rules}>
-            <ul className="space-y-2 text-sm leading-6 text-[#62645f]">
-              <li>{labels.ruleJudge}</li>
-              <li>{labels.ruleExplain}</li>
-              <li>{labels.ruleLocal}</li>
-              <li>{labels.ruleExam}</li>
-            </ul>
-          </Panel>
-        </aside>
+            <Panel title={labels.display}>
+              <div className="space-y-3">
+                <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
+                <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
+              </div>
+            </Panel>
+          </aside>
+        ) : null}
 
-        <div className="space-y-5">
-          {activeView === 'practice' ? (
-            <PracticePanel
-              activeQuestion={activeQuestion}
-              questionsLength={questions.length}
-              activeIndex={activeIndex}
-              answers={answers}
-              items={data.items}
-              labels={labels}
-              kindLabels={kindLabels}
-              settings={settings}
-              onAnswer={answerQuestion}
-              onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-              onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
-            />
-          ) : null}
-
-          {activeView === 'library' ? (
-            <section className="grid gap-4 lg:grid-cols-2">
-              {items.map((item) => (
-                <VocabCard
-                  key={item.id}
-                  item={item}
-                  progress={progress[item.id]}
-                  showRuby={settings.showReviewRuby}
-                  labels={labels}
-                  deckLabels={deckLabels}
-                  locale={settings.locale}
-                />
-              ))}
-            </section>
-          ) : null}
-
+        <div className={activeView === 'about' ? 'lg:col-span-2' : 'space-y-5'}>
+          {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
           {activeView === 'settings' ? (
             <Panel title={labels.settings}>
               <div className="grid gap-4 md:grid-cols-2">
                 <SettingBlock title={labels.language}>
-                  <LanguageSelect
-                    value={settings.locale}
-                    onChange={(locale) => updateSettings({ ...settings, locale })}
-                  />
+                  <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
                 </SettingBlock>
                 <SettingBlock title={labels.display}>
                   <div className="space-y-3">
@@ -617,6 +658,37 @@ export default function App() {
                 </SettingBlock>
               </div>
             </Panel>
+          ) : null}
+          {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
+          {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
+            <>
+              <PracticePanel
+                activeQuestion={activeQuestion}
+                questionsLength={questions.length}
+                activeIndex={activeIndex}
+                answers={answers}
+                items={data.items}
+                labels={labels}
+                kindLabels={kindLabels}
+                settings={settings}
+                onAnswer={answerQuestion}
+                onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
+                onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+              />
+              <section className="grid gap-4 lg:grid-cols-2">
+                {items.slice(0, 6).map((item) => (
+                  <VocabCard
+                    key={item.id}
+                    item={item}
+                    progress={progress[item.id]}
+                    showRuby={settings.showReviewRuby}
+                    labels={labels}
+                    deckLabels={deckLabels}
+                    locale={locale}
+                  />
+                ))}
+              </section>
+            </>
           ) : null}
         </div>
       </section>
@@ -842,6 +914,83 @@ function formatDate(value: string | undefined, locale: Locale) {
   return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(value));
 }
 
+function getCountdown(target: string) {
+  const diff = Math.max(0, new Date(target).getTime() - Date.now());
+  const totalMinutes = Math.floor(diff / 60_000);
+  return {
+    days: Math.floor(totalMinutes / 1440),
+    hours: Math.floor((totalMinutes % 1440) / 60),
+    minutes: totalMinutes % 60,
+  };
+}
+
+function moduleItems(items: VocabItem[], view: AppView, selectedDeck: Deck | 'all') {
+  if (view === 'grammar') {
+    return items.filter((item) => item.deck === 'grammar_expression');
+  }
+  if (view === 'listening' || view === 'reading' || view === 'about' || view === 'settings') {
+    return [];
+  }
+  if (view === 'vocabulary') {
+    const vocabItems = items.filter((item) => item.deck !== 'grammar_expression');
+    if (selectedDeck === 'all' || selectedDeck === 'grammar_expression') {
+      return vocabItems;
+    }
+    return vocabItems.filter((item) => item.deck === selectedDeck);
+  }
+  if (selectedDeck === 'all') {
+    return items;
+  }
+  return items.filter((item) => item.deck === selectedDeck);
+}
+
+function navItems(labels: Record<string, string>) {
+  return [
+    { view: 'vocabulary' as const, label: labels.navVocabulary },
+    { view: 'grammar' as const, label: labels.navGrammar },
+    { view: 'listening' as const, label: labels.navListening },
+    { view: 'reading' as const, label: labels.navReading },
+    { view: 'mixed' as const, label: labels.navMixed },
+    { view: 'about' as const, label: labels.navAbout },
+    { view: 'settings' as const, label: labels.settings },
+  ];
+}
+
+function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
+  return [
+    {
+      view: 'vocabulary' as const,
+      title: labels.moduleVocabularyTitle,
+      body: labels.moduleVocabularyBody,
+      count: items.filter((item) => item.deck !== 'grammar_expression').length,
+    },
+    {
+      view: 'grammar' as const,
+      title: labels.moduleGrammarTitle,
+      body: labels.moduleGrammarBody,
+      count: items.filter((item) => item.deck === 'grammar_expression').length,
+    },
+    {
+      view: 'listening' as const,
+      title: labels.moduleListeningTitle,
+      body: labels.moduleListeningBody,
+      count: 0,
+    },
+    {
+      view: 'reading' as const,
+      title: labels.moduleReadingTitle,
+      body: labels.moduleReadingBody,
+      count: 0,
+    },
+    {
+      view: 'mixed' as const,
+      title: labels.moduleMixedTitle,
+      body: labels.moduleMixedBody,
+      count: items.length,
+    },
+  ];
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
@@ -862,6 +1011,104 @@ function SegmentButton({ active, children, onClick }: { active: boolean; childre
     >
       {children}
     </button>
+  );
+}
+
+function NavButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-10 shrink-0 rounded-md px-3 text-sm font-semibold transition ${
+        active ? 'bg-[#173d35] text-white' : 'text-[#53605a] hover:bg-[#eef4ee] hover:text-[#173d35]'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function CountdownCard({ countdown, labels }: { countdown: { days: number; hours: number; minutes: number }; labels: Record<string, string> }) {
+  return (
+    <aside className="rounded-lg border border-[#cbd6cf] bg-[#173d35] p-5 text-white shadow-sm md:p-6">
+      <p className="text-sm font-semibold text-[#cfe0d7]">{labels.countdownTitle}</p>
+      <p className="mt-2 text-xl font-semibold">{labels.countdownDate}</p>
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        <TimeBox value={countdown.days} label={labels.days} />
+        <TimeBox value={countdown.hours} label={labels.hours} />
+        <TimeBox value={countdown.minutes} label={labels.minutes} />
+      </div>
+      <a className="mt-4 block text-sm font-semibold text-[#dfe9df] underline-offset-4 hover:underline" href={JLPT_OFFICIAL_URL} target="_blank" rel="noreferrer">
+        {labels.countdownSource}
+      </a>
+    </aside>
+  );
+}
+
+function TimeBox({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-md bg-white/10 px-3 py-3 text-center">
+      <p className="text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-[#cfe0d7]">{label}</p>
+    </div>
+  );
+}
+
+function ModuleCard({
+  module,
+  active,
+  onClick,
+}: {
+  module: { view: AppView; title: string; body: string; count: number };
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-36 rounded-lg border p-4 text-left shadow-sm transition ${
+        active ? 'border-[#173d35] bg-[#e7f0eb]' : 'border-[#d7dfd6] bg-white hover:bg-[#f7faf6]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">{module.title}</h2>
+        <span className="rounded bg-white px-2 py-1 text-xs font-semibold text-[#52645c]">{module.count}</span>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-[#626c66]">{module.body}</p>
+    </button>
+  );
+}
+
+function AboutPanel({ labels }: { labels: Record<string, string> }) {
+  return (
+    <section className="grid gap-4 lg:grid-cols-2">
+      <article className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+        <h2 className="text-2xl font-semibold">{labels.aboutTitle}</h2>
+        <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.aboutBody}</p>
+      </article>
+      <article className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+        <h2 className="text-2xl font-semibold">{labels.deployTitle}</h2>
+        <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.deployBody}</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <a className="rounded-md bg-[#173d35] px-4 py-2 text-sm font-semibold text-white" href="https://github.com/erzhiqianyi/jlpt-master-deck" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a className="rounded-md border border-[#cbd6cf] bg-white px-4 py-2 text-sm font-semibold text-[#24473f]" href="https://github.com/erzhiqianyi/jlpt-master-deck/blob/main/README.md" target="_blank" rel="noreferrer">
+            README
+          </a>
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function EmptyModule({ labels }: { labels: Record<string, string> }) {
+  return (
+    <section className="rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
+      <h2 className="text-2xl font-semibold">{labels.moduleEmptyTitle}</h2>
+      <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.moduleEmptyBody}</p>
+    </section>
   );
 }
 

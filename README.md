@@ -12,6 +12,8 @@ The intended workflow is simple:
 ## Features
 
 - Vocabulary decks for JLPT words, expressions, and Japanese name readings.
+- Module navigation for vocabulary, grammar, listening, reading, and mixed practice.
+- Countdown to the next JLPT test date.
 - Practice modes for JLPT `文字・語彙`, meaning checks, kana-to-kanji, and kanji-to-kana.
 - Immediate correct/incorrect judging.
 - Full explanations after each answer.
