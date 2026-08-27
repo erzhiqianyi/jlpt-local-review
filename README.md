@@ -41,6 +41,24 @@ npm run build
 
 The production output is written to `dist`.
 
+## Start With Your Own Data
+
+This repository includes an example deck. To use the included sample content, keep `public/data/review-data.json` as-is and run:
+
+```bash
+npm install
+npm run dev
+```
+
+To start from an empty deck without the sample content, run:
+
+```bash
+npm run data:blank
+npm run dev
+```
+
+Then use Codex or Claude Code to add your own study items back into `public/data/review-data.json`.
+
 ## Local Tunnel Preview
 
 For a fixed local port:
@@ -93,6 +111,38 @@ This means a new deployment can update the vocabulary data without deleting each
 Japanese text that contains kanji should include kana support through `reading` and `ruby_terms`. The app has separate settings for showing furigana in review cards and answer explanations.
 
 For multilingual decks, keep Japanese source fields stable and add learner-facing translations under `localizations`, for example `en.meaning`, `ja.core_memory`, or `ko.analysis`.
+
+Each item should include an input timestamp:
+
+```json
+{
+  "id": "2026-08-27-001",
+  "date": "2026-08-27",
+  "input_at": "2026-08-27T20:20:00+09:00"
+}
+```
+
+Per-user review scheduling is stored in browser `localStorage`, not in the public seed data. For each item, the app records:
+
+```json
+{
+  "firstSeenAt": "2026-08-27T20:20:00.000Z",
+  "lastReviewedAt": "2026-08-27T20:25:00.000Z",
+  "reviewCount": 2,
+  "ease": 2.8,
+  "intervalDays": 3,
+  "nextReviewAt": "2026-08-30T20:25:00.000Z"
+}
+```
+
+The review interval follows a simplified Anki/SM-2 style schedule:
+
+- First correct review: next day.
+- Second correct review: after 3 days.
+- Later correct reviews: previous interval multiplied by the item's ease factor.
+- Wrong review: next day again, with a lower ease factor.
+
+This keeps the repository data shareable while each learner's forgetting-curve schedule stays private in their own browser.
 
 ## Using Codex
 

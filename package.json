@@ -11,6 +11,7 @@
     "start": "vite preview --host 0.0.0.0 --port 5180 --strictPort",
     "tunnel": "cloudflared tunnel --config ~/.cloudflared/config.yml run satori-local",
     "dev:tunnel": "bash scripts/dev-with-tunnel.sh",
+    "data:blank": "node scripts/create-blank-data.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

@@ -7,7 +7,19 @@ type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'practice' | 'library' | 'settings';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
-type ProgressState = Record<string, { correct: number; wrong: number; status: 'new' | 'learning' | 'review' | 'mastered' }>;
+type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
+type ProgressEntry = {
+  correct: number;
+  wrong: number;
+  status: ReviewStatus;
+  firstSeenAt?: string;
+  lastReviewedAt?: string;
+  reviewCount?: number;
+  ease?: number;
+  intervalDays?: number;
+  nextReviewAt?: string;
+};
+type ProgressState = Record<string, ProgressEntry>;
 type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean; locale: Locale };
 type RubyTerm = { text: string; reading: string };
 type LocalizedText = {
@@ -19,6 +31,7 @@ type LocalizedText = {
 type VocabItem = {
   id: string;
   date: string;
+  input_at?: string;
   deck: Deck;
   type: string;
   jlpt_level?: string;
@@ -72,6 +85,8 @@ const translations = {
     answered: '已作答',
     correct: '正确',
     mastered: '掌握',
+    reviewCount: '复习',
+    nextReview: '下次复习',
     practice: '今日练习',
     library: '词库',
     settings: '设置',
@@ -130,6 +145,8 @@ const translations = {
     answered: '回答済み',
     correct: '正解',
     mastered: '習得',
+    reviewCount: '復習',
+    nextReview: '次回復習',
     practice: '今日の復習',
     library: '語彙帳',
     settings: '設定',
@@ -188,6 +205,8 @@ const translations = {
     answered: 'Answered',
     correct: 'Correct',
     mastered: 'Mastered',
+    reviewCount: 'Reviews',
+    nextReview: 'Next Review',
     practice: 'Practice',
     library: 'Library',
     settings: 'Settings',
@@ -401,6 +420,7 @@ export default function App() {
 
   function answerQuestion(question: Question, selected: string) {
     const correct = selected === question.answer;
+    const now = new Date();
     const nextAnswers = {
       ...answers,
       [question.id]: { selected, correct },
@@ -408,10 +428,17 @@ export default function App() {
     const current = progress[question.itemId] ?? { correct: 0, wrong: 0, status: 'new' as const };
     const nextCorrect = current.correct + (correct ? 1 : 0);
     const nextWrong = current.wrong + (correct ? 0 : 1);
-    const status = nextCorrect >= 4 && nextWrong <= 1 ? 'mastered' : nextCorrect >= 2 ? 'review' : nextCorrect + nextWrong > 0 ? 'learning' : 'new';
+    const schedule = nextSchedule(current, correct, now);
+    const status = nextStatus(nextCorrect, nextWrong, schedule.reviewCount);
     const nextProgress = {
       ...progress,
-      [question.itemId]: { correct: nextCorrect, wrong: nextWrong, status },
+      [question.itemId]: {
+        ...current,
+        correct: nextCorrect,
+        wrong: nextWrong,
+        status,
+        ...schedule,
+      },
     };
     setAnswers(nextAnswers);
     setProgress(nextProgress);
@@ -744,6 +771,60 @@ function writeStorage(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function nextStatus(correct: number, wrong: number, reviewCount: number): ReviewStatus {
+  if (correct >= 4 && wrong <= 1 && reviewCount >= 4) {
+    return 'mastered';
+  }
+  if (correct >= 2) {
+    return 'review';
+  }
+  if (correct + wrong > 0) {
+    return 'learning';
+  }
+  return 'new';
+}
+
+function nextSchedule(current: ProgressEntry, correct: boolean, now: Date) {
+  const previousEase = current.ease ?? 2.5;
+  const previousInterval = current.intervalDays ?? 0;
+  const reviewCount = (current.reviewCount ?? 0) + 1;
+  const ease = correct ? Math.min(previousEase + 0.15, 3.2) : Math.max(previousEase - 0.2, 1.3);
+  const intervalDays = correct
+    ? nextCorrectInterval(reviewCount, previousInterval, ease)
+    : 1;
+  return {
+    firstSeenAt: current.firstSeenAt ?? now.toISOString(),
+    lastReviewedAt: now.toISOString(),
+    reviewCount,
+    ease,
+    intervalDays,
+    nextReviewAt: addDays(now, intervalDays).toISOString(),
+  };
+}
+
+function nextCorrectInterval(reviewCount: number, previousInterval: number, ease: number) {
+  if (reviewCount <= 1) {
+    return 1;
+  }
+  if (reviewCount === 2) {
+    return 3;
+  }
+  return Math.max(4, Math.round(Math.max(previousInterval, 3) * ease));
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatDate(value: string | undefined, locale: Locale) {
+  if (!value) {
+    return '-';
+  }
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(value));
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
@@ -982,6 +1063,10 @@ function VocabCard({
         <span className="rounded bg-[#24473f] px-2 py-1 text-xs font-semibold text-white">{deckLabels[item.deck]}</span>
         <span className="rounded bg-[#ead9c7] px-2 py-1 text-xs font-semibold text-[#6f412d]">{item.jlpt_level ?? 'unknown'}</span>
         <span className="rounded bg-[#edf0e9] px-2 py-1 text-xs font-semibold text-[#52645c]">{progress?.status ?? 'new'}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-[#62645f]">
+        <span className="rounded bg-[#f8f3eb] px-2 py-1">{labels.reviewCount}: {progress?.reviewCount ?? 0}</span>
+        <span className="rounded bg-[#f8f3eb] px-2 py-1">{labels.nextReview}: {formatDate(progress?.nextReviewAt, locale)}</span>
       </div>
       <h3 className="mt-3 text-2xl font-semibold">
         <RubyText text={item.original} items={[item]} enabled={showRuby} />

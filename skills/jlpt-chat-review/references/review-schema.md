@@ -21,6 +21,7 @@ Each item:
 {
   "id": "n1-vocab-001",
   "date": "2026-08-27",
+  "input_at": "2026-08-27T20:20:00+09:00",
   "deck": "n1_vocab",
   "type": "word",
   "jlpt_level": "N1",
@@ -100,6 +101,7 @@ Recommended values:
 
 - `id`
 - `date`
+- `input_at`
 - `deck`
 - `type`
 - `original`
@@ -170,6 +172,25 @@ Use `localizations` for multilingual learner-facing output. Keys should be BCP 4
 ```
 
 Keep Japanese source fields stable. Translate learner-facing fields only.
+
+## Review Scheduling
+
+Do not store learner-specific scheduling state in seed data. Store only the content timestamp `input_at` in each item.
+
+Browser progress may contain:
+
+```json
+{
+  "firstSeenAt": "2026-08-27T20:20:00.000Z",
+  "lastReviewedAt": "2026-08-27T20:25:00.000Z",
+  "reviewCount": 2,
+  "ease": 2.8,
+  "intervalDays": 3,
+  "nextReviewAt": "2026-08-30T20:25:00.000Z"
+}
+```
+
+Use a simplified Anki/SM-2 style rule: first correct answer reviews tomorrow, second correct answer reviews after 3 days, later correct answers multiply the interval by ease, and wrong answers return to tomorrow with lower ease.
 
 ## Privacy Rule
 

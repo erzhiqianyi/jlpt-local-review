@@ -60,7 +60,8 @@
           "core_memory": "Use a standard or instrument to turn objective data into numbers.",
           "analysis": "Use it for measurable targets such as temperature, blood pressure, concentration, speed, or machine performance."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-002",
@@ -119,7 +120,8 @@
           "core_memory": "A formal stamp of recognition after checking against criteria.",
           "analysis": "The key ideas are a standard and a formal judgment. It is stronger than simply thinking something is acceptable."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-003",
@@ -174,7 +176,8 @@
           "core_memory": "Every year, the trend becomes more visible.",
           "analysis": "Often pairs with increase, decrease, rise, decline, worsening, or other trend expressions."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-004",
@@ -231,7 +234,8 @@
           "core_memory": "Time passes, and the situation develops up to the present.",
           "analysis": "It can describe elapsed time, or the progress of treatment, an incident, a project, or another ongoing state."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-005",
@@ -290,7 +294,8 @@
           "core_memory": "Step back and look at the whole structure.",
           "analysis": "Common in essays, reports, and chapter openings when first surveying the overall situation or history."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-006",
@@ -347,7 +352,8 @@
           "core_memory": "Through training, a skill, habit, or professional is formed.",
           "analysis": "Often used with personnel, specialists, abilities, habits, and courses. It has a formal, institutional feel."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-007",
@@ -400,7 +406,8 @@
           "core_memory": "Step through something one stage at a time.",
           "analysis": "Feet, ground, and brakes are literal uses. Procedures, steps, and stages are figurative uses."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-008",
@@ -456,7 +463,8 @@
           "core_memory": "Not just many, but plentiful and substantial.",
           "analysis": "Common with experience, knowledge, resources, varieties, nutrients, and menus. It stresses both quantity and richness."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-001",
@@ -492,7 +500,8 @@
           "core_memory": "Remember it as はっとり; do not derive it mechanically from 服=ふく and 部=ぶ.",
           "analysis": "When followed by さん, 氏, 教授, or 先生, it is usually being used as a surname."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-002",
@@ -525,7 +534,8 @@
           "core_memory": "As a personal name, 智里 is often read ちさと.",
           "analysis": "Japanese personal names can have special readings. For a real person, follow the textbook, audio, or the person’s own notation."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-003",
@@ -561,7 +571,8 @@
           "core_memory": "Remember the whole form as さの.",
           "analysis": "With さん or 先生 it is likely a surname; with 市 or 駅 it is likely a place name."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-004",
@@ -594,7 +605,8 @@
           "core_memory": "智 can be read とも, and 子 is read こ.",
           "analysis": "The exact reading of a real person’s name should still follow that person’s own notation."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-005",
@@ -634,7 +646,8 @@
           "core_memory": "しんたに is the default candidate, but names may have other special readings.",
           "analysis": "Without more context, しんたに is a reasonable first guess, but it should not be treated as the only possible reading."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "name-006",
@@ -667,7 +680,8 @@
           "core_memory": "新谷 = しんたに, 遥 = はるか.",
           "analysis": "For a specific person, confirm with their own notation, textbook marking, or audio."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-009",
@@ -712,7 +726,8 @@
           "core_memory": "A large distance in space, time, or degree.",
           "analysis": "Alone in a name it is often read はるか. In 遥かに + comparison, it means far or greatly beyond."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-010",
@@ -768,7 +783,8 @@
           "core_memory": "Not just holding back once, but enduring through a hard period.",
           "analysis": "辛抱 fits when enduring a difficult period. 我慢 is more general for holding back desires, pain, or emotions."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     },
     {
       "id": "n1-vocab-011",
@@ -824,7 +840,8 @@
           "core_memory": "Use it to see the structure of the whole book by chapter.",
           "analysis": "目次 is the chapter list at the front. 索引 is an index used to find pages by keywords or names."
         }
-      }
+      },
+      "input_at": "2026-08-27T20:20:00+09:00"
     }
   ]
 }

@@ -25,6 +25,7 @@ For Claude Code or other coding assistants, tell the assistant to read this `SKI
 For each item:
 
 - Preserve the Japanese surface form.
+- Add `input_at` as an ISO 8601 timestamp for when the user provided the item.
 - Normalize obvious typos only in a separate field when needed.
 - Classify the deck as `n1_vocab`, `grammar_expression`, or `name_reading`.
 - Estimate JLPT level only when there is enough evidence; otherwise use `unknown`.
@@ -54,6 +55,7 @@ Furigana must be display-controlled, not baked into visible plain text. The revi
 - Do not call external dictionary or translation APIs unless the user explicitly asks.
 - Do not invent official JLPT levels for uncertain items.
 - Keep user progress out of the seed data; progress belongs in browser local storage.
+- Keep review counts, ease factors, intervals, and `nextReviewAt` in browser progress only. Seed data should describe content, not a specific learner's schedule.
 
 ## Language Output
 
