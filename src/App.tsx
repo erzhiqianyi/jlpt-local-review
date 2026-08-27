@@ -6,6 +6,7 @@ type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
+type StudyPage = 'questions' | 'words';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
 type ProgressEntry = {
@@ -88,6 +89,9 @@ const translations = {
     reviewCount: '复习',
     nextReview: '下次复习',
     wordDetail: '词条详情',
+    questionPage: '题目练习',
+    wordPage: '词条页面',
+    page: '页面',
     swipeHint: '移动端左右滑动切换，电脑端可用箭头或键盘方向键。',
     practice: '今日练习',
     library: '词库',
@@ -181,6 +185,9 @@ const translations = {
     reviewCount: '復習',
     nextReview: '次回復習',
     wordDetail: '語彙詳細',
+    questionPage: '問題練習',
+    wordPage: '語彙ページ',
+    page: 'ページ',
     swipeHint: 'モバイルでは左右スワイプ、PC では矢印またはキーボードで切り替えます。',
     practice: '今日の復習',
     library: '語彙帳',
@@ -274,6 +281,9 @@ const translations = {
     reviewCount: 'Reviews',
     nextReview: 'Next Review',
     wordDetail: 'Word Detail',
+    questionPage: 'Practice Questions',
+    wordPage: 'Word Page',
+    page: 'Page',
     swipeHint: 'Swipe on mobile, or use arrows and keyboard arrow keys on desktop.',
     practice: 'Practice',
     library: 'Library',
@@ -485,6 +495,7 @@ export default function App() {
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
   const [activeView, setActiveView] = useState<AppView>('vocabulary');
+  const [studyPage, setStudyPage] = useState<StudyPage>('questions');
   const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
 
   useEffect(() => {
@@ -528,7 +539,7 @@ export default function App() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
+      if (studyPage !== 'words' || activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
         return;
       }
       if (event.key === 'ArrowLeft') {
@@ -540,7 +551,7 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeView, items.length]);
+  }, [activeView, items.length, studyPage]);
 
   function answerQuestion(question: Question, selected: string) {
     const correct = selected === question.answer;
@@ -648,6 +659,18 @@ export default function App() {
               </Panel>
             ) : null}
 
+            <Panel title={labels.page}>
+              <div className="grid gap-2">
+                <SegmentButton active={studyPage === 'questions'} onClick={() => setStudyPage('questions')}>
+                  {labels.questionPage}
+                </SegmentButton>
+                <SegmentButton active={studyPage === 'words'} onClick={() => setStudyPage('words')}>
+                  {labels.wordPage}
+                </SegmentButton>
+              </div>
+            </Panel>
+
+            {studyPage === 'questions' ? (
             <Panel title={labels.questionType}>
               <div className="grid grid-cols-2 gap-2">
                 {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
@@ -657,6 +680,7 @@ export default function App() {
                 ))}
               </div>
             </Panel>
+            ) : null}
 
             <Panel title={labels.display}>
               <div className="space-y-3">
@@ -686,7 +710,7 @@ export default function App() {
           ) : null}
           {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
           {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
-            <>
+            studyPage === 'questions' ? (
               <PracticePanel
                 activeQuestion={activeQuestion}
                 questionsLength={questions.length}
@@ -700,6 +724,7 @@ export default function App() {
                 onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
                 onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
               />
+            ) : (
               <WordDetailPanel
                 item={activeWord}
                 index={wordIndex}
@@ -712,7 +737,7 @@ export default function App() {
                 onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
                 onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
               />
-            </>
+            )
           ) : null}
         </div>
       </section>
