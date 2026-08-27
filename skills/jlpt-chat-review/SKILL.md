@@ -49,6 +49,18 @@ Every generated question should support immediate correct/incorrect judging and 
 
 Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support. Question prompts and answer choices must stay plain so readings do not leak into the test.
 
+## Exported Study Record Workflow
+
+When the user provides an exported study record JSON from the website settings page:
+
+1. Analyze answer history, item progress, review counts, intervals, and `nextReviewAt`.
+2. Identify weak modules, weak question types, overdue items, and high-confusion items.
+3. Generate a short study diagnosis in the user's requested language.
+4. Create a 7-day review plan based on due items and Anki-style spacing.
+5. Generate new practice material for weak points and update `public/data/review-data.json` only when the user asks to write the new content into the site.
+
+Do not treat exported browser progress as public seed data. It is private learner state used for analysis and planning.
+
 ## Boundaries
 
 - Do not include private raw chat logs in public data.

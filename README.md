@@ -20,6 +20,7 @@ The intended workflow is simple:
 - Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.
 - Multilingual UI and multilingual data support through `localizations`.
 - Local-only progress with `localStorage`.
+- Exportable study records for AI analysis and next-plan generation.
 - Static deployment friendly: no login, database, or backend required.
 
 ## Local Setup
@@ -146,6 +147,25 @@ The review interval follows a simplified Anki/SM-2 style schedule:
 
 This keeps the repository data shareable while each learner's forgetting-curve schedule stays private in their own browser.
 
+## Export Study Records
+
+Open `设置` / `Settings` and use `导出学习记录` to download a JSON file from the current browser. The export includes:
+
+- Current content version and item summary.
+- Answer history.
+- Correct and wrong counts.
+- Review count, ease factor, interval, and `nextReviewAt`.
+- A ready-to-paste AI prompt.
+
+Give this exported JSON to Codex, Claude Code, or another AI assistant and ask it to:
+
+- Analyze weak modules and weak question types.
+- Find items that are due or overdue.
+- Generate a 7-day review plan.
+- Create new JLPT-style questions and explanations from the weak points.
+
+The export stays local. The app does not upload learning records by itself.
+
 ## Using Codex
 
 Install or copy the included skill from:
@@ -173,6 +193,13 @@ Paste your notes, vocabulary explanations, sentences, or JLPT-style questions. A
 
 ```bash
 npm run build
+```
+
+After practicing in the app, export your study record from `设置` and send it back to Codex:
+
+```text
+$jlpt-chat-review
+这是我导出的学习记录 JSON。请分析弱点、安排未来 7 天复习计划，并基于错题生成新的 JLPT 练习内容。
 ```
 
 ## Using Claude Code

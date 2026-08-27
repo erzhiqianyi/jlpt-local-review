@@ -96,6 +96,17 @@ const translations = {
     practice: '今日练习',
     library: '词库',
     settings: '设置',
+    exportStudyRecord: '导出学习记录',
+    exportStudyRecordBody: '下载当前浏览器里的答题记录、复习次数、下次复习时间和 AI 分析提示。把 JSON 给 Codex 或 Claude Code 后，可以分析弱点、生成 7 天学习计划和新的复习内容。',
+    exportStudyRecordButton: '导出 JSON',
+    exportForAI: '给 AI 分析',
+    skillTitle: '技能工作流',
+    skillBody: '使用 jlpt-chat-review 技能，把聊天里的单词、句子、语法疑问和完整题目整理成 review-data.json。技能会记录输入时间、输出多语言说明、生成 JLPT 题型，并把假名标注放在可控制的 ruby_terms 中。',
+    workflowTitle: '推荐使用流程',
+    workflowCapture: '1. 在 Codex 或 Claude Code 里输入今天不懂的内容。',
+    workflowGenerate: '2. 让 AI 按 skills/jlpt-chat-review/SKILL.md 整理结构化数据。',
+    workflowPractice: '3. 在网页里按单词、语法、听力、阅读、综合模块复习。',
+    workflowExport: '4. 从设置导出学习记录，再交给 AI 分析弱点、安排下一轮复习和生成新题。',
     brand: 'JLPT Review',
     navHome: '首页',
     navVocabulary: '单词',
@@ -193,6 +204,17 @@ const translations = {
     practice: '今日の復習',
     library: '語彙帳',
     settings: '設定',
+    exportStudyRecord: '学習記録を書き出す',
+    exportStudyRecordBody: 'このブラウザ内の回答履歴、復習回数、次回復習日、AI 分析用プロンプトを JSON で保存します。JSON を Codex や Claude Code に渡すと、弱点分析、7日間の学習計画、新しい復習内容の作成に使えます。',
+    exportStudyRecordButton: 'JSON を書き出す',
+    exportForAI: 'AI に分析させる',
+    skillTitle: 'スキルの流れ',
+    skillBody: 'jlpt-chat-review スキルで、チャット内の語彙・文・文法の疑問・問題を review-data.json に整理します。入力時刻、多言語説明、JLPT 形式の問題、表示制御できる ruby_terms を扱います。',
+    workflowTitle: 'おすすめの使い方',
+    workflowCapture: '1. Codex や Claude Code に今日分からなかった内容を入力します。',
+    workflowGenerate: '2. skills/jlpt-chat-review/SKILL.md に従って構造化データを作成します。',
+    workflowPractice: '3. Web で語彙・文法・聴解・読解・総合のモジュール別に復習します。',
+    workflowExport: '4. 設定から学習記録を書き出し、AI に弱点分析と次の復習計画を作らせます。',
     brand: 'JLPT Review',
     navHome: 'ホーム',
     navVocabulary: '語彙',
@@ -290,6 +312,17 @@ const translations = {
     practice: 'Practice',
     library: 'Library',
     settings: 'Settings',
+    exportStudyRecord: 'Export Study Record',
+    exportStudyRecordBody: 'Download answers, review counts, next-review times, and an AI analysis prompt from this browser. Give the JSON to Codex or Claude Code to analyze weak points, create a 7-day plan, and generate new review content.',
+    exportStudyRecordButton: 'Export JSON',
+    exportForAI: 'Analyze With AI',
+    skillTitle: 'Skill Workflow',
+    skillBody: 'Use the jlpt-chat-review skill to turn words, sentences, grammar questions, and full JLPT problems from chat into review-data.json. The skill records input time, multilingual explanations, JLPT question types, and display-controlled ruby_terms.',
+    workflowTitle: 'Recommended Flow',
+    workflowCapture: '1. Enter confusing material from today in Codex or Claude Code.',
+    workflowGenerate: '2. Ask the AI to follow skills/jlpt-chat-review/SKILL.md and create structured data.',
+    workflowPractice: '3. Review by vocabulary, grammar, listening, reading, and mixed modules in the web app.',
+    workflowExport: '4. Export the study record from Settings, then ask AI to analyze weak points, plan the next review, and generate new content.',
     brand: 'JLPT Review',
     navHome: 'Home',
     navVocabulary: 'Vocabulary',
@@ -597,6 +630,43 @@ export default function App() {
     writeStorage(STORAGE_SETTINGS, normalized);
   }
 
+  function exportStudyRecord() {
+    const exportedAt = new Date().toISOString();
+    const payload = {
+      exported_at: exportedAt,
+      app: 'JLPT Review',
+      data_generated_at: data.generated_at,
+      locale,
+      summary: {
+        items: data.items.length,
+        questions: allQuestions.length,
+        answered: answeredCount,
+        correct: correctCount,
+        mastered: masteredCount,
+      },
+      items: data.items.map((item) => ({
+        id: item.id,
+        deck: item.deck,
+        type: item.type,
+        jlpt_level: item.jlpt_level,
+        original: item.original,
+        reading: item.reading,
+        meaning: itemMeaning(item, locale),
+        input_at: item.input_at,
+      })),
+      answers,
+      progress,
+      settings,
+      ai_prompt: [
+        '请分析这份 JLPT 学习记录。',
+        '请找出我的薄弱模块、容易错的题型、需要提前复习的词条。',
+        '请按照 Anki/遗忘曲线思想，为接下来 7 天生成复习计划。',
+        '请基于错题和即将到期的 nextReviewAt，生成新的 JLPT 练习题和解析。',
+      ].join('\n'),
+    };
+    downloadJSON(`jlpt-study-record-${exportedAt.slice(0, 10)}.json`, payload);
+  }
+
   return (
     <main className="min-h-screen max-w-full overflow-x-hidden bg-[#f5f7f3] text-[#1f2522]">
       <header className="sticky top-0 z-20 border-b border-[#d7dfd6] bg-white/90 backdrop-blur">
@@ -712,6 +782,12 @@ export default function App() {
                       <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
                       <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
                     </div>
+                  </SettingBlock>
+                  <SettingBlock title={labels.exportStudyRecord}>
+                    <p className="text-sm leading-6 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
+                    <button type="button" onClick={exportStudyRecord} className="mt-4 rounded-md bg-[#173d35] px-4 py-2 text-sm font-semibold text-white">
+                      {labels.exportStudyRecordButton}
+                    </button>
                   </SettingBlock>
                 </div>
               </Panel>
@@ -931,6 +1007,16 @@ function readStorage<T>(key: string, fallback: T): T {
 
 function writeStorage(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function downloadJSON(filename: string, value: unknown) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function normalizeSettings(value: Partial<DisplaySettings> | undefined): DisplaySettings {
@@ -1177,6 +1263,20 @@ function AboutPanel({ labels }: { labels: Record<string, string> }) {
         <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.aboutBody}</p>
       </article>
       <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+        <h2 className="text-2xl font-semibold">{labels.skillTitle}</h2>
+        <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.skillBody}</p>
+      </article>
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm lg:col-span-2">
+        <h2 className="text-2xl font-semibold">{labels.workflowTitle}</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {[labels.workflowCapture, labels.workflowGenerate, labels.workflowPractice, labels.workflowExport].map((step) => (
+            <p key={step} className="rounded-md bg-[#f5f7f3] p-3 text-sm leading-6 text-[#4f5b55]">
+              {step}
+            </p>
+          ))}
+        </div>
+      </article>
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
         <h2 className="text-2xl font-semibold">{labels.deployTitle}</h2>
         <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.deployBody}</p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -1187,6 +1287,10 @@ function AboutPanel({ labels }: { labels: Record<string, string> }) {
             README
           </a>
         </div>
+      </article>
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+        <h2 className="text-2xl font-semibold">{labels.exportForAI}</h2>
+        <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
       </article>
     </section>
   );
