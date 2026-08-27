@@ -29,6 +29,39 @@
 - 内容种子在 `public/data/review-data.json`。
 - `npm run build` 会生成 `dist/index.html` 和静态资源。
 
+## 本地 Cloudflare Tunnel 预览
+
+本机 tunnel 配置增加了：
+
+```yaml
+- hostname: jlpt-local.erzhiqian.cc
+  service: http://127.0.0.1:5180
+```
+
+项目脚本：
+
+```bash
+npm run dev
+```
+
+固定启动到：
+
+```text
+http://localhost:5180/
+```
+
+联动本地服务和 tunnel：
+
+```bash
+npm run dev:tunnel
+```
+
+外部访问地址：
+
+```text
+https://jlpt-local.erzhiqian.cc
+```
+
 ## 数据更新方式
 
 后续新增单词时：

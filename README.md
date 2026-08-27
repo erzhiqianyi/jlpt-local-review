@@ -39,6 +39,38 @@ npm run build
 
 The production output is written to `dist`.
 
+## Local Tunnel Preview
+
+For a fixed local port:
+
+```bash
+npm run dev
+```
+
+The app runs on:
+
+```text
+http://localhost:5180/
+```
+
+If you have Cloudflare Tunnel configured for this host, use:
+
+```bash
+npm run dev:tunnel
+```
+
+This starts the Vite dev server on port `5180` and runs:
+
+```bash
+cloudflared tunnel --config ~/.cloudflared/config.yml run satori-local
+```
+
+In this local setup, the tunnel hostname is:
+
+```text
+https://jlpt-local.erzhiqian.cc
+```
+
 ## Data Model
 
 The app reads seed content from:

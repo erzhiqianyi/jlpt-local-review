@@ -6,9 +6,11 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 0.0.0.0 --port 5180 --strictPort",
     "build": "vite build",
-    "start": "vite preview --host 0.0.0.0",
+    "start": "vite preview --host 0.0.0.0 --port 5180 --strictPort",
+    "tunnel": "cloudflared tunnel --config ~/.cloudflared/config.yml run satori-local",
+    "dev:tunnel": "bash scripts/dev-with-tunnel.sh",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

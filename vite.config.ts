@@ -4,5 +4,8 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   css: { postcss: { plugins: [tailwindcss()] } },
+  server: {
+    allowedHosts: ['jlpt-local.erzhiqian.cc'],
+  },
   plugins: [react()],
 });
