@@ -34,6 +34,18 @@ Each item:
   ],
   "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
   "core_memory": "按标准、用仪器把客观数据测出来。",
+  "localizations": {
+    "en": {
+      "meaning": "Measurement; determining a numeric value with a method or instrument.",
+      "core_memory": "Measure objective data by a standard method.",
+      "analysis": "Use it for measurable quantities such as temperature, blood pressure, concentration, or speed."
+    },
+    "ja": {
+      "meaning": "一定の方法や器具で数値を調べること。",
+      "core_memory": "基準や器具を使って客観的な数値を出す。",
+      "analysis": "温度・血圧・濃度・速度など、数値化できる対象で使いやすい。"
+    }
+  },
   "part_of_speech": "名词・サ变动词",
   "collocations": ["血圧を測定する", "測定結果"],
   "collocation_ruby": [
@@ -98,6 +110,7 @@ Recommended values:
 
 - `reading`
 - `ruby_terms`
+- `localizations`
 - `jlpt_level`
 - `part_of_speech`
 - `collocations`
@@ -127,6 +140,24 @@ Rules:
 - Do not add readings for kana-only text.
 - For uncertain proper-name readings, include the most likely reading and mention uncertainty in `analysis`.
 - Keep base fields such as `original`, `collocations`, and `examples[].ja` clean, without parentheses readings.
+
+## Localizations
+
+Use `localizations` for multilingual learner-facing output. Keys should be BCP 47 style language tags.
+
+```json
+{
+  "localizations": {
+    "en": {
+      "meaning": "Measurement; determining a numeric value with a method or instrument.",
+      "core_memory": "Measure objective data by a standard method.",
+      "analysis": "Use it for measurable quantities such as temperature or speed."
+    }
+  }
+}
+```
+
+Keep Japanese source fields stable. Translate learner-facing fields only.
 
 ## Privacy Rule
 

@@ -10,10 +10,11 @@ Use this skill when the user gives Japanese-learning material in chat and wants 
 ## Workflow
 
 1. Read `references/review-schema.md`.
-2. Extract learnable items from the user's chat or notes.
-3. Update `public/data/review-data.json`.
-4. Keep raw private chat transcripts out of the website data.
-5. Run the project build after editing data.
+2. Ask or infer which output languages the user wants when the request is ambiguous.
+3. Extract learnable items from the user's chat or notes.
+4. Update `public/data/review-data.json`.
+5. Keep raw private chat transcripts out of the website data.
+6. Run the project build after editing data.
 
 For Codex installations, copy this folder to `~/.codex/skills/jlpt-chat-review`.
 
@@ -28,6 +29,7 @@ For each item:
 - Classify the deck as `n1_vocab`, `grammar_expression`, or `name_reading`.
 - Estimate JLPT level only when there is enough evidence; otherwise use `unknown`.
 - Write Chinese explanations for review.
+- When the user asks for multiple languages, keep the Japanese source fields stable and write translated learner-facing text under `localizations`.
 - Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
@@ -52,3 +54,20 @@ Furigana must be display-controlled, not baked into visible plain text. The revi
 - Do not call external dictionary or translation APIs unless the user explicitly asks.
 - Do not invent official JLPT levels for uncertain items.
 - Keep user progress out of the seed data; progress belongs in browser local storage.
+
+## Language Output
+
+Default learner-facing language is Simplified Chinese (`zh-CN`). If the user asks for another language or a multilingual deck, output `localizations` for the requested languages.
+
+Supported language keys should use BCP 47 style tags, for example:
+
+- `zh-CN`
+- `zh-TW`
+- `ja`
+- `en`
+- `ko`
+- `vi`
+- `fr`
+- `es`
+
+Do not translate Japanese source fields such as `original`, `reading`, `collocations`, or `examples[].ja`. Translate meanings, memory hints, explanations, comparison notes, question explanations, and learner instructions.

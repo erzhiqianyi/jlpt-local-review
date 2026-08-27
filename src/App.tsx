@@ -4,10 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'reading' | 'meaning' | 'collocation' | 'comparison' | 'moji_goi';
+type Locale = 'zh-CN' | 'ja' | 'en';
+type AppView = 'practice' | 'library' | 'settings';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ProgressState = Record<string, { correct: number; wrong: number; status: 'new' | 'learning' | 'review' | 'mastered' }>;
-type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean };
+type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean; locale: Locale };
 type RubyTerm = { text: string; reading: string };
+type LocalizedText = {
+  meaning?: string;
+  core_memory?: string;
+  analysis?: string;
+};
 
 type VocabItem = {
   id: string;
@@ -24,6 +31,7 @@ type VocabItem = {
   examples?: { ja: string; zh: string }[];
   comparisons?: { target: string; difference_zh: string }[];
   analysis?: string;
+  localizations?: Partial<Record<Locale | string, LocalizedText>>;
   ruby_terms?: RubyTerm[];
   tags?: string[];
 };
@@ -48,20 +56,152 @@ const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
 const STORAGE_ANSWERS = 'jlpt-vocab-answers-v1';
 const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
 
-const kindLabels: Record<QuestionKind, string> = {
-  reading: '读音',
-  meaning: '词义',
-  collocation: '搭配',
-  comparison: '易混',
-  moji_goi: '文字・語彙',
-};
-
-const deckLabels: Record<Deck | 'all', string> = {
-  all: '全部',
-  n1_vocab: 'N1/N2 词汇',
-  grammar_expression: '表达/活用',
-  name_reading: '人名读法',
-};
+const translations = {
+  'zh-CN': {
+    deckAll: '全部',
+    deckN1: 'N1/N2 词汇',
+    deckExpression: '表达/活用',
+    deckName: '人名读法',
+    reading: '读音',
+    meaning: '词义',
+    collocation: '搭配',
+    comparison: '易混',
+    mojiGoi: '文字・語彙',
+    reset: '重置本地进度',
+    items: '词条',
+    questions: '题目',
+    answered: '已作答',
+    correct: '正确',
+    mastered: '掌握',
+    practice: '今日练习',
+    library: '词库',
+    settings: '设置',
+    practiceTitle: '开始一组复习',
+    practiceCopy: '按题型练习，作答后看对错和完整解析。',
+    libraryTitle: '查看整理好的词条',
+    libraryCopy: '按 deck 查看词义、搭配、例句和解析。',
+    settingsTitle: '调整学习显示',
+    settingsCopy: '控制语言和假名标注。',
+    deck: 'Deck',
+    questionType: '题型',
+    display: '显示设置',
+    language: '界面语言',
+    reviewRuby: '复习显示假名',
+    explanationRuby: '解析显示假名',
+    rules: '练习规则',
+    ruleJudge: '选择答案后立即判分。',
+    ruleExplain: '每题显示正确答案和解析。',
+    ruleLocal: '答题记录写入浏览器本地。',
+    ruleExam: '考场判断作为解析材料，不单独出题。',
+    noQuestion: '没有可练习题目',
+    noQuestionBody: '当前筛选条件下没有题目。',
+    beforeAnswer: '作答后会显示对错评判、正确答案和完整解析。',
+    yourAnswer: '你的答案',
+    rightAnswer: '正确答案',
+    wrong: '错误',
+    prev: '上一题',
+    next: '下一题',
+    analysis: '解析',
+    contact: '联系',
+    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习读音、词义、搭配、易混辨析和 JLPT 文字・語彙。',
+  },
+  ja: {
+    deckAll: 'すべて',
+    deckN1: 'N1/N2 語彙',
+    deckExpression: '表現・活用',
+    deckName: '人名読み',
+    reading: '読み',
+    meaning: '意味',
+    collocation: '連語',
+    comparison: '比較',
+    mojiGoi: '文字・語彙',
+    reset: 'ローカル進捗をリセット',
+    items: '項目',
+    questions: '問題',
+    answered: '回答済み',
+    correct: '正解',
+    mastered: '習得',
+    practice: '今日の復習',
+    library: '語彙帳',
+    settings: '設定',
+    practiceTitle: '復習を始める',
+    practiceCopy: '問題に答えて、判定と解説を確認します。',
+    libraryTitle: '整理済みの語彙を見る',
+    libraryCopy: 'Deck ごとに意味、連語、例文、解説を確認します。',
+    settingsTitle: '表示を調整',
+    settingsCopy: '言語とふりがな表示を切り替えます。',
+    deck: 'Deck',
+    questionType: '問題形式',
+    display: '表示設定',
+    language: '表示言語',
+    reviewRuby: '復習にふりがな',
+    explanationRuby: '解説にふりがな',
+    rules: '練習ルール',
+    ruleJudge: '選択後すぐに判定します。',
+    ruleExplain: '正解と解説を表示します。',
+    ruleLocal: '回答履歴はブラウザに保存されます。',
+    ruleExam: '試験用の判断材料は解説に含めます。',
+    noQuestion: '問題がありません',
+    noQuestionBody: '現在の条件では問題がありません。',
+    beforeAnswer: '回答後、判定・正解・解説が表示されます。',
+    yourAnswer: 'あなたの答え',
+    rightAnswer: '正解',
+    wrong: '不正解',
+    prev: '前へ',
+    next: '次へ',
+    analysis: '解説',
+    contact: '連絡先',
+    intro: 'Codex や Claude Code で整理した学習記録を使い、読み・意味・連語・比較・JLPT 文字語彙をブラウザ内で復習します。',
+  },
+  en: {
+    deckAll: 'All',
+    deckN1: 'N1/N2 Vocab',
+    deckExpression: 'Expressions',
+    deckName: 'Name Readings',
+    reading: 'Reading',
+    meaning: 'Meaning',
+    collocation: 'Collocation',
+    comparison: 'Compare',
+    mojiGoi: 'Moji Goi',
+    reset: 'Reset local progress',
+    items: 'Items',
+    questions: 'Questions',
+    answered: 'Answered',
+    correct: 'Correct',
+    mastered: 'Mastered',
+    practice: 'Practice',
+    library: 'Library',
+    settings: 'Settings',
+    practiceTitle: 'Start a review set',
+    practiceCopy: 'Practice by question type, then review scoring and explanations.',
+    libraryTitle: 'Browse structured entries',
+    libraryCopy: 'Review meanings, collocations, examples, and notes by deck.',
+    settingsTitle: 'Tune study display',
+    settingsCopy: 'Control language and furigana support.',
+    deck: 'Deck',
+    questionType: 'Question Type',
+    display: 'Display',
+    language: 'Language',
+    reviewRuby: 'Show furigana in review',
+    explanationRuby: 'Show furigana in explanations',
+    rules: 'Rules',
+    ruleJudge: 'Answers are scored immediately.',
+    ruleExplain: 'Each question shows the answer and explanation.',
+    ruleLocal: 'Progress is saved in this browser.',
+    ruleExam: 'Exam heuristics appear in explanations only.',
+    noQuestion: 'No questions',
+    noQuestionBody: 'No questions match the current filters.',
+    beforeAnswer: 'After answering, scoring, the correct answer, and explanation will appear.',
+    yourAnswer: 'Your answer',
+    rightAnswer: 'Correct answer',
+    wrong: 'Incorrect',
+    prev: 'Previous',
+    next: 'Next',
+    analysis: 'Analysis',
+    contact: 'Contact',
+    intro: 'Turn your Codex or Claude Code study chats into a local browser review deck for readings, meanings, collocations, comparisons, and JLPT Moji Goi.',
+  },
+} satisfies Record<Locale, Record<string, string>>;
 
 const fallbackData: ReviewData = {
   generated_at: '2026-08-27T20:20:00+09:00',
@@ -71,6 +211,7 @@ const fallbackData: ReviewData = {
 const defaultSettings: DisplaySettings = {
   showReviewRuby: true,
   showExplanationRuby: true,
+  locale: 'zh-CN',
 };
 
 const defaultRubyTerms: RubyTerm[] = [
@@ -191,6 +332,7 @@ export default function App() {
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
+  const [activeView, setActiveView] = useState<AppView>('practice');
 
   useEffect(() => {
     fetch('/data/review-data.json')
@@ -219,6 +361,9 @@ export default function App() {
   const answeredCount = Object.keys(answers).length;
   const correctCount = Object.values(answers).filter((answer) => answer.correct).length;
   const masteredCount = Object.values(progress).filter((item) => item.status === 'mastered').length;
+  const labels = translations[settings.locale];
+  const deckLabels = deckLabelsFor(settings.locale);
+  const kindLabels = kindLabelsFor(settings.locale);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -259,37 +404,66 @@ export default function App() {
   return (
     <main className="min-h-screen bg-[#f6f1e8] text-[#1f2522]">
       <header className="border-b border-[#d9d0c3] bg-[#fffaf2]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6 md:px-8 lg:px-10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-5 md:px-8 lg:px-10">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#856033]">Personal JLPT Vocabulary Trainer</p>
-              <h1 className="mt-2 text-4xl font-semibold leading-tight md:text-5xl">JLPT Master Deck</h1>
+              <h1 className="text-4xl font-semibold leading-tight md:text-5xl">JLPT Master Deck</h1>
               <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">
-                使用 Codex 整理的词条数据，在本地浏览器里练习读音、词义、搭配、易混辨析和 JLPT 文字・語彙题型。进度只保存在当前浏览器。
+                {labels.intro}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={resetLocalProgress}
-              className="h-11 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold text-[#574f48] hover:bg-[#f7efe5]"
-            >
-              重置本地进度
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <LanguageSelect
+                value={settings.locale}
+                onChange={(locale) => updateSettings({ ...settings, locale })}
+              />
+              <button
+                type="button"
+                onClick={resetLocalProgress}
+                className="h-11 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold text-[#574f48] hover:bg-[#f7efe5]"
+              >
+                {labels.reset}
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Metric label="词条" value={data.items.length.toString()} />
-            <Metric label="题目" value={allQuestions.length.toString()} />
-            <Metric label="已作答" value={answeredCount.toString()} />
-            <Metric label="正确" value={correctCount.toString()} />
-            <Metric label="掌握" value={masteredCount.toString()} />
+            <Metric label={labels.items} value={data.items.length.toString()} />
+            <Metric label={labels.questions} value={allQuestions.length.toString()} />
+            <Metric label={labels.answered} value={answeredCount.toString()} />
+            <Metric label={labels.correct} value={correctCount.toString()} />
+            <Metric label={labels.mastered} value={masteredCount.toString()} />
           </div>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-5 py-5 md:grid-cols-[300px_minmax(0,1fr)] md:px-8 lg:px-10">
+      <section className="mx-auto grid max-w-7xl gap-4 px-5 py-5 md:grid-cols-3 md:px-8 lg:px-10">
+        <HomeAction
+          active={activeView === 'practice'}
+          title={labels.practiceTitle}
+          eyebrow={labels.practice}
+          body={labels.practiceCopy}
+          onClick={() => setActiveView('practice')}
+        />
+        <HomeAction
+          active={activeView === 'library'}
+          title={labels.libraryTitle}
+          eyebrow={labels.library}
+          body={labels.libraryCopy}
+          onClick={() => setActiveView('library')}
+        />
+        <HomeAction
+          active={activeView === 'settings'}
+          title={labels.settingsTitle}
+          eyebrow={labels.settings}
+          body={labels.settingsCopy}
+          onClick={() => setActiveView('settings')}
+        />
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-5 md:grid-cols-[280px_minmax(0,1fr)] md:px-8 lg:px-10">
         <aside className="space-y-4">
-          <Panel title="Deck">
+          <Panel title={labels.deck}>
             <div className="grid gap-2">
               {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
                 <SegmentButton key={deck} active={selectedDeck === deck} onClick={() => setSelectedDeck(deck)}>
@@ -299,7 +473,7 @@ export default function App() {
             </div>
           </Panel>
 
-          <Panel title="题型">
+          <Panel title={labels.questionType}>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
                 <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
@@ -309,109 +483,82 @@ export default function App() {
             </div>
           </Panel>
 
-          <Panel title="假名标注">
+          <Panel title={labels.display}>
             <div className="space-y-3">
               <Toggle
                 checked={settings.showReviewRuby}
-                label="复习卡片显示"
+                label={labels.reviewRuby}
                 onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
               />
               <Toggle
                 checked={settings.showExplanationRuby}
-                label="题目解析显示"
+                label={labels.explanationRuby}
                 onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })}
               />
             </div>
           </Panel>
 
-          <Panel title="练习规则">
+          <Panel title={labels.rules}>
             <ul className="space-y-2 text-sm leading-6 text-[#62645f]">
-              <li>选择答案后立即判分。</li>
-              <li>每题显示正确答案和解析。</li>
-              <li>答题记录写入浏览器本地。</li>
-              <li>考场判断作为解析材料，不单独出题。</li>
+              <li>{labels.ruleJudge}</li>
+              <li>{labels.ruleExplain}</li>
+              <li>{labels.ruleLocal}</li>
+              <li>{labels.ruleExam}</li>
             </ul>
           </Panel>
         </aside>
 
         <div className="space-y-5">
-          <section className="rounded-lg border border-[#d8cdbc] bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : '题目'}</p>
-                <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? '没有可练习题目'}</h2>
-                <p className="mt-3 text-lg leading-8 text-[#353b37]">
-                  {activeQuestion ? (
-                    <RubyText text={activeQuestion.prompt} items={data.items} enabled={settings.showReviewRuby} />
-                  ) : (
-                    '当前筛选条件下没有题目。'
-                  )}
-                </p>
-              </div>
-              <div className="flex h-10 min-w-28 items-center justify-center rounded-md bg-[#e8f0eb] px-3 text-sm font-semibold text-[#24473f]">
-                {questions.length ? `${activeIndex + 1} / ${questions.length}` : '0 / 0'}
-              </div>
-            </div>
+          {activeView === 'practice' ? (
+            <PracticePanel
+              activeQuestion={activeQuestion}
+              questionsLength={questions.length}
+              activeIndex={activeIndex}
+              answers={answers}
+              items={data.items}
+              labels={labels}
+              kindLabels={kindLabels}
+              settings={settings}
+              onAnswer={answerQuestion}
+              onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
+              onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+            />
+          ) : null}
 
-            {activeQuestion ? (
-              <>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  {activeQuestion.choices.map((choice) => {
-                    const answered = answers[activeQuestion.id];
-                    const isSelected = answered?.selected === choice;
-                    const isAnswer = choice === activeQuestion.answer;
-                    const color = !answered
-                      ? 'border-[#ddd4c8] bg-[#fffaf3] hover:bg-[#f5eadf]'
-                      : isAnswer
-                        ? 'border-[#3d735f] bg-[#e5f2ea]'
-                        : isSelected
-                          ? 'border-[#b65842] bg-[#fae8e1]'
-                          : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70';
-                    return (
-                      <button
-                        type="button"
-                        key={choice}
-                        onClick={() => answerQuestion(activeQuestion, choice)}
-                        className={`min-h-14 rounded-md border px-4 py-3 text-left text-base font-semibold ${color}`}
-                      >
-                        <RubyText text={choice} items={data.items} enabled={settings.showReviewRuby} />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <AnswerPanel
-                  question={activeQuestion}
-                  answer={answers[activeQuestion.id]}
-                  items={data.items}
-                  showRuby={settings.showExplanationRuby}
+          {activeView === 'library' ? (
+            <section className="grid gap-4 lg:grid-cols-2">
+              {items.map((item) => (
+                <VocabCard
+                  key={item.id}
+                  item={item}
+                  progress={progress[item.id]}
+                  showRuby={settings.showReviewRuby}
+                  labels={labels}
+                  deckLabels={deckLabels}
+                  locale={settings.locale}
                 />
+              ))}
+            </section>
+          ) : null}
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-                    className="h-10 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold"
-                  >
-                    上一题
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
-                    className="h-10 rounded-md bg-[#24473f] px-4 text-sm font-semibold text-white"
-                  >
-                    下一题
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </section>
-
-          <section className="grid gap-4 lg:grid-cols-2">
-            {items.map((item) => (
-              <VocabCard key={item.id} item={item} progress={progress[item.id]} showRuby={settings.showReviewRuby} />
-            ))}
-          </section>
+          {activeView === 'settings' ? (
+            <Panel title={labels.settings}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SettingBlock title={labels.language}>
+                  <LanguageSelect
+                    value={settings.locale}
+                    onChange={(locale) => updateSettings({ ...settings, locale })}
+                  />
+                </SettingBlock>
+                <SettingBlock title={labels.display}>
+                  <div className="space-y-3">
+                    <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
+                    <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
+                  </div>
+                </SettingBlock>
+              </div>
+            </Panel>
+          ) : null}
         </div>
       </section>
 
@@ -494,6 +641,27 @@ function buildQuestions(items: VocabItem[]): Question[] {
   });
 
   return questions;
+}
+
+function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
+  const labels = translations[locale];
+  return {
+    all: labels.deckAll,
+    n1_vocab: labels.deckN1,
+    grammar_expression: labels.deckExpression,
+    name_reading: labels.deckName,
+  };
+}
+
+function kindLabelsFor(locale: Locale): Record<QuestionKind, string> {
+  const labels = translations[locale];
+  return {
+    reading: labels.reading,
+    meaning: labels.meaning,
+    collocation: labels.collocation,
+    comparison: labels.comparison,
+    moji_goi: labels.mojiGoi,
+  };
 }
 
 function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number): Question {
@@ -594,6 +762,58 @@ function SegmentButton({ active, children, onClick }: { active: boolean; childre
   );
 }
 
+function HomeAction({
+  active,
+  eyebrow,
+  title,
+  body,
+  onClick,
+}: {
+  active: boolean;
+  eyebrow: string;
+  title: string;
+  body: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg border p-4 text-left shadow-sm transition ${
+        active ? 'border-[#24473f] bg-[#e7f0eb]' : 'border-[#d8cdbc] bg-white hover:bg-[#fffaf4]'
+      }`}
+    >
+      <p className="text-xs font-semibold uppercase text-[#856033]">{eyebrow}</p>
+      <h2 className="mt-2 text-xl font-semibold">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-[#62645f]">{body}</p>
+    </button>
+  );
+}
+
+function LanguageSelect({ value, onChange }: { value: Locale; onChange: (locale: Locale) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as Locale)}
+      className="h-11 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#574f48]"
+      aria-label="Language"
+    >
+      <option value="zh-CN">简体中文</option>
+      <option value="ja">日本語</option>
+      <option value="en">English</option>
+    </select>
+  );
+}
+
+function SettingBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-[#e1d7c9] bg-white p-4">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
 function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[#d9d0c3] bg-white px-3 py-2 text-sm font-semibold text-[#4f5651]">
@@ -617,30 +837,119 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+function PracticePanel({
+  activeQuestion,
+  questionsLength,
+  activeIndex,
+  answers,
+  items,
+  labels,
+  kindLabels,
+  settings,
+  onAnswer,
+  onPrev,
+  onNext,
+}: {
+  activeQuestion?: Question;
+  questionsLength: number;
+  activeIndex: number;
+  answers: AnswerState;
+  items: VocabItem[];
+  labels: Record<string, string>;
+  kindLabels: Record<QuestionKind, string>;
+  settings: DisplaySettings;
+  onAnswer: (question: Question, selected: string) => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <section className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
+          <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
+          <p className="mt-3 text-lg leading-8 text-[#353b37]">
+            {activeQuestion ? (
+              <RubyText text={activeQuestion.prompt} items={items} enabled={settings.showReviewRuby} />
+            ) : (
+              labels.noQuestionBody
+            )}
+          </p>
+        </div>
+        <div className="flex h-10 min-w-28 items-center justify-center rounded-md bg-[#e8f0eb] px-3 text-sm font-semibold text-[#24473f]">
+          {questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}
+        </div>
+      </div>
+
+      {activeQuestion ? (
+        <>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {activeQuestion.choices.map((choice) => {
+              const answered = answers[activeQuestion.id];
+              const isSelected = answered?.selected === choice;
+              const isAnswer = choice === activeQuestion.answer;
+              const color = !answered
+                ? 'border-[#ddd4c8] bg-[#fffaf3] hover:bg-[#f5eadf]'
+                : isAnswer
+                  ? 'border-[#3d735f] bg-[#e5f2ea]'
+                  : isSelected
+                    ? 'border-[#b65842] bg-[#fae8e1]'
+                    : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70';
+              return (
+                <button
+                  type="button"
+                  key={choice}
+                  onClick={() => onAnswer(activeQuestion, choice)}
+                  className={`min-h-14 rounded-md border px-4 py-3 text-left text-base font-semibold ${color}`}
+                >
+                  <RubyText text={choice} items={items} enabled={settings.showReviewRuby} />
+                </button>
+              );
+            })}
+          </div>
+
+          <AnswerPanel question={activeQuestion} answer={answers[activeQuestion.id]} items={items} showRuby={settings.showExplanationRuby} labels={labels} />
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" onClick={onPrev} className="h-10 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold">
+              {labels.prev}
+            </button>
+            <button type="button" onClick={onNext} className="h-10 rounded-md bg-[#24473f] px-4 text-sm font-semibold text-white">
+              {labels.next}
+            </button>
+          </div>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 function AnswerPanel({
   question,
   answer,
   items,
   showRuby,
+  labels,
 }: {
   question: Question;
   answer?: { selected: string; correct: boolean };
   items: VocabItem[];
   showRuby: boolean;
+  labels: Record<string, string>;
 }) {
   if (!answer) {
     return (
       <div className="mt-5 rounded-lg border border-[#ded5c7] bg-[#fffaf4] p-4 text-sm leading-6 text-[#62645f]">
-        作答后会显示对错评判、正确答案和完整解析。
+        {labels.beforeAnswer}
       </div>
     );
   }
 
   return (
     <div className={`mt-5 rounded-lg border p-4 ${answer.correct ? 'border-[#3d735f] bg-[#e8f3ec]' : 'border-[#b65842] bg-[#fae9e2]'}`}>
-      <p className="text-sm font-semibold">{answer.correct ? '正确' : '错误'}</p>
-      <p className="mt-2 text-sm">你的答案：<RubyText text={answer.selected} items={items} enabled={showRuby} /></p>
-      <p className="mt-1 text-sm">正确答案：<RubyText text={question.answer} items={items} enabled={showRuby} /></p>
+      <p className="text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
+      <p className="mt-2 text-sm">{labels.yourAnswer}：<RubyText text={answer.selected} items={items} enabled={showRuby} /></p>
+      <p className="mt-1 text-sm">{labels.rightAnswer}：<RubyText text={question.answer} items={items} enabled={showRuby} /></p>
       <p className="mt-3 text-sm leading-6 text-[#3f4641]">
         <RubyText text={question.explanation} items={items} enabled={showRuby} />
       </p>
@@ -648,7 +957,24 @@ function AnswerPanel({
   );
 }
 
-function VocabCard({ item, progress, showRuby }: { item: VocabItem; progress?: ProgressState[string]; showRuby: boolean }) {
+function VocabCard({
+  item,
+  progress,
+  showRuby,
+  labels,
+  deckLabels,
+  locale,
+}: {
+  item: VocabItem;
+  progress?: ProgressState[string];
+  showRuby: boolean;
+  labels: Record<string, string>;
+  deckLabels: Record<Deck | 'all', string>;
+  locale: Locale;
+}) {
+  const meaning = localized(item, locale, 'meaning') ?? item.meaning_zh;
+  const coreMemory = localized(item, locale, 'core_memory') ?? item.core_memory;
+  const analysis = localized(item, locale, 'analysis') ?? item.analysis;
   return (
     <article className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -660,8 +986,8 @@ function VocabCard({ item, progress, showRuby }: { item: VocabItem; progress?: P
         <RubyText text={item.original} items={[item]} enabled={showRuby} />
       </h3>
       {item.reading ? <p className="mt-1 text-sm font-semibold text-[#8c5a3d]">{item.reading}</p> : null}
-      <p className="mt-3 text-sm font-semibold">{item.meaning_zh}</p>
-      <p className="mt-2 text-sm leading-6 text-[#5f625b]">{item.core_memory}</p>
+      <p className="mt-3 text-sm font-semibold">{meaning}</p>
+      <p className="mt-2 text-sm leading-6 text-[#5f625b]">{coreMemory}</p>
       {item.collocations?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {item.collocations.slice(0, 4).map((collocation) => (
@@ -671,13 +997,20 @@ function VocabCard({ item, progress, showRuby }: { item: VocabItem; progress?: P
           ))}
         </div>
       ) : null}
-      {item.analysis ? (
+      {analysis ? (
         <p className="mt-3 rounded-md bg-[#f8f3eb] p-3 text-xs leading-5 text-[#62645f]">
-          解析：<RubyText text={item.analysis} items={[item]} enabled={showRuby} />
+          {labels.analysis}：<RubyText text={analysis} items={[item]} enabled={showRuby} />
         </p>
       ) : null}
     </article>
   );
+}
+
+function localized(item: VocabItem, locale: Locale, key: keyof LocalizedText) {
+  if (locale === 'zh-CN') {
+    return undefined;
+  }
+  return item.localizations?.[locale]?.[key];
 }
 
 function RubyText({ text, items, enabled }: { text: string; items: VocabItem[]; enabled: boolean }) {
