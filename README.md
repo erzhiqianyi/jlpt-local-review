@@ -17,7 +17,7 @@ There are two supported workflows:
 - Countdown to the next JLPT test date.
 - Practice modes for JLPT `文字・語彙`, `言い換え類義`, `表記`, and `漢字読み`.
 - Immediate correct/incorrect judging.
-- Full explanations after each answer.
+- Structured explanations after each answer: full context, why the answer is correct, per-choice distractor analysis, and a memory point with useful comparisons.
 - Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.
 - Multilingual UI and multilingual data support through `localizations`.
 - Local-only progress with `localStorage`.

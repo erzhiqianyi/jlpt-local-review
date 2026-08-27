@@ -67,7 +67,10 @@ type Question = {
   prompt: string;
   choices: string[];
   answer: string;
-  explanation: string;
+  context: string;
+  correctReason: string;
+  memoryPoint: string;
+  choiceAnalysis: { choice: string; correct: boolean; explanation: string }[];
 };
 
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
@@ -164,15 +167,18 @@ const translations = {
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
-    originalSentence: '原句是',
-    coreMeaning: '核心意思是',
-    readAs: '读作',
     yourAnswer: '你的答案',
     rightAnswer: '正确答案',
     wrong: '错误',
     prev: '上一题',
     next: '下一题',
     analysis: '解析',
+    contextLabel: '完整语境',
+    correctReasonLabel: '正确理由',
+    choiceAnalysisLabel: '选项分析',
+    memoryPointLabel: '记忆重点',
+    choiceFits: '符合',
+    choiceDoesNotFit: '不符合',
     contact: '联系',
     intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习 JLPT 文字・語彙、言い換え類義、表記和漢字読み。',
   },
@@ -265,15 +271,18 @@ const translations = {
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
-    originalSentence: '元の文',
-    coreMeaning: '中心的な意味',
-    readAs: '読み',
     yourAnswer: 'あなたの答え',
     rightAnswer: '正解',
     wrong: '不正解',
     prev: '前へ',
     next: '次へ',
     analysis: '解説',
+    contextLabel: '文脈',
+    correctReasonLabel: '正解の理由',
+    choiceAnalysisLabel: '選択肢の分析',
+    memoryPointLabel: '覚えるポイント',
+    choiceFits: '適切',
+    choiceDoesNotFit: '不適切',
     contact: '連絡先',
     intro: 'Codex や Claude Code で整理した学習記録を使い、JLPT 文字・語彙・言い換え類義・表記・漢字読みをブラウザ内で復習します。',
   },
@@ -366,15 +375,18 @@ const translations = {
     kanjiToKanaPrompt: 'Choose the best reading of "{word}" in the sentence. {sentence}',
     mojiGoiTitle: 'JLPT Vocabulary',
     mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
-    originalSentence: 'Original sentence',
-    coreMeaning: 'Core meaning',
-    readAs: 'is read as',
     yourAnswer: 'Your answer',
     rightAnswer: 'Correct answer',
     wrong: 'Incorrect',
     prev: 'Previous',
     next: 'Next',
     analysis: 'Analysis',
+    contextLabel: 'Full Context',
+    correctReasonLabel: 'Why It Is Correct',
+    choiceAnalysisLabel: 'Choice Analysis',
+    memoryPointLabel: 'Memory Point',
+    choiceFits: 'Fits',
+    choiceDoesNotFit: 'Does not fit',
     contact: 'Contact',
     intro: 'Turn your Codex or Claude Code study chats into a local browser deck for JLPT vocabulary, paraphrase, orthography, and kanji-reading practice.',
   },
@@ -875,11 +887,12 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
 
   items.forEach((item, index) => {
     const meaning = itemMeaning(item, locale);
-    const memory = itemMemory(item, locale);
-    const analysis = itemAnalysis(item, locale);
     const example = item.examples?.[0]?.ja;
     const sentence = questionSentence(item);
     const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
+    const context = example ?? sentence;
+    const meaningAnswer = shortMeaning(meaning);
+    const meaningChoices = choices(meaningAnswer, meanings, index + 1);
 
     questions.push({
       id: `${item.id}-meaning`,
@@ -887,31 +900,33 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
       kind: 'meaning',
       title: labels.meaningTitle,
       prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
-      choices: choices(shortMeaning(meaning), meanings, index + 1),
-      answer: shortMeaning(meaning),
-      explanation: `${labels.originalSentence}「${example ?? sentence}」。${labels.coreMeaning}：${meaning} ${analysis ?? memory}`,
+      choices: meaningChoices,
+      answer: meaningAnswer,
+      ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
     });
 
     if (item.reading) {
+      const kanaToKanjiChoices = choices(item.original, surfaces, index + 2);
       questions.push({
         id: `${item.id}-kana-to-kanji`,
         itemId: item.id,
         kind: 'kana_to_kanji',
         title: labels.kanaToKanjiTitle,
         prompt: template(labels.kanaToKanjiPrompt, { reading: item.reading, sentence: kanaSentence }),
-        choices: choices(item.original, surfaces, index + 2),
+        choices: kanaToKanjiChoices,
         answer: item.original,
-        explanation: `${labels.originalSentence}「${example ?? sentence}」。空欄の語は「${item.original}」で、${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
+        ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
       });
+      const kanjiToKanaChoices = choices(item.reading, readings, index + 3);
       questions.push({
         id: `${item.id}-kanji-to-kana`,
         itemId: item.id,
         kind: 'kanji_to_kana',
         title: labels.kanjiToKanaTitle,
         prompt: template(labels.kanjiToKanaPrompt, { word: item.original, sentence }),
-        choices: choices(item.reading, readings, index + 3),
+        choices: kanjiToKanaChoices,
         answer: item.reading,
-        explanation: `${labels.originalSentence}「${example ?? sentence}」。「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
+        ...buildQuestionExplanation(item, kanjiToKanaChoices, 'kanji_to_kana', items, locale, context),
       });
     }
 
@@ -946,14 +961,14 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
   const example = item.examples?.[0]?.ja;
   const answer = item.original;
   const meaning = itemMeaning(item, locale);
-  const memory = itemMemory(item, locale);
-  const analysis = itemAnalysis(item, locale);
   const otherSurfaces = allItems
     .filter((candidate) => candidate.id !== item.id && candidate.deck === item.deck)
     .map((candidate) => candidate.original);
   const prompt = example
     ? example.replace(item.original, '＿＿')
     : template(labels.mojiGoiMeaningPrompt, { meaning: shortMeaning(meaning) });
+  const choiceList = choices(answer, otherSurfaces.length >= 3 ? otherSurfaces : allItems.map((candidate) => candidate.original), index + 4);
+  const context = example ?? `「${item.original}」`;
 
   return {
     id: `${item.id}-moji-goi`,
@@ -961,12 +976,128 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
     kind: 'moji_goi',
     title: labels.mojiGoiTitle,
     prompt,
-    choices: choices(answer, otherSurfaces.length >= 3 ? otherSurfaces : allItems.map((candidate) => candidate.original), index + 4),
+    choices: choiceList,
     answer,
-    explanation: example
-      ? `${labels.originalSentence}「${example}」。${labels.coreMeaning}：${meaning} ${analysis ?? ''}`
-      : `「${item.original}」${labels.coreMeaning}：${meaning} ${memory}`,
+    ...buildQuestionExplanation(item, choiceList, 'moji_goi', allItems, locale, context),
   };
+}
+
+function buildQuestionExplanation(
+  item: VocabItem,
+  choiceList: string[],
+  kind: QuestionKind,
+  allItems: VocabItem[],
+  locale: Locale,
+  context: string,
+): Pick<Question, 'context' | 'correctReason' | 'memoryPoint' | 'choiceAnalysis'> {
+  const answer = answerForKind(item, kind, locale);
+  return {
+    context,
+    correctReason: correctReasonFor(item, kind, locale, context),
+    memoryPoint: memoryPointFor(item, locale),
+    choiceAnalysis: choiceList.map((choice) => ({
+      choice,
+      correct: choice === answer,
+      explanation: choiceExplanationFor(choice, choice === answer, item, kind, allItems, locale),
+    })),
+  };
+}
+
+function answerForKind(item: VocabItem, kind: QuestionKind, locale: Locale) {
+  if (kind === 'meaning') {
+    return shortMeaning(itemMeaning(item, locale));
+  }
+  if (kind === 'kanji_to_kana') {
+    return item.reading ?? '';
+  }
+  return item.original;
+}
+
+function correctReasonFor(item: VocabItem, kind: QuestionKind, locale: Locale, context: string) {
+  const meaning = itemMeaning(item, locale);
+  const reading = item.reading ?? '';
+  const collocation = item.collocations?.find((value) => value.includes(item.original)) ?? context;
+
+  if (locale === 'ja') {
+    if (kind === 'meaning') return `「${item.original}」は「${meaning}」という意味です。「${context}」でもこの意味で使われているため、この言い換えが最も適切です。`;
+    if (kind === 'kana_to_kanji') return `「${reading}」の表記は「${item.original}」です。「${context}」の語彙と一致し、意味は「${meaning}」です。`;
+    if (kind === 'kanji_to_kana') return `「${item.original}」の読みは「${reading}」です。文中でも意味は「${meaning}」で、読み方は変わりません。`;
+    return `「${item.original}」は「${meaning}」を表します。「${collocation}」のような結び付きが自然で、文脈に最も合います。`;
+  }
+
+  if (locale === 'en') {
+    if (kind === 'meaning') return `“${item.original}” means “${meaning}.” It keeps that meaning in “${context},” so this is the closest paraphrase.`;
+    if (kind === 'kana_to_kanji') return `The kana “${reading}” is written “${item.original}.” It matches the word used in “${context}” and means “${meaning}.”`;
+    if (kind === 'kanji_to_kana') return `“${item.original}” is read “${reading}.” The reading stays the same in this context, where the word means “${meaning}.”`;
+    return `“${item.original}” means “${meaning}.” It forms a natural expression such as “${collocation},” which fits the sentence context.`;
+  }
+
+  if (kind === 'meaning') return `「${item.original}」的意思是“${meaning}”。在「${context}」中仍然使用这个核心义，因此该释义最接近原词。`;
+  if (kind === 'kana_to_kanji') return `假名「${reading}」对应的正确表记是「${item.original}」。它与「${context}」中的词一致，意思是“${meaning}”。`;
+  if (kind === 'kanji_to_kana') return `「${item.original}」读作「${reading}」。它在本句中的意思是“${meaning}”，语境不会改变这个读音。`;
+  return `「${item.original}」表示“${meaning}”。它可以形成「${collocation}」这样的自然搭配，词义和句子结构都符合本题语境。`;
+}
+
+function choiceExplanationFor(
+  choice: string,
+  correct: boolean,
+  target: VocabItem,
+  kind: QuestionKind,
+  allItems: VocabItem[],
+  locale: Locale,
+) {
+  if (correct) {
+    if (locale === 'ja') return kind === 'kanji_to_kana' ? `「${target.original}」の正しい読みです。` : `対象語の意味・表記・文脈に一致する正解です。`;
+    if (locale === 'en') return kind === 'kanji_to_kana' ? `This is the correct reading of “${target.original}.”` : `This matches the target word's meaning, form, and context.`;
+    return kind === 'kanji_to_kana' ? `这是「${target.original}」的正确读音。` : `这个选项与目标词的词义、表记和语境一致。`;
+  }
+
+  const candidate = itemForChoice(choice, kind, allItems, locale);
+  if (!candidate) {
+    if (locale === 'ja') return `対象語の意味または読みと一致しません。`;
+    if (locale === 'en') return `This does not match the target word's meaning or reading.`;
+    return `这个选项与目标词要求的词义或读音不一致。`;
+  }
+
+  const candidateMeaning = itemMeaning(candidate, locale);
+  const candidateCollocation = candidate.collocations?.find((value) => value.includes(candidate.original));
+
+  if (locale === 'ja') {
+    if (kind === 'kana_to_kanji') return `「${candidate.original}」の読みは「${candidate.reading ?? '不明'}」で、「${target.reading}」の表記ではありません。`;
+    if (kind === 'kanji_to_kana') return `「${choice}」は「${candidate.original}」の読みであり、「${target.original}」の読みではありません。`;
+    if (kind === 'meaning') return `この意味は「${candidate.original}」（${candidateMeaning}）に近く、「${target.original}」の中心的な意味とは異なります。`;
+    return `「${candidate.original}」は「${candidateMeaning}」を表し${candidateCollocation ? `、「${candidateCollocation}」のように使います` : 'ます'}。本問の意味と結び付きません。`;
+  }
+
+  if (locale === 'en') {
+    if (kind === 'kana_to_kanji') return `“${candidate.original}” is read “${candidate.reading ?? 'unknown'},” so it is not the spelling of “${target.reading}.”`;
+    if (kind === 'kanji_to_kana') return `“${choice}” is the reading of “${candidate.original},” not “${target.original}.”`;
+    if (kind === 'meaning') return `This meaning is closer to “${candidate.original}” (${candidateMeaning}), not the core meaning of “${target.original}.”`;
+    return `“${candidate.original}” means “${candidateMeaning}”${candidateCollocation ? ` and is used in expressions such as “${candidateCollocation}”` : ''}. It does not fit this sentence.`;
+  }
+
+  if (kind === 'kana_to_kanji') return `「${candidate.original}」读作「${candidate.reading ?? 'unknown'}」，不是假名「${target.reading}」对应的表记。`;
+  if (kind === 'kanji_to_kana') return `「${choice}」是「${candidate.original}」的读音，不是「${target.original}」的读音。`;
+  if (kind === 'meaning') return `这个释义更接近「${candidate.original}」（${candidateMeaning}），与「${target.original}」的核心意思不同。`;
+  return `「${candidate.original}」表示“${candidateMeaning}”${candidateCollocation ? `，常见搭配是「${candidateCollocation}」` : ''}，与本句需要表达的意思不符。`;
+}
+
+function itemForChoice(choice: string, kind: QuestionKind, items: VocabItem[], locale: Locale) {
+  if (kind === 'meaning') {
+    return items.find((item) => shortMeaning(itemMeaning(item, locale)) === choice);
+  }
+  if (kind === 'kanji_to_kana') {
+    return items.find((item) => item.reading === choice);
+  }
+  return items.find((item) => item.original === choice);
+}
+
+function memoryPointFor(item: VocabItem, locale: Locale) {
+  const points = [itemMemory(item, locale), itemAnalysis(item, locale)];
+  if (locale === 'zh-CN') {
+    points.push(...(item.comparisons?.slice(0, 2).map((comparison) => `与「${comparison.target}」相比：${comparison.difference_zh}`) ?? []));
+  }
+  return unique(points.filter(Boolean) as string[]).join(' ');
 }
 
 function choices(answer: string, pool: string[], salt: number) {
@@ -1531,15 +1662,50 @@ function AnswerPanel({
       <p className="text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
       <p className="mt-2 text-sm">{labels.yourAnswer}：{answer.selected}</p>
       <p className="mt-1 text-sm">{labels.rightAnswer}：{question.answer}</p>
-      <p className="mt-3 text-sm leading-6 text-[#3f4641]">
-        <RubyText text={question.explanation} items={items} enabled={showRuby} />
-      </p>
+      <div className="mt-4 border-t border-black/10">
+        <ExplanationSection label={labels.contextLabel}>
+          <RubyText text={question.context} items={items} enabled={showRuby} />
+        </ExplanationSection>
+        <ExplanationSection label={labels.correctReasonLabel}>
+          <RubyText text={question.correctReason} items={items} enabled={showRuby} />
+        </ExplanationSection>
+        <section className="border-t border-black/10 py-4">
+          <h3 className="text-sm font-semibold text-[#313934]">{labels.choiceAnalysisLabel}</h3>
+          <div className="mt-2 divide-y divide-black/10">
+            {question.choiceAnalysis.map((choice) => (
+              <div key={choice.choice} className="grid gap-2 py-3 sm:grid-cols-[minmax(90px,auto)_1fr] sm:items-start sm:gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold text-[#27312c]">{choice.choice}</span>
+                  <span className={`rounded px-2 py-0.5 text-xs font-semibold ${choice.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-white/70 text-[#7b4a3b]'}`}>
+                    {choice.correct ? labels.choiceFits : labels.choiceDoesNotFit}
+                  </span>
+                </div>
+                <p className="text-sm leading-6 text-[#4b534e]">
+                  <RubyText text={choice.explanation} items={items} enabled={showRuby} />
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <ExplanationSection label={labels.memoryPointLabel}>
+          <RubyText text={question.memoryPoint} items={items} enabled={showRuby} />
+        </ExplanationSection>
+      </div>
       {needsHumanReview ? (
         <p className="mt-3 rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-sm leading-6 text-[#6f4a16]">
           {labels.unverifiedContentNotice}
         </p>
       ) : null}
     </div>
+  );
+}
+
+function ExplanationSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section className="border-t border-black/10 py-4 first:border-t-0">
+      <h3 className="text-sm font-semibold text-[#313934]">{label}</h3>
+      <p className="mt-2 text-sm leading-6 text-[#4b534e]">{children}</p>
+    </section>
   );
 }
 
