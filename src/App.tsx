@@ -100,10 +100,6 @@ const translations = {
     filters: '筛选',
     hideFilters: '收起筛选',
     showFilters: '展开筛选',
-    moduleContent: '学习内容',
-    swipeHint: '移动端左右滑动切换，电脑端可用箭头或键盘方向键。',
-    practice: '今日练习',
-    library: '词库',
     settings: '设置',
     exportStudyRecord: '导出学习记录',
     exportStudyRecordBody: '下载当前浏览器里的答题记录、复习次数、下次复习时间和 AI 分析提示。把 JSON 给 Codex 或 Claude Code 后，可以分析弱点、生成 7 天学习计划和新的复习内容。',
@@ -151,26 +147,14 @@ const translations = {
     aboutBody: '这是一个本地优先的 JLPT 学习工具。你可以整理自己的疑问，也可以只提供目标级别和备考时间，让 AI 生成通用学习计划。网页负责复习、判分和浏览器本地进度。',
     deployTitle: '自己部署',
     deployBody: 'Fork GitHub 仓库，选择使用示例数据或 npm run data:blank 创建空白数据，然后部署到 Cloudflare Pages。',
-    practiceTitle: '开始一组复习',
-    practiceCopy: '按题型练习，作答后看对错和完整解析。',
-    libraryTitle: '查看整理好的词条',
-    libraryCopy: '按 deck 查看词义、搭配、例句和解析。',
-    settingsTitle: '调整学习显示',
-    settingsCopy: '控制语言和假名标注。',
     deck: 'Deck',
     questionType: '题型',
     display: '显示设置',
     language: '界面语言',
     reviewRuby: '复习显示假名',
     explanationRuby: '解析显示假名',
-    rules: '练习规则',
-    ruleJudge: '选择答案后立即判分。',
-    ruleExplain: '每题显示正确答案和解析，题干和选项不显示假名提示。',
-    ruleLocal: '答题记录写入浏览器本地。',
-    ruleExam: '考场判断作为解析材料，不单独出题。',
     noQuestion: '没有可练习题目',
     noQuestionBody: '当前筛选条件下没有题目。',
-    beforeAnswer: '作答后会显示对错评判、正确答案和完整解析。',
     meaningTitle: '言い換え類義',
     meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
     kanaToKanjiTitle: '表記',
@@ -217,10 +201,6 @@ const translations = {
     filters: 'フィルター',
     hideFilters: 'フィルターを閉じる',
     showFilters: 'フィルターを開く',
-    moduleContent: '学習内容',
-    swipeHint: 'モバイルでは左右スワイプ、PC では矢印またはキーボードで切り替えます。',
-    practice: '今日の復習',
-    library: '語彙帳',
     settings: '設定',
     exportStudyRecord: '学習記録を書き出す',
     exportStudyRecordBody: 'このブラウザ内の回答履歴、復習回数、次回復習日、AI 分析用プロンプトを JSON で保存します。JSON を Codex や Claude Code に渡すと、弱点分析、7日間の学習計画、新しい復習内容の作成に使えます。',
@@ -268,26 +248,14 @@ const translations = {
     aboutBody: 'これはローカル優先の JLPT 学習ツールです。自分の疑問を整理する方法と、目標レベルと期間から一般的な計画を生成する方法があります。Web アプリが復習・採点・ブラウザ内の進捗を担当します。',
     deployTitle: '自分でデプロイ',
     deployBody: 'GitHub リポジトリを fork し、サンプルデータを使うか npm run data:blank で空データを作成して、Cloudflare Pages にデプロイします。',
-    practiceTitle: '復習を始める',
-    practiceCopy: '問題に答えて、判定と解説を確認します。',
-    libraryTitle: '整理済みの語彙を見る',
-    libraryCopy: 'Deck ごとに意味、連語、例文、解説を確認します。',
-    settingsTitle: '表示を調整',
-    settingsCopy: '言語とふりがな表示を切り替えます。',
     deck: 'Deck',
     questionType: '問題形式',
     display: '表示設定',
     language: '表示言語',
     reviewRuby: '復習にふりがな',
     explanationRuby: '解説にふりがな',
-    rules: '練習ルール',
-    ruleJudge: '選択後すぐに判定します。',
-    ruleExplain: '正解と解説を表示します。問題文と選択肢にはふりがなを出しません。',
-    ruleLocal: '回答履歴はブラウザに保存されます。',
-    ruleExam: '試験用の判断材料は解説に含めます。',
     noQuestion: '問題がありません',
     noQuestionBody: '現在の条件では問題がありません。',
-    beforeAnswer: '回答後、判定・正解・解説が表示されます。',
     meaningTitle: '言い換え類義',
     meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
     kanaToKanjiTitle: '表記',
@@ -334,10 +302,6 @@ const translations = {
     filters: 'Filters',
     hideFilters: 'Hide Filters',
     showFilters: 'Show Filters',
-    moduleContent: 'Study Content',
-    swipeHint: 'Swipe on mobile, or use arrows and keyboard arrow keys on desktop.',
-    practice: 'Practice',
-    library: 'Library',
     settings: 'Settings',
     exportStudyRecord: 'Export Study Record',
     exportStudyRecordBody: 'Download answers, review counts, next-review times, and an AI analysis prompt from this browser. Give the JSON to Codex or Claude Code to analyze weak points, create a 7-day plan, and generate new review content.',
@@ -385,26 +349,14 @@ const translations = {
     aboutBody: 'This is a local-first JLPT study tool. You can structure your own questions or generate a general plan from a target level and study duration. The web app handles review, scoring, and browser-local progress.',
     deployTitle: 'Deploy Your Own',
     deployBody: 'Fork the GitHub repo, keep the sample data or run npm run data:blank, then deploy it to Cloudflare Pages.',
-    practiceTitle: 'Start a review set',
-    practiceCopy: 'Practice by question type, then review scoring and explanations.',
-    libraryTitle: 'Browse structured entries',
-    libraryCopy: 'Review meanings, collocations, examples, and notes by deck.',
-    settingsTitle: 'Tune study display',
-    settingsCopy: 'Control language and furigana support.',
     deck: 'Deck',
     questionType: 'Question Type',
     display: 'Display',
     language: 'Language',
     reviewRuby: 'Show furigana in review',
     explanationRuby: 'Show furigana in explanations',
-    rules: 'Rules',
-    ruleJudge: 'Answers are scored immediately.',
-    ruleExplain: 'Each question shows the answer and explanation, without furigana hints in prompts or choices.',
-    ruleLocal: 'Progress is saved in this browser.',
-    ruleExam: 'Exam heuristics appear in explanations only.',
     noQuestion: 'No questions',
     noQuestionBody: 'No questions match the current filters.',
-    beforeAnswer: 'After answering, scoring, the correct answer, and explanation will appear.',
     meaningTitle: 'Paraphrase',
     meaningPrompt: 'Choose the closest meaning of "{word}" in the sentence. {sentence}',
     kanaToKanjiTitle: 'Orthography',
@@ -1518,11 +1470,7 @@ function AnswerPanel({
   labels: Record<string, string>;
 }) {
   if (!answer) {
-    return (
-      <div className="mt-5 rounded-lg border border-[#ded5c7] bg-[#fffaf4] p-4 text-sm leading-6 text-[#62645f]">
-        {labels.beforeAnswer}
-      </div>
-    );
+    return null;
   }
 
   const sourceItem = items.find((item) => item.id === question.itemId);
@@ -1600,7 +1548,6 @@ function WordDetailPanel({
         <div>
           <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
           <h2 className="mt-1 text-2xl font-semibold">{item.original}</h2>
-          <p className="mt-1 text-sm text-[#62645f]">{labels.swipeHint}</p>
         </div>
         <div className="flex items-center gap-2">
           <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} />
