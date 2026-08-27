@@ -136,8 +136,8 @@ export default function App() {
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6 md:px-8 lg:px-10">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[#856033]">Local JLPT Vocabulary Trainer</p>
-              <h1 className="mt-2 text-4xl font-semibold leading-tight md:text-5xl">JLPT 単語復習</h1>
+              <p className="text-sm font-semibold text-[#856033]">Personal JLPT Vocabulary Trainer</p>
+              <h1 className="mt-2 text-4xl font-semibold leading-tight md:text-5xl">JLPT Master Deck</h1>
               <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">
                 使用 Codex 整理的词条数据，在本地浏览器里练习读音、词义、搭配、易混辨析和 JLPT 文字・語彙题型。进度只保存在当前浏览器。
               </p>

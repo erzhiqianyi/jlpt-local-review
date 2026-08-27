@@ -1,4 +1,4 @@
-# JLPT Local Review
+# JLPT Master Deck
 
 A personal JLPT vocabulary review tool built from your own study chats. The app runs as a static Vite site, stores progress in the browser, and can be deployed to Cloudflare Pages.
 
@@ -118,13 +118,13 @@ See [docs/cloudflare-pages-deploy.md](docs/cloudflare-pages-deploy.md) for the s
 
 ## Repository Name
 
-The recommended repository name is:
+The repository name is:
 
 ```text
-jlpt-local-review
+jlpt-master-deck
 ```
 
-It describes the project more clearly than `JLPT`: this is a local-first review site, not a general JLPT repository.
+It describes the project more clearly than `JLPT`: this is a JLPT-focused deck and review tool, not a general JLPT repository.
 
 ## Copyright
 

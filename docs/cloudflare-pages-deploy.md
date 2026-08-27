@@ -9,7 +9,7 @@
 3. 选择 `Create application`。
 4. 选择 `Pages`。
 5. 选择 `Connect to Git` 或 `Import from an existing Git repository`。
-6. 授权 GitHub 后，选择仓库 `erzhiqianyi/jlpt-local-review`。
+6. 授权 GitHub 后，选择仓库 `erzhiqianyi/jlpt-master-deck`。
 7. 构建设置填写：
    - Framework preset: `Vite`
    - Build command: `npm run build`
