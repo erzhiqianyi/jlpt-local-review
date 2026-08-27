@@ -140,6 +140,18 @@ Rules:
 - Do not add readings for kana-only text.
 - For uncertain proper-name readings, include the most likely reading and mention uncertainty in `analysis`.
 - Keep base fields such as `original`, `collocations`, and `examples[].ja` clean, without parentheses readings.
+- Do not add furigana to quiz prompts, choices, selected answers, or correct answers. Use readings in explanations or `ruby_terms`, not as answer hints.
+
+## Practice Question Types
+
+The app generates these vocabulary practice types from item data:
+
+- `moji_goi`: JLPT-style `文字・語彙` sentence completion or vocabulary selection.
+- `meaning`: choose the correct learner-facing core meaning.
+- `kana_to_kanji`: choose the kanji word that matches a kana reading.
+- `kanji_to_kana`: choose the kana reading that matches a kanji word.
+
+Question prompts, choices, and answer keys should stay plain text. Full explanations may use kanji and can be annotated by the app when the learner enables explanation furigana.
 
 ## Localizations
 

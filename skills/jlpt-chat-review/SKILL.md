@@ -32,21 +32,21 @@ For each item:
 - When the user asks for multiple languages, keep the Japanese source fields stable and write translated learner-facing text under `localizations`.
 - Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
+- Do not add furigana or ruby markup inside quiz prompts, choices, selected answers, or correct answers. Furigana is only for review cards and explanations.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
 
 ## Practice Expectations
 
 The app can generate these practice modes from each item:
 
-- Reading: choose the correct reading.
-- Meaning: choose the correct core meaning.
-- Collocation: choose the natural phrase.
-- Comparison: choose the correct distinction between close words.
 - `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
+- Meaning check: choose the correct core meaning for a Japanese word.
+- Kana to kanji: choose the kanji word for a kana reading.
+- Kanji to kana: choose the kana reading for a kanji word.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
 
-Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support.
+Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support. Question prompts and answer choices must stay plain so readings do not leak into the test.
 
 ## Boundaries
 

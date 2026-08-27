@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
-type QuestionKind = 'reading' | 'meaning' | 'collocation' | 'comparison' | 'moji_goi';
+type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'practice' | 'library' | 'settings';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
@@ -62,11 +62,10 @@ const translations = {
     deckN1: 'N1/N2 词汇',
     deckExpression: '表达/活用',
     deckName: '人名读法',
-    reading: '读音',
-    meaning: '词义',
-    collocation: '搭配',
-    comparison: '易混',
-    mojiGoi: '文字・語彙',
+    meaning: '词义判断',
+    kanaToKanji: '假名选汉字',
+    kanjiToKana: '汉字选假名',
+    mojiGoi: 'JLPT 語彙',
     reset: '重置本地进度',
     items: '词条',
     questions: '题目',
@@ -90,7 +89,7 @@ const translations = {
     explanationRuby: '解析显示假名',
     rules: '练习规则',
     ruleJudge: '选择答案后立即判分。',
-    ruleExplain: '每题显示正确答案和解析。',
+    ruleExplain: '每题显示正确答案和解析，题干和选项不显示假名提示。',
     ruleLocal: '答题记录写入浏览器本地。',
     ruleExam: '考场判断作为解析材料，不单独出题。',
     noQuestion: '没有可练习题目',
@@ -103,18 +102,17 @@ const translations = {
     next: '下一题',
     analysis: '解析',
     contact: '联系',
-    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习读音、词义、搭配、易混辨析和 JLPT 文字・語彙。',
+    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习 JLPT 語彙、词义判断、假名选汉字和汉字选假名。',
   },
   ja: {
     deckAll: 'すべて',
     deckN1: 'N1/N2 語彙',
     deckExpression: '表現・活用',
     deckName: '人名読み',
-    reading: '読み',
-    meaning: '意味',
-    collocation: '連語',
-    comparison: '比較',
-    mojiGoi: '文字・語彙',
+    meaning: '意味判定',
+    kanaToKanji: 'かなから漢字',
+    kanjiToKana: '漢字からかな',
+    mojiGoi: 'JLPT 語彙',
     reset: 'ローカル進捗をリセット',
     items: '項目',
     questions: '問題',
@@ -138,7 +136,7 @@ const translations = {
     explanationRuby: '解説にふりがな',
     rules: '練習ルール',
     ruleJudge: '選択後すぐに判定します。',
-    ruleExplain: '正解と解説を表示します。',
+    ruleExplain: '正解と解説を表示します。問題文と選択肢にはふりがなを出しません。',
     ruleLocal: '回答履歴はブラウザに保存されます。',
     ruleExam: '試験用の判断材料は解説に含めます。',
     noQuestion: '問題がありません',
@@ -151,18 +149,17 @@ const translations = {
     next: '次へ',
     analysis: '解説',
     contact: '連絡先',
-    intro: 'Codex や Claude Code で整理した学習記録を使い、読み・意味・連語・比較・JLPT 文字語彙をブラウザ内で復習します。',
+    intro: 'Codex や Claude Code で整理した学習記録を使い、JLPT 語彙・意味判定・かなから漢字・漢字からかなをブラウザ内で復習します。',
   },
   en: {
     deckAll: 'All',
     deckN1: 'N1/N2 Vocab',
     deckExpression: 'Expressions',
     deckName: 'Name Readings',
-    reading: 'Reading',
-    meaning: 'Meaning',
-    collocation: 'Collocation',
-    comparison: 'Compare',
-    mojiGoi: 'Moji Goi',
+    meaning: 'Meaning Check',
+    kanaToKanji: 'Kana to Kanji',
+    kanjiToKana: 'Kanji to Kana',
+    mojiGoi: 'JLPT Vocabulary',
     reset: 'Reset local progress',
     items: 'Items',
     questions: 'Questions',
@@ -186,7 +183,7 @@ const translations = {
     explanationRuby: 'Show furigana in explanations',
     rules: 'Rules',
     ruleJudge: 'Answers are scored immediately.',
-    ruleExplain: 'Each question shows the answer and explanation.',
+    ruleExplain: 'Each question shows the answer and explanation, without furigana hints in prompts or choices.',
     ruleLocal: 'Progress is saved in this browser.',
     ruleExam: 'Exam heuristics appear in explanations only.',
     noQuestion: 'No questions',
@@ -199,7 +196,7 @@ const translations = {
     next: 'Next',
     analysis: 'Analysis',
     contact: 'Contact',
-    intro: 'Turn your Codex or Claude Code study chats into a local browser review deck for readings, meanings, collocations, comparisons, and JLPT Moji Goi.',
+    intro: 'Turn your Codex or Claude Code study chats into a local browser deck for JLPT vocabulary, meaning checks, kana-to-kanji, and kanji-to-kana practice.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -586,56 +583,39 @@ function buildQuestions(items: VocabItem[]): Question[] {
   const questions: Question[] = [];
 
   items.forEach((item, index) => {
-    if (item.reading) {
-      questions.push({
-        id: `${item.id}-reading`,
-        itemId: item.id,
-        kind: 'reading',
-        title: `「${item.original}」的读音`,
-        prompt: `请选择「${item.original}」最合适的读音。`,
-        choices: choices(item.reading, readings, index),
-        answer: item.reading,
-        explanation: `「${item.original}」读作「${item.reading}」。${item.core_memory}`,
-      });
-    }
-
     questions.push({
       id: `${item.id}-meaning`,
       itemId: item.id,
       kind: 'meaning',
-      title: `「${item.original}」的核心义`,
+      title: '单词意思判断',
       prompt: `请选择最符合「${item.original}」的中文核心意思。`,
       choices: choices(shortMeaning(item.meaning_zh), meanings, index + 1),
       answer: shortMeaning(item.meaning_zh),
       explanation: `${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
     });
 
-    if (item.collocations?.length) {
-      const collocation = item.collocations[0];
+    if (item.reading) {
       questions.push({
-        id: `${item.id}-collocation`,
+        id: `${item.id}-kana-to-kanji`,
         itemId: item.id,
-        kind: 'collocation',
-        title: `「${item.original}」的搭配`,
-        prompt: `下面哪个搭配最自然地使用了「${item.original}」？`,
-        choices: choices(collocation, buildCollocationDistractors(item, surfaces), index + 2),
-        answer: collocation,
-        explanation: `正确搭配是「${collocation}」。${item.collocations.slice(1, 4).length ? `同组搭配还有：${item.collocations.slice(1, 4).join('、')}。` : ''}${item.analysis ?? ''}`,
+        kind: 'kana_to_kanji',
+        title: '假名判断汉字',
+        prompt: `「${item.reading}」对应哪一个汉字词？`,
+        choices: choices(item.original, surfaces, index + 2),
+        answer: item.original,
+        explanation: `「${item.original}」读作「${item.reading}」。${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
+      });
+      questions.push({
+        id: `${item.id}-kanji-to-kana`,
+        itemId: item.id,
+        kind: 'kanji_to_kana',
+        title: '汉字判断假名',
+        prompt: `「${item.original}」的正确读音是哪一个？`,
+        choices: choices(item.reading, readings, index + 3),
+        answer: item.reading,
+        explanation: `「${item.original}」读作「${item.reading}」。${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
       });
     }
-
-    item.comparisons?.slice(0, 1).forEach((comparison) => {
-      questions.push({
-        id: `${item.id}-comparison`,
-        itemId: item.id,
-        kind: 'comparison',
-        title: `「${item.original}」和「${comparison.target}」`,
-        prompt: `关于「${item.original}」和「${comparison.target}」的区别，哪一项正确？`,
-        choices: choices(comparison.difference_zh, comparisonDistractors(item), index + 3),
-        answer: comparison.difference_zh,
-        explanation: `「${item.original}」的重点是：${item.core_memory} 与「${comparison.target}」相比：${comparison.difference_zh}`,
-      });
-    });
 
     questions.push(buildMojiGoiQuestion(item, items, index));
   });
@@ -656,11 +636,10 @@ function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
 function kindLabelsFor(locale: Locale): Record<QuestionKind, string> {
   const labels = translations[locale];
   return {
-    reading: labels.reading,
-    meaning: labels.meaning,
-    collocation: labels.collocation,
-    comparison: labels.comparison,
     moji_goi: labels.mojiGoi,
+    meaning: labels.meaning,
+    kana_to_kanji: labels.kanaToKanji,
+    kanji_to_kana: labels.kanjiToKana,
   };
 }
 
@@ -686,22 +665,6 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
       ? `原句是「${example}」。这里需要「${item.original}」，意思是：${item.meaning_zh} ${item.analysis ?? ''}`
       : `「${item.original}」的核心意思是：${item.meaning_zh} ${item.core_memory}`,
   };
-}
-
-function buildCollocationDistractors(item: VocabItem, surfaces: string[]) {
-  const noun = item.collocations?.[0]?.replace(item.original, '＿＿') ?? `＿＿する`;
-  return surfaces
-    .filter((surface) => surface !== item.original)
-    .map((surface) => noun.replace('＿＿', surface));
-}
-
-function comparisonDistractors(item: VocabItem) {
-  return [
-    '只是日常口语说法，几乎没有正式语感差异。',
-    '主要表示人的姓名读法，不表示词义区别。',
-    '只能用于否定句，不能用于普通陈述。',
-    item.analysis ?? item.core_memory,
-  ];
 }
 
 function choices(answer: string, pool: string[], salt: number) {
@@ -869,11 +832,7 @@ function PracticePanel({
           <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
           <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
           <p className="mt-3 text-lg leading-8 text-[#353b37]">
-            {activeQuestion ? (
-              <RubyText text={activeQuestion.prompt} items={items} enabled={settings.showReviewRuby} />
-            ) : (
-              labels.noQuestionBody
-            )}
+            {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
           </p>
         </div>
         <div className="flex h-10 min-w-28 items-center justify-center rounded-md bg-[#e8f0eb] px-3 text-sm font-semibold text-[#24473f]">
@@ -902,7 +861,7 @@ function PracticePanel({
                   onClick={() => onAnswer(activeQuestion, choice)}
                   className={`min-h-14 rounded-md border px-4 py-3 text-left text-base font-semibold ${color}`}
                 >
-                  <RubyText text={choice} items={items} enabled={settings.showReviewRuby} />
+                  {choice}
                 </button>
               );
             })}
@@ -948,8 +907,8 @@ function AnswerPanel({
   return (
     <div className={`mt-5 rounded-lg border p-4 ${answer.correct ? 'border-[#3d735f] bg-[#e8f3ec]' : 'border-[#b65842] bg-[#fae9e2]'}`}>
       <p className="text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
-      <p className="mt-2 text-sm">{labels.yourAnswer}：<RubyText text={answer.selected} items={items} enabled={showRuby} /></p>
-      <p className="mt-1 text-sm">{labels.rightAnswer}：<RubyText text={question.answer} items={items} enabled={showRuby} /></p>
+      <p className="mt-2 text-sm">{labels.yourAnswer}：{answer.selected}</p>
+      <p className="mt-1 text-sm">{labels.rightAnswer}：{question.answer}</p>
       <p className="mt-3 text-sm leading-6 text-[#3f4641]">
         <RubyText text={question.explanation} items={items} enabled={showRuby} />
       </p>

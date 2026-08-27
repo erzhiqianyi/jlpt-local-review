@@ -12,10 +12,10 @@ The intended workflow is simple:
 ## Features
 
 - Vocabulary decks for JLPT words, expressions, and Japanese name readings.
-- Practice modes for reading, meaning, collocations, comparison questions, and JLPT `文字・語彙`.
+- Practice modes for JLPT `文字・語彙`, meaning checks, kana-to-kanji, and kanji-to-kana.
 - Immediate correct/incorrect judging.
 - Full explanations after each answer.
-- Optional furigana display for review cards and answer explanations.
+- Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.
 - Multilingual UI and multilingual data support through `localizations`.
 - Local-only progress with `localStorage`.
 - Static deployment friendly: no login, database, or backend required.
@@ -30,7 +30,7 @@ npm run dev
 Open the local URL printed by Vite, usually:
 
 ```text
-http://localhost:5173/
+http://localhost:5180/
 ```
 
 Build the static site:
