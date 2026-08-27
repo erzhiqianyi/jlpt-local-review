@@ -192,6 +192,20 @@ Browser progress may contain:
 
 Use a simplified Anki/SM-2 style rule: first correct answer reviews tomorrow, second correct answer reviews after 3 days, later correct answers multiply the interval by ease, and wrong answers return to tomorrow with lower ease.
 
+## AI-Generated Content Metadata
+
+Content created without learner-provided source material must be visibly distinguishable from captured study notes:
+
+```json
+{
+  "content_origin": "ai_generated",
+  "verification_status": "unverified",
+  "level_confidence": "medium"
+}
+```
+
+Do not apply this marker to content extracted from the learner's own notes. AI-generated readings, meanings, answers, and JLPT-level estimates require learner review. Only set `verification_status` to `verified` after explicit learner confirmation or a user-requested verification pass.
+
 ## Privacy Rule
 
 Do not copy raw chat transcripts into this file. Store only structured learning content and short explanations needed for review.

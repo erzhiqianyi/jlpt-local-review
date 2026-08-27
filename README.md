@@ -1,13 +1,13 @@
 # JLPT Master Deck
 
-A personal JLPT vocabulary review tool built from your own study chats. The app runs as a static Vite site, stores progress in the browser, and can be deployed to Cloudflare Pages.
+A local-first JLPT review tool built from your own study chats or an AI-generated general plan. The app runs as a static Vite site, stores progress in the browser, and can be deployed to Cloudflare Pages.
 
-The intended workflow is simple:
+There are two supported workflows:
 
-1. Chat with Codex or Claude Code about words, sentences, grammar, or JLPT questions you do not understand.
-2. Use the included skill prompt to turn those chats into structured review data.
-3. Put the generated data into `public/data/review-data.json`.
-4. Practice in the local web app. Your answers and progress stay in browser storage.
+1. Personalized review: chat with Codex or Claude Code about material you do not understand, then use `jlpt-chat-review` to structure it.
+2. General study generation: give `jlpt-study-generator` a target level, available days, daily study time, and focus modules. No source notes are required.
+3. Put selected generated items into `public/data/review-data.json` and practice in the local web app.
+4. Your answers and progress stay in browser storage.
 
 ## Features
 
@@ -21,6 +21,8 @@ The intended workflow is simple:
 - Multilingual UI and multilingual data support through `localizations`.
 - Local-only progress with `localStorage`.
 - Exportable study records for AI analysis and next-plan generation.
+- A second skill for generating a general study plan and original practice content without learner-provided notes.
+- Visible `AI generated` and `unverified` notices for generated entries that require learner review.
 - Static deployment friendly: no login, database, or backend required.
 
 ## Local Setup
@@ -168,10 +170,11 @@ The export stays local. The app does not upload learning records by itself.
 
 ## Using Codex
 
-Install or copy the included skill from:
+Install or copy the two included skills from:
 
 ```text
 skills/jlpt-chat-review/
+skills/jlpt-study-generator/
 ```
 
 If you use Codex with local skills, copy it into your Codex skills directory:
@@ -179,6 +182,7 @@ If you use Codex with local skills, copy it into your Codex skills directory:
 ```bash
 mkdir -p ~/.codex/skills
 cp -R skills/jlpt-chat-review ~/.codex/skills/
+cp -R skills/jlpt-study-generator ~/.codex/skills/
 ```
 
 Then chat naturally with Codex:
@@ -202,15 +206,49 @@ $jlpt-chat-review
 这是我导出的学习记录 JSON。请分析弱点、安排未来 7 天复习计划，并基于错题生成新的 JLPT 练习内容。
 ```
 
+## Generate A Plan Without Your Own Notes
+
+Use `jlpt-study-generator` when you want AI to create a general curriculum and study material from scratch. Provide:
+
+- Target level, such as `N1`.
+- Approximate number of study days.
+- Daily available time.
+- Focus modules: vocabulary, grammar, listening, reading, or mixed.
+- Output languages.
+
+Example:
+
+```text
+$jlpt-study-generator
+目标 N1，距离考试还有 100 天，每天 45 分钟。
+重点练习单词和阅读，输出简体中文和英语。
+请生成完整阶段计划和前 7 天的学习内容，并把可用的单词、语法条目合并到网站数据。
+```
+
+The skill creates a full-duration outline and generates only the first seven days of detailed content by default. This keeps later batches adjustable instead of locking the whole course before any progress data exists.
+
+AI-generated material is deliberately marked with:
+
+```json
+{
+  "content_origin": "ai_generated",
+  "verification_status": "unverified",
+  "level_confidence": "medium"
+}
+```
+
+It is not official JLPT material. The learner must verify readings, meanings, answer keys, distractors, and JLPT-level assignments. The website displays a warning on generated entries until they are explicitly verified.
+
 ## Using Claude Code
 
 Claude Code does not need the Codex skill system. Use the same instructions manually:
 
 1. Open this repository in Claude Code.
-2. Tell Claude Code to read `skills/jlpt-chat-review/SKILL.md`.
-3. Give it your study chat or notes.
-4. Ask it to update `public/data/review-data.json` following `skills/jlpt-chat-review/references/review-schema.md`.
-5. Run `npm run build`.
+2. For your own notes, tell Claude Code to read `skills/jlpt-chat-review/SKILL.md`.
+3. For a general plan without notes, tell it to read `skills/jlpt-study-generator/SKILL.md`.
+4. Give it the relevant notes, or just your target level, days, daily time, and focus modules.
+5. Ask it to update `public/data/review-data.json` only when you want generated vocabulary or grammar imported.
+6. Run `npm run build`.
 
 Example prompt:
 

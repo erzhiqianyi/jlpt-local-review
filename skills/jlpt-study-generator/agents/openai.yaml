@@ -1,0 +1,4 @@
+interface:
+  display_name: "JLPT Study Generator"
+  short_description: "Generate a JLPT plan and unverified study content"
+  default_prompt: "Use $jlpt-study-generator to create a JLPT study plan and practice content from my target level, available days, and focus modules."
