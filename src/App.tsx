@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
-type AppView = 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
+type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
 type StudyPage = 'questions' | 'words';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
@@ -97,6 +97,7 @@ const translations = {
     library: '词库',
     settings: '设置',
     brand: 'JLPT Review',
+    navHome: '首页',
     navVocabulary: '单词',
     navGrammar: '语法',
     navListening: '听力',
@@ -193,6 +194,7 @@ const translations = {
     library: '語彙帳',
     settings: '設定',
     brand: 'JLPT Review',
+    navHome: 'ホーム',
     navVocabulary: '語彙',
     navGrammar: '文法',
     navListening: '聴解',
@@ -289,6 +291,7 @@ const translations = {
     library: 'Library',
     settings: 'Settings',
     brand: 'JLPT Review',
+    navHome: 'Home',
     navVocabulary: 'Vocabulary',
     navGrammar: 'Grammar',
     navListening: 'Listening',
@@ -494,7 +497,7 @@ export default function App() {
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
-  const [activeView, setActiveView] = useState<AppView>('vocabulary');
+  const [activeView, setActiveView] = useState<AppView>('home');
   const [studyPage, setStudyPage] = useState<StudyPage>('questions');
   const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
 
@@ -539,7 +542,7 @@ export default function App() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (studyPage !== 'words' || activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
+      if (studyPage !== 'words' || activeView === 'home' || activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
         return;
       }
       if (event.key === 'ArrowLeft') {
@@ -599,7 +602,7 @@ export default function App() {
       <header className="sticky top-0 z-20 border-b border-[#d7dfd6] bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={() => setActiveView('vocabulary')} className="text-lg font-semibold tracking-normal text-[#173d35]">
+            <button type="button" onClick={() => setActiveView('home')} className="text-lg font-semibold tracking-normal text-[#173d35]">
               {labels.brand}
             </button>
             <a className="rounded-md border border-[#d7dfd6] px-3 py-2 text-sm font-semibold text-[#24473f] lg:hidden" href="https://github.com/erzhiqianyi/jlpt-master-deck" target="_blank" rel="noreferrer">
@@ -622,125 +625,131 @@ export default function App() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 py-5 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-10">
-        <div className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm md:p-6">
-          <p className="text-sm font-semibold text-[#7d6032]">Local-first JLPT system</p>
-          <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight md:text-4xl">{labels.heroTitle}</h1>
-          <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">{labels.heroBody}</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Metric label={labels.items} value={data.items.length.toString()} />
-            <Metric label={labels.questions} value={allQuestions.length.toString()} />
-            <Metric label={labels.answered} value={answeredCount.toString()} />
-            <Metric label={labels.correct} value={correctCount.toString()} />
-            <Metric label={labels.mastered} value={masteredCount.toString()} />
-          </div>
-        </div>
-        <CountdownCard countdown={countdown} labels={labels} />
-      </section>
+      {activeView === 'home' ? (
+        <>
+          <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 py-5 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-10">
+            <div className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm md:p-6">
+              <p className="text-sm font-semibold text-[#7d6032]">Local-first JLPT system</p>
+              <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight md:text-4xl">{labels.heroTitle}</h1>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">{labels.heroBody}</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                <Metric label={labels.items} value={data.items.length.toString()} />
+                <Metric label={labels.questions} value={allQuestions.length.toString()} />
+                <Metric label={labels.answered} value={answeredCount.toString()} />
+                <Metric label={labels.correct} value={correctCount.toString()} />
+                <Metric label={labels.mastered} value={masteredCount.toString()} />
+              </div>
+            </div>
+            <CountdownCard countdown={countdown} labels={labels} />
+          </section>
 
-      <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
-        {moduleStats.map((module) => (
-          <ModuleCard key={module.view} module={module} active={activeView === module.view} onClick={() => setActiveView(module.view)} />
-        ))}
-      </section>
+          <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
+            {moduleStats.map((module) => (
+              <ModuleCard key={module.view} module={module} active={false} onClick={() => setActiveView(module.view)} />
+            ))}
+          </section>
+        </>
+      ) : null}
 
-      <section className="mx-auto grid max-w-7xl min-w-0 gap-5 px-4 pb-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
-        {activeView !== 'about' && activeView !== 'settings' ? (
-          <aside className="space-y-4">
-            {(activeView === 'vocabulary' || activeView === 'mixed') ? (
-              <Panel title={labels.deck}>
+      {activeView !== 'home' ? (
+        <section className="mx-auto grid max-w-7xl min-w-0 gap-5 px-4 py-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
+          {activeView !== 'about' && activeView !== 'settings' ? (
+            <aside className="space-y-4">
+              {(activeView === 'vocabulary' || activeView === 'mixed') ? (
+                <Panel title={labels.deck}>
+                  <div className="grid gap-2">
+                    {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
+                      <SegmentButton key={deck} active={selectedDeck === deck} onClick={() => setSelectedDeck(deck)}>
+                        {deckLabels[deck]}
+                      </SegmentButton>
+                    ))}
+                  </div>
+                </Panel>
+              ) : null}
+
+              <Panel title={labels.page}>
                 <div className="grid gap-2">
-                  {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
-                    <SegmentButton key={deck} active={selectedDeck === deck} onClick={() => setSelectedDeck(deck)}>
-                      {deckLabels[deck]}
-                    </SegmentButton>
-                  ))}
+                  <SegmentButton active={studyPage === 'questions'} onClick={() => setStudyPage('questions')}>
+                    {labels.questionPage}
+                  </SegmentButton>
+                  <SegmentButton active={studyPage === 'words'} onClick={() => setStudyPage('words')}>
+                    {labels.wordPage}
+                  </SegmentButton>
+                </div>
+              </Panel>
+
+              {studyPage === 'questions' ? (
+                <Panel title={labels.questionType}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
+                      <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
+                        {kindLabels[kind]}
+                      </SegmentButton>
+                    ))}
+                  </div>
+                </Panel>
+              ) : null}
+
+              <Panel title={labels.display}>
+                <div className="space-y-3">
+                  <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
+                  <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
+                </div>
+              </Panel>
+            </aside>
+          ) : null}
+
+          <div className={activeView === 'about' || activeView === 'settings' ? 'min-w-0 lg:col-span-2' : 'min-w-0 space-y-5'}>
+            {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
+            {activeView === 'settings' ? (
+              <Panel title={labels.settings}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SettingBlock title={labels.language}>
+                    <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
+                  </SettingBlock>
+                  <SettingBlock title={labels.display}>
+                    <div className="space-y-3">
+                      <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
+                      <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
+                    </div>
+                  </SettingBlock>
                 </div>
               </Panel>
             ) : null}
-
-            <Panel title={labels.page}>
-              <div className="grid gap-2">
-                <SegmentButton active={studyPage === 'questions'} onClick={() => setStudyPage('questions')}>
-                  {labels.questionPage}
-                </SegmentButton>
-                <SegmentButton active={studyPage === 'words'} onClick={() => setStudyPage('words')}>
-                  {labels.wordPage}
-                </SegmentButton>
-              </div>
-            </Panel>
-
-            {studyPage === 'questions' ? (
-            <Panel title={labels.questionType}>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
-                  <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
-                    {kindLabels[kind]}
-                  </SegmentButton>
-                ))}
-              </div>
-            </Panel>
+            {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
+            {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
+              studyPage === 'questions' ? (
+                <PracticePanel
+                  activeQuestion={activeQuestion}
+                  questionsLength={questions.length}
+                  activeIndex={activeIndex}
+                  answers={answers}
+                  items={data.items}
+                  labels={labels}
+                  kindLabels={kindLabels}
+                  settings={settings}
+                  onAnswer={answerQuestion}
+                  onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
+                  onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+                />
+              ) : (
+                <WordDetailPanel
+                  item={activeWord}
+                  index={wordIndex}
+                  total={items.length}
+                  progress={activeWord ? progress[activeWord.id] : undefined}
+                  showRuby={settings.showReviewRuby}
+                  labels={labels}
+                  deckLabels={deckLabels}
+                  locale={locale}
+                  onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
+                  onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+                />
+              )
             ) : null}
-
-            <Panel title={labels.display}>
-              <div className="space-y-3">
-                <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
-                <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
-              </div>
-            </Panel>
-          </aside>
-        ) : null}
-
-        <div className={activeView === 'about' ? 'min-w-0 lg:col-span-2' : 'min-w-0 space-y-5'}>
-          {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
-          {activeView === 'settings' ? (
-            <Panel title={labels.settings}>
-              <div className="grid gap-4 md:grid-cols-2">
-                <SettingBlock title={labels.language}>
-                  <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
-                </SettingBlock>
-                <SettingBlock title={labels.display}>
-                  <div className="space-y-3">
-                    <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
-                    <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
-                  </div>
-                </SettingBlock>
-              </div>
-            </Panel>
-          ) : null}
-          {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
-          {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
-            studyPage === 'questions' ? (
-              <PracticePanel
-                activeQuestion={activeQuestion}
-                questionsLength={questions.length}
-                activeIndex={activeIndex}
-                answers={answers}
-                items={data.items}
-                labels={labels}
-                kindLabels={kindLabels}
-                settings={settings}
-                onAnswer={answerQuestion}
-                onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-                onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
-              />
-            ) : (
-              <WordDetailPanel
-                item={activeWord}
-                index={wordIndex}
-                total={items.length}
-                progress={activeWord ? progress[activeWord.id] : undefined}
-                showRuby={settings.showReviewRuby}
-                labels={labels}
-                deckLabels={deckLabels}
-                locale={locale}
-                onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
-                onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
-              />
-            )
-          ) : null}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
       <footer className="border-t border-[#d9d0c3] bg-[#fffaf2]">
         <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-2 px-5 py-5 text-sm text-[#5f625b] md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
@@ -1001,6 +1010,9 @@ function getCountdown(target: string) {
 }
 
 function moduleItems(items: VocabItem[], view: AppView, selectedDeck: Deck | 'all') {
+  if (view === 'home') {
+    return items;
+  }
   if (view === 'grammar') {
     return items.filter((item) => item.deck === 'grammar_expression');
   }
@@ -1022,6 +1034,7 @@ function moduleItems(items: VocabItem[], view: AppView, selectedDeck: Deck | 'al
 
 function navItems(labels: Record<string, string>) {
   return [
+    { view: 'home' as const, label: labels.navHome },
     { view: 'vocabulary' as const, label: labels.navVocabulary },
     { view: 'grammar' as const, label: labels.navGrammar },
     { view: 'listening' as const, label: labels.navListening },
