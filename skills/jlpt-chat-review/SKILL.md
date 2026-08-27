@@ -1,0 +1,51 @@
+---
+name: jlpt-chat-review
+description: Turn JLPT study content discussed in an AI coding chat into structured review data for this local JLPT review website.
+---
+
+# JLPT Chat Review
+
+Use this skill when the user gives Japanese-learning material in chat and wants it organized for this review website. The website is a viewer and practice tool, not the capture UI: the user chats with an AI assistant, the assistant extracts structured records, and the website reads `public/data/review-data.json`.
+
+## Workflow
+
+1. Read `references/review-schema.md`.
+2. Extract learnable items from the user's chat or notes.
+3. Update `public/data/review-data.json`.
+4. Keep raw private chat transcripts out of the website data.
+5. Run the project build after editing data.
+
+For Codex installations, copy this folder to `~/.codex/skills/jlpt-chat-review`.
+
+For Claude Code or other coding assistants, tell the assistant to read this `SKILL.md` and follow it as project-specific extraction guidance.
+
+## Capture Rules
+
+For each item:
+
+- Preserve the Japanese surface form.
+- Normalize obvious typos only in a separate field when needed.
+- Classify the deck as `n1_vocab`, `grammar_expression`, or `name_reading`.
+- Estimate JLPT level only when there is enough evidence; otherwise use `unknown`.
+- Write Chinese explanations for review.
+- Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
+- Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
+
+## Practice Expectations
+
+The app can generate these practice modes from each item:
+
+- Reading: choose the correct reading.
+- Meaning: choose the correct core meaning.
+- Collocation: choose the natural phrase.
+- Comparison: choose the correct distinction between close words.
+- `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
+
+Every generated question should support immediate correct/incorrect judging and a full explanation.
+
+## Boundaries
+
+- Do not include private raw chat logs in public data.
+- Do not call external dictionary or translation APIs unless the user explicitly asks.
+- Do not invent official JLPT levels for uncertain items.
+- Keep user progress out of the seed data; progress belongs in browser local storage.

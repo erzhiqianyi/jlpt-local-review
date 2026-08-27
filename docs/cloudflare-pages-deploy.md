@@ -9,7 +9,7 @@
 3. 选择 `Create application`。
 4. 选择 `Pages`。
 5. 选择 `Connect to Git` 或 `Import from an existing Git repository`。
-6. 授权 GitHub 后，选择仓库 `erzhiqianyi/JLPT`。
+6. 授权 GitHub 后，选择仓库 `erzhiqianyi/jlpt-local-review`。
 7. 构建设置填写：
    - Framework preset: `Vite`
    - Build command: `npm run build`
@@ -33,7 +33,7 @@
 
 后续新增单词时：
 
-1. 在 Codex 聊天里整理学习内容。
+1. 在 Codex 或 Claude Code 里整理学习内容。
 2. 更新 `public/data/review-data.json`。
 3. 提交并 push 到 GitHub。
 4. Cloudflare Pages 自动部署。

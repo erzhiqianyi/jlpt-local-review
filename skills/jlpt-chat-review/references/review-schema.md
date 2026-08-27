@@ -1,0 +1,89 @@
+# Review Data Schema
+
+The website reads this file:
+
+```text
+public/data/review-data.json
+```
+
+Top-level shape:
+
+```json
+{
+  "generated_at": "2026-08-27T20:20:00+09:00",
+  "items": []
+}
+```
+
+Each item:
+
+```json
+{
+  "id": "n1-vocab-001",
+  "date": "2026-08-27",
+  "deck": "n1_vocab",
+  "type": "word",
+  "jlpt_level": "N1",
+  "original": "測定",
+  "reading": "そくてい",
+  "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
+  "core_memory": "按标准、用仪器把客观数据测出来。",
+  "part_of_speech": "名词・サ变动词",
+  "collocations": ["血圧を測定する", "測定結果"],
+  "examples": [
+    {
+      "ja": "室内の温度を測定した。",
+      "zh": "测定了室内温度。"
+    }
+  ],
+  "comparisons": [
+    {
+      "target": "測る",
+      "difference_zh": "日常说“量一下”；測定する更正式、客观。"
+    }
+  ],
+  "analysis": "看到温度、血压、浓度、速度等可数值化对象时，理解为按标准测出数值。",
+  "tags": ["漢語", "正式語", "技术"]
+}
+```
+
+## Decks
+
+- `n1_vocab`: ordinary JLPT vocabulary.
+- `grammar_expression`: expressions, forms, and grammar-like vocabulary.
+- `name_reading`: Japanese name or place-name readings.
+
+## Types
+
+Recommended values:
+
+- `word`
+- `proper_name`
+- `expression`
+- `verb_form`
+- `question`
+
+## Required Fields
+
+- `id`
+- `date`
+- `deck`
+- `type`
+- `original`
+- `meaning_zh`
+- `core_memory`
+
+## Optional But Useful Fields
+
+- `reading`
+- `jlpt_level`
+- `part_of_speech`
+- `collocations`
+- `examples`
+- `comparisons`
+- `analysis`
+- `tags`
+
+## Privacy Rule
+
+Do not copy raw chat transcripts into this file. Store only structured learning content and short explanations needed for review.
