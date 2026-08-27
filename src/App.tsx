@@ -6,9 +6,10 @@ type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'grammar' | 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
-type StudyPage = 'questions' | 'words';
+type StudyPage = 'questions' | 'words' | 'review';
 type AppRoute = { view: AppView; page: StudyPage; itemId?: string };
-type AnswerState = Record<string, { selected: string; correct: boolean }>;
+type AnswerRecord = { selected: string; correct: boolean; answeredAt?: string; elapsedMs?: number; attemptId?: string };
+type AnswerState = Record<string, AnswerRecord>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
 type SearchResult = {
   item: VocabItem;
@@ -31,6 +32,31 @@ type ProgressEntry = {
 };
 type ProgressState = Record<string, ProgressEntry>;
 type FeedbackMode = 'immediate' | 'batch';
+type AttemptAnswer = {
+  questionId: string;
+  itemId: string;
+  kind: QuestionKind;
+  selected: string;
+  correct: boolean;
+  answeredAt: string;
+  elapsedMs: number;
+};
+type PracticeAttempt = {
+  id: string;
+  startedAt: string;
+  completedAt?: string;
+  view: AppView;
+  deck: Deck | 'all';
+  questionIds: string[];
+  answers: AttemptAnswer[];
+  summary?: {
+    total: number;
+    correct: number;
+    wrong: number;
+    accuracy: number;
+    elapsedMs: number;
+  };
+};
 type DisplaySettings = {
   showReviewRuby: boolean;
   showExplanationRuby: boolean;
@@ -96,6 +122,8 @@ type Question = {
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
 const STORAGE_ANSWERS = 'jlpt-vocab-answers-jlpt-v2';
 const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
+const STORAGE_ATTEMPT_HISTORY = 'jlpt-practice-attempt-history-v1';
+const STORAGE_ACTIVE_ATTEMPT = 'jlpt-active-practice-attempt-v1';
 
 const translations = {
   'zh-CN': {
@@ -120,6 +148,7 @@ const translations = {
     wordDetail: '词条详情',
     questionPage: '练习',
     wordPage: '阅读',
+    reviewPage: '解析',
     studyMode: '学习模式',
     completed: '已完成',
     restartPractice: '重新练习',
@@ -219,6 +248,22 @@ const translations = {
     prev: '上一题',
     next: '下一题',
     analysis: '解析',
+    reviewSummaryTitle: '本次解析',
+    reviewSummaryBody: '完成全部题目后再看答案时，这里集中展示每题解析、历史记录和下一轮建议。',
+    historyTitle: '做题历史',
+    latestAttempt: '最近一次',
+    startedAt: '开始时间',
+    completedAt: '完成时间',
+    elapsed: '用时',
+    accuracy: '正确率',
+    wrongQuestions: '错题',
+    suggestionLabel: '建议',
+    suggestionAllCorrect: '本轮全对。下一轮可以混合其他模块，或延后复习以检查长期记忆。',
+    suggestionReviewWrong: '先复盘错题的正确理由和选项差异，再把错题导出给 AI 生成相似题。',
+    suggestionLowAccuracy: '正确率偏低。建议先回到阅读页复习相关词条，再做一轮同模块练习。',
+    noAttemptHistory: '还没有完成的练习记录。',
+    backToPractice: '返回练习',
+    aiSuggestionPromptLabel: '给 AI 的建议输入',
     contextLabel: '完整语境',
     correctReasonLabel: '正确理由',
     choiceAnalysisLabel: '选项分析',
@@ -250,6 +295,7 @@ const translations = {
     wordDetail: '語彙詳細',
     questionPage: '練習',
     wordPage: '閲覧',
+    reviewPage: '解説',
     studyMode: '学習モード',
     completed: '完了',
     restartPractice: 'もう一度練習',
@@ -349,6 +395,22 @@ const translations = {
     prev: '前へ',
     next: '次へ',
     analysis: '解説',
+    reviewSummaryTitle: '今回の解説',
+    reviewSummaryBody: '全問回答後に答えを見る場合、各問の解説、履歴、次回への提案をまとめて表示します。',
+    historyTitle: '回答履歴',
+    latestAttempt: '最新',
+    startedAt: '開始',
+    completedAt: '完了',
+    elapsed: '所要時間',
+    accuracy: '正答率',
+    wrongQuestions: '誤答',
+    suggestionLabel: '提案',
+    suggestionAllCorrect: '今回は全問正解です。次は他の分野を混ぜるか、少し間を空けて定着を確認してください。',
+    suggestionReviewWrong: 'まず誤答の正解理由と選択肢の違いを復習し、AI に類題を作らせるのがよいです。',
+    suggestionLowAccuracy: '正答率が低めです。関連項目を閲覧ページで確認してから、同じ分野をもう一度練習してください。',
+    noAttemptHistory: '完了した練習記録はまだありません。',
+    backToPractice: '練習に戻る',
+    aiSuggestionPromptLabel: 'AI への入力',
     contextLabel: '文脈',
     correctReasonLabel: '正解の理由',
     choiceAnalysisLabel: '選択肢の分析',
@@ -380,6 +442,7 @@ const translations = {
     wordDetail: 'Word Detail',
     questionPage: 'Practice',
     wordPage: 'Read',
+    reviewPage: 'Review',
     studyMode: 'Study Mode',
     completed: 'Completed',
     restartPractice: 'Practice Again',
@@ -479,6 +542,22 @@ const translations = {
     prev: 'Previous',
     next: 'Next',
     analysis: 'Analysis',
+    reviewSummaryTitle: 'Attempt Review',
+    reviewSummaryBody: 'When answers are hidden until completion, this page collects per-question explanations, history, and next-step suggestions.',
+    historyTitle: 'Attempt History',
+    latestAttempt: 'Latest',
+    startedAt: 'Started',
+    completedAt: 'Completed',
+    elapsed: 'Time',
+    accuracy: 'Accuracy',
+    wrongQuestions: 'Missed',
+    suggestionLabel: 'Suggestion',
+    suggestionAllCorrect: 'Perfect round. Mix in another module next, or review later to check long-term recall.',
+    suggestionReviewWrong: 'Review why each missed choice fails, then export the misses for AI-generated similar practice.',
+    suggestionLowAccuracy: 'Accuracy is low. Revisit the related entries in Read mode before repeating this module.',
+    noAttemptHistory: 'No completed practice attempts yet.',
+    backToPractice: 'Back to Practice',
+    aiSuggestionPromptLabel: 'AI Prompt Seed',
     contextLabel: 'Full Context',
     correctReasonLabel: 'Why It Is Correct',
     choiceAnalysisLabel: 'Choice Analysis',
@@ -678,6 +757,8 @@ export default function App() {
   const [wordIndex, setWordIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
+  const [attemptHistory, setAttemptHistory] = useState<PracticeAttempt[]>([]);
+  const [activeAttempt, setActiveAttempt] = useState<PracticeAttempt | null>(null);
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
   const [searchQuery, setSearchQuery] = useState('');
   const [route, setRoute] = useState<AppRoute>(() => routeFromHash(typeof window === 'undefined' ? '' : window.location.hash));
@@ -694,6 +775,8 @@ export default function App() {
 
     setProgress(readStorage(STORAGE_PROGRESS, {}));
     setAnswers(readStorage(STORAGE_ANSWERS, {}));
+    setAttemptHistory(readStorage(STORAGE_ATTEMPT_HISTORY, []));
+    setActiveAttempt(readStorage(STORAGE_ACTIVE_ATTEMPT, null));
     setSettings(normalizeSettings(readStorage(STORAGE_SETTINGS, defaultSettings)));
   }, []);
 
@@ -739,6 +822,10 @@ export default function App() {
   const questionTypeIntros = [{ title: labels.meaningTypeTitle, instruction: labels.meaningTypeIntroBody }];
   const hasStudySidebar = activeView === 'vocabulary' || activeView === 'grammar' || activeView === 'mixed';
   const searchResults = useMemo(() => searchItems(data.items, searchQuery, locale, labels), [data.items, labels, locale, searchQuery]);
+  const reviewAttempt = useMemo(
+    () => latestAttemptFor(attemptHistory, activeView, selectedDeck, questions),
+    [activeView, attemptHistory, questions, selectedDeck],
+  );
 
   useEffect(() => {
     setActiveIndex(0);
@@ -777,9 +864,21 @@ export default function App() {
     }
     const correct = selected === question.answer;
     const now = new Date();
+    const attempt = currentAttemptFor(activeAttempt, activeView, selectedDeck, questions, now);
+    const elapsedMs = Math.max(0, now.getTime() - new Date(attempt.startedAt).getTime());
+    const nextAttemptAnswer: AttemptAnswer = {
+      questionId: question.id,
+      itemId: question.itemId,
+      kind: question.kind,
+      selected,
+      correct,
+      answeredAt: now.toISOString(),
+      elapsedMs,
+    };
+    const nextAttempt = appendAttemptAnswer(attempt, nextAttemptAnswer);
     const nextAnswers = {
       ...answers,
-      [question.id]: { selected, correct },
+      [question.id]: { selected, correct, answeredAt: now.toISOString(), elapsedMs, attemptId: nextAttempt.id },
     };
     const current = progress[question.itemId] ?? { correct: 0, wrong: 0, status: 'new' as const };
     const nextCorrect = current.correct + (correct ? 1 : 0);
@@ -800,6 +899,23 @@ export default function App() {
     setProgress(nextProgress);
     writeStorage(STORAGE_ANSWERS, nextAnswers);
     writeStorage(STORAGE_PROGRESS, nextProgress);
+
+    const completed = questions.length > 0 && questions.every((candidate) => Boolean(nextAnswers[candidate.id]));
+    if (completed) {
+      const completedAttempt = completeAttempt(nextAttempt, nextAnswers, questions, now);
+      const nextHistory = upsertAttemptHistory(attemptHistory, completedAttempt);
+      setActiveAttempt(null);
+      setAttemptHistory(nextHistory);
+      localStorage.removeItem(STORAGE_ACTIVE_ATTEMPT);
+      writeStorage(STORAGE_ATTEMPT_HISTORY, nextHistory);
+      if (settings.feedbackMode === 'batch' && supportsStudyPage(activeView)) {
+        window.location.hash = routeHash(activeView, 'review');
+      }
+      return;
+    }
+
+    setActiveAttempt(nextAttempt);
+    writeStorage(STORAGE_ACTIVE_ATTEMPT, nextAttempt);
   }
 
   function restartPractice() {
@@ -807,9 +923,15 @@ export default function App() {
     const nextAnswers = Object.fromEntries(
       Object.entries(answers).filter(([questionId]) => !questionIds.has(questionId)),
     );
+    const nextAttempt = createPracticeAttempt(activeView, selectedDeck, questions, new Date());
     setAnswers(nextAnswers);
+    setActiveAttempt(nextAttempt);
     writeStorage(STORAGE_ANSWERS, nextAnswers);
+    writeStorage(STORAGE_ACTIVE_ATTEMPT, nextAttempt);
     setActiveIndex(0);
+    if (supportsStudyPage(activeView)) {
+      window.location.hash = routeHash(activeView, 'questions');
+    }
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }
 
@@ -840,8 +962,12 @@ export default function App() {
     }
     setAnswers({});
     setProgress({});
+    setAttemptHistory([]);
+    setActiveAttempt(null);
     localStorage.removeItem(STORAGE_ANSWERS);
     localStorage.removeItem(STORAGE_PROGRESS);
+    localStorage.removeItem(STORAGE_ATTEMPT_HISTORY);
+    localStorage.removeItem(STORAGE_ACTIVE_ATTEMPT);
   }
 
   function updateSettings(nextSettings: DisplaySettings) {
@@ -877,6 +1003,7 @@ export default function App() {
       })),
       answers,
       progress,
+      attempt_history: attemptHistory,
       settings,
       ai_prompt: [
         '请分析这份 JLPT 学习记录。',
@@ -1063,7 +1190,7 @@ export default function App() {
                   onNext={() => setActiveIndex((index) => nextPracticeIndex(index, questions, answers))}
                   onRestart={restartPractice}
                 />
-              ) : (
+              ) : studyPage === 'words' ? (
                 <WordDetailPanel
                   item={activeWord}
                   index={wordIndex}
@@ -1074,6 +1201,18 @@ export default function App() {
                   onShowRubyChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
                   onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
                   onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+                />
+              ) : (
+                <PracticeReviewPanel
+                  attempt={reviewAttempt}
+                  questions={questions}
+                  answers={answers}
+                  items={data.items}
+                  labels={labels}
+                  locale={locale}
+                  showRuby={settings.showExplanationRuby}
+                  onRestart={restartPractice}
+                  onBackToPractice={() => navigateTo(activeView, 'questions')}
                 />
               )
             ) : null}
@@ -1547,7 +1686,7 @@ function rotate<T>(items: T[], count: number) {
 function routeFromHash(hash: string): AppRoute {
   const [viewValue, pageValue, itemValue] = hash.replace(/^#\/?/, '').split('/');
   const view = isAppView(viewValue) ? viewValue : 'home';
-  const page = pageValue === 'words' ? 'words' : 'questions';
+  const page = pageValue === 'words' || pageValue === 'review' ? pageValue : 'questions';
   const itemId = page === 'words' && itemValue ? decodeURIComponent(itemValue) : undefined;
   return { view, page: supportsStudyPage(view) ? page : 'questions', itemId };
 }
@@ -1635,6 +1774,133 @@ function readStorage<T>(key: string, fallback: T): T {
 
 function writeStorage(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function createPracticeAttempt(view: AppView, deck: Deck | 'all', questions: Question[], now: Date): PracticeAttempt {
+  return {
+    id: `attempt-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`,
+    startedAt: now.toISOString(),
+    view,
+    deck,
+    questionIds: questions.map((question) => question.id),
+    answers: [],
+  };
+}
+
+function currentAttemptFor(
+  attempt: PracticeAttempt | null,
+  view: AppView,
+  deck: Deck | 'all',
+  questions: Question[],
+  now: Date,
+) {
+  const questionIds = questions.map((question) => question.id);
+  const sameQuestionSet = attempt
+    && attempt.view === view
+    && attempt.deck === deck
+    && attempt.questionIds.length === questionIds.length
+    && attempt.questionIds.every((id, index) => id === questionIds[index])
+    && !attempt.completedAt;
+  return sameQuestionSet ? attempt : createPracticeAttempt(view, deck, questions, now);
+}
+
+function appendAttemptAnswer(attempt: PracticeAttempt, answer: AttemptAnswer): PracticeAttempt {
+  return {
+    ...attempt,
+    answers: [...attempt.answers.filter((item) => item.questionId !== answer.questionId), answer],
+  };
+}
+
+function completeAttempt(attempt: PracticeAttempt, answers: AnswerState, questions: Question[], now: Date): PracticeAttempt {
+  const completedAnswers = questions.map((question) => {
+    const existing = attempt.answers.find((answer) => answer.questionId === question.id);
+    const stored = answers[question.id];
+    return existing ?? {
+      questionId: question.id,
+      itemId: question.itemId,
+      kind: question.kind,
+      selected: stored?.selected ?? '',
+      correct: Boolean(stored?.correct),
+      answeredAt: stored?.answeredAt ?? now.toISOString(),
+      elapsedMs: stored?.elapsedMs ?? Math.max(0, now.getTime() - new Date(attempt.startedAt).getTime()),
+    };
+  });
+  const correct = completedAnswers.filter((answer) => answer.correct).length;
+  const elapsedMs = Math.max(0, now.getTime() - new Date(attempt.startedAt).getTime());
+  return {
+    ...attempt,
+    completedAt: now.toISOString(),
+    answers: completedAnswers,
+    summary: {
+      total: questions.length,
+      correct,
+      wrong: questions.length - correct,
+      accuracy: questions.length ? correct / questions.length : 0,
+      elapsedMs,
+    },
+  };
+}
+
+function upsertAttemptHistory(history: PracticeAttempt[], attempt: PracticeAttempt) {
+  return [attempt, ...history.filter((item) => item.id !== attempt.id)].slice(0, 50);
+}
+
+function latestAttemptFor(history: PracticeAttempt[], view: AppView, deck: Deck | 'all', questions: Question[]) {
+  const questionIds = new Set(questions.map((question) => question.id));
+  return history.find((attempt) => (
+    attempt.view === view
+    && attempt.deck === deck
+    && attempt.completedAt
+    && attempt.questionIds.some((id) => questionIds.has(id))
+  ));
+}
+
+function attemptSuggestion(attempt: PracticeAttempt | undefined, labels: Record<string, string>) {
+  if (!attempt?.summary) {
+    return labels.noAttemptHistory;
+  }
+  if (attempt.summary.wrong === 0) {
+    return labels.suggestionAllCorrect;
+  }
+  if (attempt.summary.accuracy < 0.7) {
+    return labels.suggestionLowAccuracy;
+  }
+  return labels.suggestionReviewWrong;
+}
+
+function aiPromptSeed(attempt: PracticeAttempt, questions: Question[]) {
+  const questionMap = new Map(questions.map((question) => [question.id, question]));
+  const misses = attempt.answers
+    .filter((answer) => !answer.correct)
+    .map((answer) => {
+      const question = questionMap.get(answer.questionId);
+      return {
+        kind: answer.kind,
+        prompt: question?.prompt,
+        selected: answer.selected,
+        answer: question?.answer,
+        correct_reason: question?.correctReason,
+      };
+    });
+  return JSON.stringify({
+    task: 'Analyze this JLPT practice attempt and propose focused review plus similar questions.',
+    summary: attempt.summary,
+    misses,
+  }, null, 2);
+}
+
+function formatDateTime(value: string | undefined, locale: Locale) {
+  if (!value) {
+    return '-';
+  }
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function formatDuration(ms: number | undefined) {
+  const totalSeconds = Math.max(0, Math.round((ms ?? 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
 
 function downloadJSON(filename: string, value: unknown) {
@@ -1883,7 +2149,7 @@ function StudyModeSwitch({
   onChange: (mode: StudyPage) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#c8bcae] bg-[#e9eee9] p-1 shadow-sm" role="group" aria-label={labels.studyMode}>
+    <div className="grid grid-cols-3 gap-1 rounded-lg border border-[#c8bcae] bg-[#e9eee9] p-1 shadow-sm" role="group" aria-label={labels.studyMode}>
       <button
         type="button"
         onClick={() => onChange('questions')}
@@ -1903,6 +2169,16 @@ function StudyModeSwitch({
         }`}
       >
         {labels.wordPage}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('review')}
+        aria-pressed={mode === 'review'}
+        className={`h-10 rounded-md px-3 text-sm font-semibold transition ${
+          mode === 'review' ? 'bg-[#173d35] text-white shadow-sm' : 'text-[#53605a] hover:bg-white/70'
+        }`}
+      >
+        {labels.reviewPage}
       </button>
     </div>
   );
@@ -2195,6 +2471,160 @@ function QuestionPrompt({ text, target }: { text: string; target?: string }) {
       <span className="font-semibold underline decoration-2 underline-offset-4">{target}</span>
       {text.slice(targetIndex + target.length)}
     </>
+  );
+}
+
+function PracticeReviewPanel({
+  attempt,
+  questions,
+  answers,
+  items,
+  labels,
+  locale,
+  showRuby,
+  onRestart,
+  onBackToPractice,
+}: {
+  attempt?: PracticeAttempt;
+  questions: Question[];
+  answers: AnswerState;
+  items: VocabItem[];
+  labels: Record<string, string>;
+  locale: Locale;
+  showRuby: boolean;
+  onRestart: () => void;
+  onBackToPractice: () => void;
+}) {
+  const questionMap = new Map(questions.map((question) => [question.id, question]));
+  const reviewAnswers = attempt?.answers.length
+    ? attempt.answers
+    : questions
+      .filter((question) => answers[question.id])
+      .map((question) => ({
+        questionId: question.id,
+        itemId: question.itemId,
+        kind: question.kind,
+        selected: answers[question.id].selected,
+        correct: answers[question.id].correct,
+        answeredAt: answers[question.id].answeredAt ?? '',
+        elapsedMs: answers[question.id].elapsedMs ?? 0,
+      }));
+  const summary = attempt?.summary ?? {
+    total: questions.length,
+    correct: reviewAnswers.filter((answer) => answer.correct).length,
+    wrong: reviewAnswers.filter((answer) => !answer.correct).length,
+    accuracy: reviewAnswers.length ? reviewAnswers.filter((answer) => answer.correct).length / reviewAnswers.length : 0,
+    elapsedMs: reviewAnswers.at(-1)?.elapsedMs ?? 0,
+  };
+  const wrongAnswers = reviewAnswers.filter((answer) => !answer.correct);
+
+  return (
+    <section className="min-w-0 space-y-5">
+      <div className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-[#856033]">{labels.latestAttempt}</p>
+            <h2 className="mt-2 text-2xl font-semibold">{labels.reviewSummaryTitle}</h2>
+            <p className="mt-2 text-sm leading-6 text-[#5f625b]">{labels.reviewSummaryBody}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={onBackToPractice} className="h-10 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]">
+              {labels.backToPractice}
+            </button>
+            <button type="button" onClick={onRestart} className="h-10 rounded-md bg-[#173d35] px-3 text-sm font-semibold text-white">
+              {labels.restartPractice}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric label={labels.correct} value={`${summary.correct} / ${summary.total}`} />
+          <Metric label={labels.accuracy} value={`${Math.round(summary.accuracy * 100)}%`} />
+          <Metric label={labels.wrongQuestions} value={summary.wrong.toString()} />
+          <Metric label={labels.elapsed} value={formatDuration(summary.elapsedMs)} />
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-[#e1d7c9] bg-[#fffaf4] p-3">
+            <p className="text-sm font-semibold text-[#313934]">{labels.historyTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-[#5f625b]">
+              {labels.startedAt}: {formatDateTime(attempt?.startedAt, locale)}
+              <br />
+              {labels.completedAt}: {formatDateTime(attempt?.completedAt, locale)}
+            </p>
+          </div>
+          <div className="rounded-md border border-[#cbd6cf] bg-[#f3f7f2] p-3">
+            <p className="text-sm font-semibold text-[#313934]">{labels.suggestionLabel}</p>
+            <p className="mt-2 text-sm leading-6 text-[#4f5b55]">{attemptSuggestion(attempt, labels)}</p>
+          </div>
+        </div>
+
+        {attempt ? (
+          <details className="mt-4 rounded-md border border-[#d9d0c3] bg-[#fffdfa] p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-[#24473f]">{labels.aiSuggestionPromptLabel}</summary>
+            <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-[#f5f7f3] p-3 text-xs leading-5 text-[#313934]">{aiPromptSeed(attempt, questions)}</pre>
+          </details>
+        ) : null}
+      </div>
+
+      {!reviewAnswers.length ? (
+        <div className="rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
+          <p className="text-sm leading-6 text-[#5f625b]">{labels.noAttemptHistory}</p>
+        </div>
+      ) : null}
+
+      {wrongAnswers.length ? (
+        <div className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+          <h3 className="text-lg font-semibold">{labels.wrongQuestions}</h3>
+          <div className="mt-3 space-y-4">
+            {wrongAnswers.map((answer) => {
+              const question = questionMap.get(answer.questionId);
+              return question ? (
+                <div key={answer.questionId} className="rounded-md border border-[#e1d7c9] bg-[#fffaf4] p-3">
+                  <p className="text-sm font-semibold text-[#856033]">{question.title}</p>
+                  <p className="mt-2 text-base leading-7 text-[#353b37]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
+                  <AnswerPanel
+                    question={question}
+                    answer={answer}
+                    items={items}
+                    showRuby={showRuby}
+                    labels={labels}
+                    locale={locale}
+                  />
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="space-y-4">
+        {reviewAnswers.map((answer) => {
+          const question = questionMap.get(answer.questionId);
+          return question ? (
+            <div key={answer.questionId} className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-[#856033]">{question.title}</p>
+                  <p className="mt-2 text-base leading-7 text-[#353b37]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
+                </div>
+                <span className={`rounded px-2 py-1 text-sm font-semibold ${answer.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-[#faf0df] text-[#665d4b]'}`}>
+                  {answer.correct ? labels.correct : labels.wrong}
+                </span>
+              </div>
+              <AnswerPanel
+                question={question}
+                answer={answer}
+                items={items}
+                showRuby={showRuby}
+                labels={labels}
+                locale={locale}
+              />
+            </div>
+          ) : null;
+        })}
+      </div>
+    </section>
   );
 }
 
