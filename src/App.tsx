@@ -7,7 +7,7 @@ type QuestionKind = 'grammar' | 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanj
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
 type StudyPage = 'questions' | 'words';
-type AppRoute = { view: AppView; page: StudyPage };
+type AppRoute = { view: AppView; page: StudyPage; itemId?: string };
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
 type ProgressEntry = {
@@ -106,6 +106,7 @@ const translations = {
     studyMode: '学习模式',
     completed: '已完成',
     restartPractice: '重新练习',
+    viewEntry: '打开词条',
     filters: '筛选',
     hideFilters: '收起筛选',
     showFilters: '展开筛选',
@@ -216,6 +217,7 @@ const translations = {
     studyMode: '学習モード',
     completed: '完了',
     restartPractice: 'もう一度練習',
+    viewEntry: '項目を開く',
     filters: 'フィルター',
     hideFilters: 'フィルターを閉じる',
     showFilters: 'フィルターを開く',
@@ -326,6 +328,7 @@ const translations = {
     studyMode: 'Study Mode',
     completed: 'Completed',
     restartPractice: 'Practice Again',
+    viewEntry: 'Open Entry',
     filters: 'Filters',
     hideFilters: 'Hide Filters',
     showFilters: 'Show Filters',
@@ -612,6 +615,16 @@ export default function App() {
     setActiveIndex(0);
     setWordIndex(0);
   }, [activeView, selectedDeck, selectedKind]);
+
+  useEffect(() => {
+    if (studyPage !== 'words' || !route.itemId) {
+      return;
+    }
+    const requestedIndex = items.findIndex((item) => item.id === route.itemId);
+    if (requestedIndex >= 0) {
+      setWordIndex(requestedIndex);
+    }
+  }, [items, route.itemId, studyPage]);
 
   useEffect(() => {
     if (availableKinds.length && !availableKinds.includes(selectedKind)) {
@@ -1268,14 +1281,23 @@ function rotate<T>(items: T[], count: number) {
 }
 
 function routeFromHash(hash: string): AppRoute {
-  const [viewValue, pageValue] = hash.replace(/^#\/?/, '').split('/');
+  const [viewValue, pageValue, itemValue] = hash.replace(/^#\/?/, '').split('/');
   const view = isAppView(viewValue) ? viewValue : 'home';
   const page = pageValue === 'words' ? 'words' : 'questions';
-  return { view, page: supportsStudyPage(view) ? page : 'questions' };
+  const itemId = page === 'words' && itemValue ? decodeURIComponent(itemValue) : undefined;
+  return { view, page: supportsStudyPage(view) ? page : 'questions', itemId };
 }
 
-function routeHash(view: AppView, page: StudyPage) {
-  return supportsStudyPage(view) ? `#/${view}/${page}` : `#/${view}`;
+function routeHash(view: AppView, page: StudyPage, itemId?: string) {
+  if (!supportsStudyPage(view)) {
+    return `#/${view}`;
+  }
+  return itemId && page === 'words' ? `#/${view}/${page}/${encodeURIComponent(itemId)}` : `#/${view}/${page}`;
+}
+
+function wordDetailHref(item: VocabItem) {
+  const view: AppView = item.deck === 'grammar_expression' ? 'grammar' : 'vocabulary';
+  return routeHash(view, 'words', item.id);
 }
 
 function supportsStudyPage(view: AppView) {
@@ -1788,18 +1810,29 @@ function PracticePanel({
 }) {
   return (
     <section className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
-          <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
-          <p className="mt-3 break-words text-lg leading-8 text-[#353b37]">
-            {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2ddd4] pb-4">
+        <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
+        <div className="flex items-center gap-2">
+          {questionsLength > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrev} /> : null}
+          <div className="flex min-h-10 min-w-32 flex-col items-center justify-center rounded-md bg-[#e8f0eb] px-3 py-1 text-[#24473f]">
+            <span className="text-sm font-semibold">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
+            <span className="text-xs">{labels.completed} {answeredCount} / {questionsLength}</span>
+          </div>
+          {complete ? (
+            <button type="button" onClick={onRestart} className="h-10 rounded-md bg-[#24473f] px-3 text-sm font-semibold text-white">
+              {labels.restartPractice}
+            </button>
+          ) : questionsLength > 1 ? (
+            <ArrowButton label={labels.next} direction="right" onClick={onNext} />
+          ) : null}
         </div>
-        <div className="flex min-h-10 min-w-32 flex-col items-center justify-center rounded-md bg-[#e8f0eb] px-3 py-1 text-[#24473f]">
-          <span className="text-sm font-semibold">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
-          <span className="text-xs">{labels.completed} {answeredCount} / {questionsLength}</span>
-        </div>
+      </div>
+
+      <div className="mt-4">
+        <h2 className="text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
+        <p className="mt-3 break-words text-lg leading-8 text-[#353b37]">
+          {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
+        </p>
       </div>
 
       {activeQuestion ? (
@@ -1814,7 +1847,7 @@ function PracticePanel({
                 : isAnswer
                   ? 'border-[#3d735f] bg-[#e5f2ea]'
                   : isSelected
-                    ? 'border-[#b65842] bg-[#fae8e1]'
+                    ? 'border-[#b59a66] bg-[#f6f0e2]'
                     : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70';
               return (
                 <button
@@ -1830,18 +1863,14 @@ function PracticePanel({
             })}
           </div>
 
-          <AnswerPanel question={activeQuestion} answer={answers[activeQuestion.id]} items={items} showRuby={settings.showExplanationRuby} labels={labels} />
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {questionsLength > 1 ? (
-              <button type="button" onClick={onPrev} className="h-10 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold">
-                {labels.prev}
-              </button>
-            ) : null}
-            <button type="button" onClick={complete ? onRestart : onNext} className="h-10 rounded-md bg-[#24473f] px-4 text-sm font-semibold text-white">
-              {complete ? labels.restartPractice : labels.next}
-            </button>
-          </div>
+          <AnswerPanel
+            question={activeQuestion}
+            answer={answers[activeQuestion.id]}
+            items={items}
+            showRuby={settings.showExplanationRuby}
+            labels={labels}
+            locale={normalizeLocale(settings.locale)}
+          />
         </>
       ) : null}
     </section>
@@ -1854,12 +1883,14 @@ function AnswerPanel({
   items,
   showRuby,
   labels,
+  locale,
 }: {
   question: Question;
   answer?: { selected: string; correct: boolean };
   items: VocabItem[];
   showRuby: boolean;
   labels: Record<string, string>;
+  locale: Locale;
 }) {
   if (!answer) {
     return null;
@@ -1867,10 +1898,18 @@ function AnswerPanel({
 
   const sourceItem = items.find((item) => item.id === question.itemId);
   const needsHumanReview = sourceItem?.content_origin === 'ai_generated' && sourceItem.verification_status !== 'verified';
+  const statusStyle = answer.correct
+    ? 'border-[#8eb3a1] bg-[#f1f7f3] text-[#285d47]'
+    : 'border-[#cdbd98] bg-[#faf7ef] text-[#665d4b]';
 
   return (
-    <div className={`mt-5 rounded-lg border p-4 ${answer.correct ? 'border-[#3d735f] bg-[#e8f3ec]' : 'border-[#b65842] bg-[#fae9e2]'}`}>
-      <p className="text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
+    <div className={`mt-5 rounded-lg border p-4 ${statusStyle}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="rounded bg-white/70 px-2 py-1 text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
+        {sourceItem ? (
+          <EntryLink item={sourceItem} label={`${labels.viewEntry}: ${sourceItem.original}`} />
+        ) : null}
+      </div>
       <p className="mt-2 text-sm">{labels.yourAnswer}：{answer.selected}</p>
       <p className="mt-1 text-sm">{labels.rightAnswer}：{question.answer}</p>
       <div className="mt-4 border-t border-black/10">
@@ -1883,19 +1922,26 @@ function AnswerPanel({
         <section className="border-t border-black/10 py-4">
           <h3 className="text-sm font-semibold text-[#313934]">{labels.choiceAnalysisLabel}</h3>
           <div className="mt-2 divide-y divide-black/10">
-            {question.choiceAnalysis.map((choice) => (
-              <div key={choice.choice} className="grid gap-2 py-3 sm:grid-cols-[minmax(90px,auto)_1fr] sm:items-start sm:gap-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-[#27312c]">{choice.choice}</span>
-                  <span className={`rounded px-2 py-0.5 text-xs font-semibold ${choice.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-white/70 text-[#7b4a3b]'}`}>
-                    {choice.correct ? labels.choiceFits : labels.choiceDoesNotFit}
-                  </span>
+            {question.choiceAnalysis.map((choice) => {
+              const linkedItem = choice.correct ? sourceItem : itemForChoice(choice.choice, question.kind, items, locale);
+              return (
+                <div key={choice.choice} className="grid gap-2 py-3 sm:grid-cols-[minmax(110px,auto)_1fr] sm:items-start sm:gap-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {linkedItem ? (
+                      <EntryLink item={linkedItem} label={choice.choice} compact />
+                    ) : (
+                      <span className="font-semibold text-[#27312c]">{choice.choice}</span>
+                    )}
+                    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${choice.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-white/70 text-[#665d4b]'}`}>
+                      {choice.correct ? labels.choiceFits : labels.choiceDoesNotFit}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-6 text-[#4b534e]">
+                    <RubyText text={choice.explanation} items={items} enabled={showRuby} />
+                  </p>
                 </div>
-                <p className="text-sm leading-6 text-[#4b534e]">
-                  <RubyText text={choice.explanation} items={items} enabled={showRuby} />
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
         <ExplanationSection label={labels.memoryPointLabel}>
@@ -1908,6 +1954,19 @@ function AnswerPanel({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function EntryLink({ item, label, compact = false }: { item: VocabItem; label: string; compact?: boolean }) {
+  return (
+    <a
+      href={wordDetailHref(item)}
+      target="_blank"
+      rel="noreferrer"
+      className={`font-semibold text-[#24473f] underline decoration-[#9ab0a7] underline-offset-4 hover:decoration-[#24473f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24473f] ${compact ? 'break-words' : 'rounded-md border border-[#b9c9c1] bg-white/80 px-3 py-2 text-sm no-underline'}`}
+    >
+      {label}
+    </a>
   );
 }
 
