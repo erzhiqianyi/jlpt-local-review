@@ -7,6 +7,7 @@ type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
 type StudyPage = 'questions' | 'words';
+type AppRoute = { view: AppView; page: StudyPage };
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
 type ProgressEntry = {
@@ -512,10 +513,11 @@ export default function App() {
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
-  const [activeView, setActiveView] = useState<AppView>('home');
-  const [studyPage, setStudyPage] = useState<StudyPage>('questions');
-  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
+  const [route, setRoute] = useState<AppRoute>(() => routeFromHash(typeof window === 'undefined' ? '' : window.location.hash));
+  const [filtersCollapsed, setFiltersCollapsed] = useState(() => shouldCollapseFilters());
   const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
+  const activeView = route.view;
+  const studyPage = route.page;
 
   useEffect(() => {
     fetch('/data/review-data.json')
@@ -531,6 +533,21 @@ export default function App() {
   useEffect(() => {
     const timer = window.setInterval(() => setCountdown(getCountdown(NEXT_JLPT_AT)), 60_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!window.location.hash) {
+      window.history.replaceState(null, '', routeHash('home', 'questions'));
+    }
+
+    function handleHashChange() {
+      setRoute(routeFromHash(window.location.hash));
+      setFiltersCollapsed(shouldCollapseFilters());
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const items = useMemo(() => moduleItems(data.items, activeView, selectedDeck), [activeView, data.items, selectedDeck]);
@@ -550,11 +567,11 @@ export default function App() {
   const deckLabels = deckLabelsFor(locale);
   const kindLabels = kindLabelsFor(locale);
   const moduleStats = moduleSummaries(data.items, labels);
+  const hasStudySidebar = activeView === 'vocabulary' || activeView === 'grammar' || activeView === 'mixed';
 
   useEffect(() => {
     setActiveIndex(0);
     setWordIndex(0);
-    setFiltersCollapsed(false);
   }, [activeView, selectedDeck, selectedKind]);
 
   useEffect(() => {
@@ -599,6 +616,18 @@ export default function App() {
     setProgress(nextProgress);
     writeStorage(STORAGE_ANSWERS, nextAnswers);
     writeStorage(STORAGE_PROGRESS, nextProgress);
+  }
+
+  function navigateTo(view: AppView, page: StudyPage = studyPage) {
+    const nextRoute = { view, page: supportsStudyPage(view) ? page : 'questions' as StudyPage };
+    const nextHash = routeHash(nextRoute.view, nextRoute.page);
+    if (window.location.hash === nextHash) {
+      setRoute(nextRoute);
+      setFiltersCollapsed(shouldCollapseFilters());
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      return;
+    }
+    window.location.hash = nextHash;
   }
 
   function resetLocalProgress() {
@@ -655,11 +684,11 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen max-w-full overflow-x-hidden bg-[#f5f7f3] text-[#1f2522]">
+    <main className="flex min-h-screen max-w-full flex-col overflow-x-hidden bg-[#f5f7f3] text-[#1f2522]">
       <header className="sticky top-0 z-20 border-b border-[#d7dfd6] bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <div className="flex items-center justify-between gap-3">
-            <button type="button" onClick={() => setActiveView('home')} className="text-lg font-semibold tracking-normal text-[#173d35]">
+            <button type="button" onClick={() => navigateTo('home')} className="text-lg font-semibold tracking-normal text-[#173d35]">
               {labels.brand}
             </button>
             <a className="rounded-md border border-[#d7dfd6] px-3 py-2 text-sm font-semibold text-[#24473f] lg:hidden" href="https://github.com/erzhiqianyi/jlpt-master-deck" target="_blank" rel="noreferrer">
@@ -668,7 +697,7 @@ export default function App() {
           </div>
           <nav className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 lg:pb-0">
             {navItems(labels).map((item) => (
-              <NavButton key={item.view} active={activeView === item.view} onClick={() => setActiveView(item.view)}>
+              <NavButton key={item.view} active={activeView === item.view} onClick={() => navigateTo(item.view)}>
                 {item.label}
               </NavButton>
             ))}
@@ -696,25 +725,23 @@ export default function App() {
 
           <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
             {moduleStats.map((module) => (
-              <ModuleCard key={module.view} module={module} active={false} onClick={() => setActiveView(module.view)} />
+              <ModuleCard key={module.view} module={module} active={false} onClick={() => navigateTo(module.view)} />
             ))}
           </section>
         </>
       ) : null}
 
       {activeView !== 'home' ? (
-        <section className={`mx-auto grid max-w-7xl min-w-0 gap-5 px-4 py-5 md:px-8 lg:px-10 ${filtersCollapsed ? 'lg:grid-cols-[72px_minmax(0,1fr)]' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
-          {activeView !== 'about' && activeView !== 'settings' ? (
+        <section className={`mx-auto grid w-full max-w-7xl min-w-0 flex-1 gap-5 px-4 py-4 md:px-8 md:py-5 lg:px-10 ${hasStudySidebar ? (filtersCollapsed ? 'lg:grid-cols-[72px_minmax(0,1fr)]' : 'lg:grid-cols-[280px_minmax(0,1fr)]') : ''}`}>
+          {hasStudySidebar ? (
             <aside className="space-y-4">
-              <Panel title={filtersCollapsed ? '' : labels.filters}>
-                <button
-                  type="button"
-                  onClick={() => setFiltersCollapsed((value) => !value)}
-                  className="w-full rounded-md border border-[#c8bcae] bg-white px-3 py-2 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]"
-                >
-                  {filtersCollapsed ? labels.filters : labels.hideFilters}
-                </button>
-              </Panel>
+              <button
+                type="button"
+                onClick={() => setFiltersCollapsed((value) => !value)}
+                className="h-10 w-full rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f] shadow-sm hover:bg-[#f2f6f1]"
+              >
+                {filtersCollapsed ? labels.filters : labels.hideFilters}
+              </button>
 
               {!filtersCollapsed && (activeView === 'vocabulary' || activeView === 'mixed') ? (
                 <Panel title={labels.deck}>
@@ -731,10 +758,10 @@ export default function App() {
               {!filtersCollapsed ? (
               <Panel title={labels.page}>
                 <div className="grid gap-2">
-                  <SegmentButton active={studyPage === 'questions'} onClick={() => setStudyPage('questions')}>
+                  <SegmentButton active={studyPage === 'questions'} onClick={() => navigateTo(activeView, 'questions')}>
                     {labels.questionPage}
                   </SegmentButton>
-                  <SegmentButton active={studyPage === 'words'} onClick={() => setStudyPage('words')}>
+                  <SegmentButton active={studyPage === 'words'} onClick={() => navigateTo(activeView, 'words')}>
                     {labels.wordPage}
                   </SegmentButton>
                 </div>
@@ -755,7 +782,7 @@ export default function App() {
             </aside>
           ) : null}
 
-          <div className={activeView === 'about' || activeView === 'settings' ? 'min-w-0 lg:col-span-2' : 'min-w-0 space-y-5'}>
+          <div className={hasStudySidebar ? 'min-w-0 space-y-5' : 'min-w-0'}>
             {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
             {activeView === 'settings' ? (
               <Panel title={labels.settings}>
@@ -819,7 +846,7 @@ export default function App() {
         </section>
       ) : null}
 
-      <footer className="border-t border-[#d9d0c3] bg-[#fffaf2]">
+      <footer className="mt-auto border-t border-[#d9d0c3] bg-[#fffaf2]">
         <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-2 px-5 py-5 text-sm text-[#5f625b] md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
           <p>© 2026 Itsuki. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
@@ -954,6 +981,29 @@ function rotate<T>(items: T[], count: number) {
   }
   const offset = count % items.length;
   return [...items.slice(offset), ...items.slice(0, offset)];
+}
+
+function routeFromHash(hash: string): AppRoute {
+  const [viewValue, pageValue] = hash.replace(/^#\/?/, '').split('/');
+  const view = isAppView(viewValue) ? viewValue : 'home';
+  const page = pageValue === 'words' ? 'words' : 'questions';
+  return { view, page: supportsStudyPage(view) ? page : 'questions' };
+}
+
+function routeHash(view: AppView, page: StudyPage) {
+  return supportsStudyPage(view) ? `#/${view}/${page}` : `#/${view}`;
+}
+
+function supportsStudyPage(view: AppView) {
+  return view === 'vocabulary' || view === 'grammar' || view === 'mixed';
+}
+
+function isAppView(value: string): value is AppView {
+  return ['home', 'vocabulary', 'grammar', 'listening', 'reading', 'mixed', 'about', 'settings'].includes(value);
+}
+
+function shouldCollapseFilters() {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
 }
 
 function nextIndex(index: number, total: number) {
@@ -1540,15 +1590,12 @@ function WordDetailPanel({
 
   return (
     <section
-      className="min-w-0 rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm md:p-5"
+      className="min-w-0"
       onTouchStart={(event) => setTouchStart(event.changedTouches[0]?.clientX ?? null)}
       onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
     >
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
-          <h2 className="mt-1 text-2xl font-semibold">{item.original}</h2>
-        </div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
         <div className="flex items-center gap-2">
           <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} />
           <span className="min-w-20 rounded-md bg-[#e8f0eb] px-3 py-2 text-center text-sm font-semibold text-[#24473f]">
@@ -1602,7 +1649,7 @@ function VocabCard({
   const coreMemory = localized(item, locale, 'core_memory') ?? item.core_memory;
   const analysis = localized(item, locale, 'analysis') ?? item.analysis;
   return (
-    <article className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm">
+    <article className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded bg-[#24473f] px-2 py-1 text-xs font-semibold text-white">{deckLabels[item.deck]}</span>
         <span className="rounded bg-[#ead9c7] px-2 py-1 text-xs font-semibold text-[#6f412d]">{item.jlpt_level ?? 'unknown'}</span>
@@ -1618,7 +1665,6 @@ function VocabCard({
       <h3 className="mt-3 text-2xl font-semibold">
         <RubyText text={item.original} items={[item]} enabled={showRuby} />
       </h3>
-      {item.reading ? <p className="mt-1 text-sm font-semibold text-[#8c5a3d]">{item.reading}</p> : null}
       <p className="mt-3 text-sm font-semibold">{meaning}</p>
       <p className="mt-2 text-sm leading-6 text-[#5f625b]">{coreMemory}</p>
       {item.collocations?.length ? (

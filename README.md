@@ -13,6 +13,7 @@ There are two supported workflows:
 
 - Vocabulary decks for JLPT words, expressions, and Japanese name readings.
 - Module navigation for vocabulary, grammar, listening, reading, and mixed practice.
+- Shareable hash routes for each module, question page, word page, About page, and Settings page; browser back and forward navigation work on static hosting.
 - Countdown to the next JLPT test date.
 - Practice modes for JLPT `文字・語彙`, `言い換え類義`, `表記`, and `漢字読み`.
 - Immediate correct/incorrect judging.
@@ -45,6 +46,17 @@ npm run build
 ```
 
 The production output is written to `dist`.
+
+Main pages have independent static-friendly addresses, for example:
+
+```text
+/#/home
+/#/vocabulary/questions
+/#/vocabulary/words
+/#/grammar/questions
+/#/about
+/#/settings
+```
 
 ## Start With Your Own Data
 
