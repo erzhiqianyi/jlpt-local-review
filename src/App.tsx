@@ -631,6 +631,9 @@ export default function App() {
             <a className="font-semibold text-[#24473f] hover:underline" href="mailto:jlpt@erzhiqian.cc">
               jlpt@erzhiqian.cc
             </a>
+            <a className="font-semibold text-[#24473f] hover:underline" href="https://github.com/erzhiqianyi/jlpt-master-deck" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
           </div>
         </div>
       </footer>
