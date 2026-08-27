@@ -87,6 +87,8 @@ const translations = {
     mastered: '掌握',
     reviewCount: '复习',
     nextReview: '下次复习',
+    wordDetail: '词条详情',
+    swipeHint: '移动端左右滑动切换，电脑端可用箭头或键盘方向键。',
     practice: '今日练习',
     library: '词库',
     settings: '设置',
@@ -178,6 +180,8 @@ const translations = {
     mastered: '習得',
     reviewCount: '復習',
     nextReview: '次回復習',
+    wordDetail: '語彙詳細',
+    swipeHint: 'モバイルでは左右スワイプ、PC では矢印またはキーボードで切り替えます。',
     practice: '今日の復習',
     library: '語彙帳',
     settings: '設定',
@@ -269,6 +273,8 @@ const translations = {
     mastered: 'Mastered',
     reviewCount: 'Reviews',
     nextReview: 'Next Review',
+    wordDetail: 'Word Detail',
+    swipeHint: 'Swipe on mobile, or use arrows and keyboard arrow keys on desktop.',
     practice: 'Practice',
     library: 'Library',
     settings: 'Settings',
@@ -474,6 +480,7 @@ export default function App() {
   const [selectedDeck, setSelectedDeck] = useState<Deck | 'all'>('all');
   const [selectedKind, setSelectedKind] = useState<QuestionKind>('moji_goi');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [wordIndex, setWordIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
@@ -505,6 +512,7 @@ export default function App() {
     [allQuestions, selectedKind],
   );
   const activeQuestion = questions[activeIndex % Math.max(questions.length, 1)];
+  const activeWord = items[wordIndex % Math.max(items.length, 1)];
   const answeredCount = Object.keys(answers).length;
   const correctCount = Object.values(answers).filter((answer) => answer.correct).length;
   const masteredCount = Object.values(progress).filter((item) => item.status === 'mastered').length;
@@ -515,7 +523,24 @@ export default function App() {
 
   useEffect(() => {
     setActiveIndex(0);
+    setWordIndex(0);
   }, [activeView, selectedDeck, selectedKind]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        setWordIndex((index) => previousIndex(index, items.length));
+      }
+      if (event.key === 'ArrowRight') {
+        setWordIndex((index) => nextIndex(index, items.length));
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeView, items.length]);
 
   function answerQuestion(question: Question, selected: string) {
     const correct = selected === question.answer;
@@ -675,19 +700,18 @@ export default function App() {
                 onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
                 onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
               />
-              <section className="grid gap-4 lg:grid-cols-2">
-                {items.slice(0, 6).map((item) => (
-                  <VocabCard
-                    key={item.id}
-                    item={item}
-                    progress={progress[item.id]}
-                    showRuby={settings.showReviewRuby}
-                    labels={labels}
-                    deckLabels={deckLabels}
-                    locale={locale}
-                  />
-                ))}
-              </section>
+              <WordDetailPanel
+                item={activeWord}
+                index={wordIndex}
+                total={items.length}
+                progress={activeWord ? progress[activeWord.id] : undefined}
+                showRuby={settings.showReviewRuby}
+                labels={labels}
+                deckLabels={deckLabels}
+                locale={locale}
+                onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
+                onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+              />
             </>
           ) : null}
         </div>
@@ -828,6 +852,18 @@ function rotate<T>(items: T[], count: number) {
   }
   const offset = count % items.length;
   return [...items.slice(offset), ...items.slice(0, offset)];
+}
+
+function nextIndex(index: number, total: number) {
+  return total ? (index + 1) % total : 0;
+}
+
+function previousIndex(index: number, total: number) {
+  return total ? (index - 1 + total) % total : 0;
+}
+
+function safeIndex(index: number, total: number) {
+  return total ? ((index % total) + total) % total : 0;
 }
 
 function unique<T>(items: T[]) {
@@ -1315,6 +1351,97 @@ function AnswerPanel({
         <RubyText text={question.explanation} items={items} enabled={showRuby} />
       </p>
     </div>
+  );
+}
+
+function WordDetailPanel({
+  item,
+  index,
+  total,
+  progress,
+  showRuby,
+  labels,
+  deckLabels,
+  locale,
+  onPrevious,
+  onNext,
+}: {
+  item?: VocabItem;
+  index: number;
+  total: number;
+  progress?: ProgressState[string];
+  showRuby: boolean;
+  labels: Record<string, string>;
+  deckLabels: Record<Deck | 'all', string>;
+  locale: Locale;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+
+  if (!item) {
+    return <EmptyModule labels={labels} />;
+  }
+
+  function handleTouchEnd(x: number) {
+    if (touchStart === null) {
+      return;
+    }
+    const delta = x - touchStart;
+    setTouchStart(null);
+    if (Math.abs(delta) < 48) {
+      return;
+    }
+    if (delta > 0) {
+      onPrevious();
+    } else {
+      onNext();
+    }
+  }
+
+  return (
+    <section
+      className="min-w-0 rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm md:p-5"
+      onTouchStart={(event) => setTouchStart(event.changedTouches[0]?.clientX ?? null)}
+      onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
+    >
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
+          <h2 className="mt-1 text-2xl font-semibold">{item.original}</h2>
+          <p className="mt-1 text-sm text-[#62645f]">{labels.swipeHint}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} />
+          <span className="min-w-20 rounded-md bg-[#e8f0eb] px-3 py-2 text-center text-sm font-semibold text-[#24473f]">
+            {total ? `${safeIndex(index, total) + 1} / ${total}` : '0 / 0'}
+          </span>
+          <ArrowButton label={labels.next} direction="right" onClick={onNext} />
+        </div>
+      </div>
+      <VocabCard
+        item={item}
+        progress={progress}
+        showRuby={showRuby}
+        labels={labels}
+        deckLabels={deckLabels}
+        locale={locale}
+      />
+    </section>
+  );
+}
+
+function ArrowButton({ label, direction, onClick }: { label: string; direction: 'left' | 'right'; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex h-10 w-10 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-xl font-semibold text-[#24473f] hover:bg-[#f2f6f1]"
+    >
+      {direction === 'left' ? '‹' : '›'}
+    </button>
   );
 }
 
