@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-08-27T12:00:00+09:00",
+  "items": [
+    {
+      "id": "2026-08-27-001",
+      "date": "2026-08-27",
+      "type": "vocabulary",
+      "jlpt_level": "N2/N1",
+      "level_confidence": "medium",
+      "original": "測定",
+      "normalized": "測定",
+      "reading": "そくてい",
+      "meaning_zh": "测定、测量",
+      "explanation_zh": "偏正式或技术语境，强调按照标准、工具或方法测量数值。",
+      "tags": ["漢語", "用語感"],
+      "source_chat_summary": "想确认「測定」的含义、读法和使用语感。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-27-002",
+      "date": "2026-08-27",
+      "type": "sentence",
+      "jlpt_level": "unknown",
+      "original": "測定結果をもとに判断する。",
+      "reading": "そくていけっかをもとにはんだんする。",
+      "meaning_zh": "根据测定结果进行判断。",
+      "explanation_zh": "「をもとに」表示“以……为依据”，常和资料、数据、结果搭配。",
+      "tags": ["表現", "根拠"],
+      "source_chat_summary": "需要把词放回句子里理解实际搭配。",
+      "review_status": "new"
+    }
+  ],
+  "daily_packs": [
+    {
+      "date": "2026-08-27",
+      "source_date": "2026-08-26",
+      "title": "8月27日 JLPT 復習",
+      "warmup": [
+        {
+          "prompt": "「測定」の読み方と意味は？",
+          "answer": "そくてい。测定、测量。"
+        },
+        {
+          "prompt": "「をもとに」は中文怎么理解？",
+          "answer": "以……为依据，根据……。"
+        }
+      ],
+      "focused_review": [
+        {
+          "item_id": "2026-08-27-001",
+          "focus": "正式语感",
+          "explanation_zh": "「測定」比日常的「測る」更偏书面、技术、报告场景。"
+        }
+      ],
+      "quiz": [
+        {
+          "id": "quiz-001",
+          "type": "multiple_choice",
+          "prompt": "「測定結果」に最も近い意味は？",
+          "choices": ["测量结果", "判断理由", "申请资料", "记忆方法"],
+          "answer": "测量结果",
+          "explanation_zh": "「測定」是测定，「結果」是结果。"
+        }
+      ],
+      "weak_points": ["漢語词的正式语感", "依据表达的句型搭配"],
+      "next_actions": ["用「測定」造 2 个句子", "复述「をもとに」和「によって」的差别"]
+    }
+  ]
+}
