@@ -363,6 +363,16 @@
       "jlpt_level": "N2",
       "original": "踏んで",
       "reading": "ふんで",
+      "question_kinds": [
+        "grammar"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "踏まえて",
+          "踏みながら",
+          "踏んだら"
+        ]
+      },
       "meaning_zh": "「踏む」的て形；踩；也表示经过步骤、程序。",
       "core_memory": "一步一步踩过去，引申为按步骤推进。",
       "part_of_speech": "动词て形",
@@ -474,6 +484,16 @@
       "jlpt_level": "unknown",
       "original": "服部",
       "reading": "はっとり",
+      "question_kinds": [
+        "kanji_to_kana"
+      ],
+      "question_distractors": {
+        "kanji_to_kana": [
+          "はとり",
+          "ふくべ",
+          "ふくぶ"
+        ]
+      },
       "meaning_zh": "常见日本姓氏。",
       "core_memory": "整体记作 はっとり，不能按 服=ふく、部=ぶ 推。",
       "collocations": [
@@ -511,6 +531,16 @@
       "jlpt_level": "unknown",
       "original": "智里",
       "reading": "ちさと",
+      "question_kinds": [
+        "kanji_to_kana"
+      ],
+      "question_distractors": {
+        "kanji_to_kana": [
+          "ともさと",
+          "ちり",
+          "さとり"
+        ]
+      },
       "meaning_zh": "常见人名读法。",
       "core_memory": "作为名字时常读 ちさと。",
       "collocations": [
@@ -545,6 +575,16 @@
       "jlpt_level": "unknown",
       "original": "佐野",
       "reading": "さの",
+      "question_kinds": [
+        "kanji_to_kana"
+      ],
+      "question_distractors": {
+        "kanji_to_kana": [
+          "さや",
+          "すけの",
+          "さのう"
+        ]
+      },
       "meaning_zh": "常见日本姓氏，也可作地名。",
       "core_memory": "整体记作 さの。",
       "collocations": [
@@ -582,6 +622,16 @@
       "jlpt_level": "unknown",
       "original": "智子",
       "reading": "ともこ",
+      "question_kinds": [
+        "kanji_to_kana"
+      ],
+      "question_distractors": {
+        "kanji_to_kana": [
+          "ちこ",
+          "さとこ",
+          "ともね"
+        ]
+      },
       "meaning_zh": "常见日本女性名字。",
       "core_memory": "智 可读 とも，子 读 こ。",
       "collocations": [
@@ -616,6 +666,7 @@
       "jlpt_level": "unknown",
       "original": "新谷",
       "reading": "しんたに",
+      "question_kinds": [],
       "meaning_zh": "常见日本姓氏读法。",
       "core_memory": "默认候选 しんたに，但人名可有其他特殊读法。",
       "collocations": [
@@ -657,6 +708,7 @@
       "jlpt_level": "unknown",
       "original": "新谷遥",
       "reading": "しんたに はるか",
+      "question_kinds": [],
       "meaning_zh": "普通日本姓名的自然读法候选。",
       "core_memory": "新谷=しんたに，遥=はるか。",
       "collocations": [

@@ -27,6 +27,10 @@ Each item:
   "jlpt_level": "N1",
   "original": "測定",
   "reading": "そくてい",
+  "question_kinds": ["moji_goi", "meaning", "kana_to_kanji", "kanji_to_kana"],
+  "question_distractors": {
+    "kanji_to_kana": ["そってい", "そくじょう", "しょくてい"]
+  },
   "ruby_terms": [
     {
       "text": "測定",
@@ -121,6 +125,8 @@ Recommended values:
 - `comparisons`
 - `analysis`
 - `tags`
+- `question_kinds`
+- `question_distractors`
 
 ## Furigana Fields
 
@@ -148,12 +154,25 @@ Rules:
 
 The app generates these vocabulary practice types from item data:
 
+- `grammar`: `文法・表現`; choose the form that fits the sentence connection, grammatical function, and context.
 - `moji_goi`: JLPT-style `文字・語彙` sentence completion or vocabulary selection.
 - `meaning`: `言い換え類義`; choose the closest meaning for the target word in a sentence context.
 - `kana_to_kanji`: `表記`; choose the correct kanji form for a kana word in a sentence context.
 - `kanji_to_kana`: `漢字読み`; choose the correct kana reading for a kanji word in a sentence context.
 
 Question prompts, choices, and answer keys should stay plain text. Prefer sentence-context prompts over isolated word prompts. Full explanations may use kanji and can be annotated by the app when the learner enables explanation furigana.
+
+### Question Suitability
+
+Do not generate all four question types for every item. Store the allowed types in `question_kinds`; an explicit empty array means the item stays available for review but does not generate an automatically scored question.
+
+- Ordinary kanji vocabulary with a reliable reading can usually use all four types.
+- Kana-only vocabulary should not generate `kana_to_kanji` or `kanji_to_kana` unless the item explicitly teaches an orthographic contrast.
+- Grammar expressions and verb forms normally use `grammar` with a sentence blank and controlled, function-specific distractors. Add reading or spelling questions only when that is the learner's actual confusion.
+- `proper_name` items normally use only `kanji_to_kana`, and only when the source establishes one intended reading.
+- Names with multiple valid readings, uncertain readings, or AI-inferred candidate readings must use `question_kinds: []` until verified.
+
+Use `question_distractors` to provide controlled wrong options per question type. Distractors must be plausible for the tested skill, must not duplicate the answer, and must not be another valid answer in the given context. For a name-reading question, explain that the answer is the recorded whole-name reading and should be confirmed from the source rather than mechanically assembled from individual kanji.
 
 ## Localizations
 

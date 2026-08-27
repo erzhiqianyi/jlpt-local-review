@@ -35,17 +35,23 @@ For each item:
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Do not add furigana or ruby markup inside quiz prompts, choices, selected answers, or correct answers. Furigana is only for review cards and explanations.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
+- Choose `question_kinds` from the lexical function and evidence for that item. Do not generate every supported question type automatically.
+- For `proper_name` items, use only `kanji_to_kana` when the source establishes one intended reading. If the name has multiple possible readings or only an inferred candidate, set `question_kinds` to an empty array until the reading is verified.
+- Add `question_distractors` when a question needs controlled, type-appropriate wrong choices. For name readings, use reading-shaped distractors and never present another valid reading of the same person as wrong.
 
 ## Practice Expectations
 
-The app can generate these practice modes from each item:
+The app supports these practice modes, but each item should opt into only the suitable modes through `question_kinds`:
 
+- `文法・表現`: choose the form that matches the sentence connection, grammatical function, and context.
 - `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
 - `言い換え類義`: choose the closest meaning for the target word in a sentence context.
 - `表記`: choose the correct kanji form for a kana word in a sentence context.
 - `漢字読み`: choose the correct kana reading for a kanji word in a sentence context.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
+
+For grammar expressions, prefer a sentence with a blank plus controlled distractors that test connection or function. Do not turn a grammar item into an isolated reading, spelling, or dictionary-meaning question unless that was the learner's actual confusion.
 
 Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support. Question prompts and answer choices must stay plain so readings do not leak into the test.
 

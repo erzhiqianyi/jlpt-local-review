@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
-type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
+type QuestionKind = 'grammar' | 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
 type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
 type StudyPage = 'questions' | 'words';
@@ -52,6 +52,8 @@ type VocabItem = {
   content_origin?: 'user_provided' | 'ai_generated';
   verification_status?: 'unverified' | 'needs_review' | 'verified';
   level_confidence?: 'low' | 'medium' | 'high';
+  question_kinds?: QuestionKind[];
+  question_distractors?: Partial<Record<QuestionKind, string[]>>;
 };
 
 type ReviewData = {
@@ -76,6 +78,7 @@ type Question = {
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
 const STORAGE_ANSWERS = 'jlpt-vocab-answers-v1';
 const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
+const QUESTION_KIND_ORDER: QuestionKind[] = ['grammar', 'moji_goi', 'meaning', 'kana_to_kanji', 'kanji_to_kana'];
 
 const translations = {
   'zh-CN': {
@@ -98,9 +101,11 @@ const translations = {
     reviewCount: '复习',
     nextReview: '下次复习',
     wordDetail: '词条详情',
-    questionPage: '题目练习',
-    wordPage: '词条页面',
-    page: '页面',
+    questionPage: '练习',
+    wordPage: '阅读',
+    studyMode: '学习模式',
+    completed: '已完成',
+    restartPractice: '重新练习',
     filters: '筛选',
     hideFilters: '收起筛选',
     showFilters: '展开筛选',
@@ -165,6 +170,10 @@ const translations = {
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    nameReadingTitle: '人名読み',
+    nameReadingPrompt: '「{word}」作为人名或地名时，读法是什么？{sentence}',
+    grammar: '文法・表現',
+    grammarTitle: '语法选择',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
     yourAnswer: '你的答案',
@@ -202,9 +211,11 @@ const translations = {
     reviewCount: '復習',
     nextReview: '次回復習',
     wordDetail: '語彙詳細',
-    questionPage: '問題練習',
-    wordPage: '語彙ページ',
-    page: 'ページ',
+    questionPage: '練習',
+    wordPage: '閲覧',
+    studyMode: '学習モード',
+    completed: '完了',
+    restartPractice: 'もう一度練習',
     filters: 'フィルター',
     hideFilters: 'フィルターを閉じる',
     showFilters: 'フィルターを開く',
@@ -269,6 +280,10 @@ const translations = {
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    nameReadingTitle: '人名読み',
+    nameReadingPrompt: '「{word}」を人名または地名として読む場合、最も適切な読みはどれですか。{sentence}',
+    grammar: '文法・表現',
+    grammarTitle: '文法・表現',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
     yourAnswer: 'あなたの答え',
@@ -306,9 +321,11 @@ const translations = {
     reviewCount: 'Reviews',
     nextReview: 'Next Review',
     wordDetail: 'Word Detail',
-    questionPage: 'Practice Questions',
-    wordPage: 'Word Page',
-    page: 'Page',
+    questionPage: 'Practice',
+    wordPage: 'Read',
+    studyMode: 'Study Mode',
+    completed: 'Completed',
+    restartPractice: 'Practice Again',
     filters: 'Filters',
     hideFilters: 'Hide Filters',
     showFilters: 'Show Filters',
@@ -373,6 +390,10 @@ const translations = {
     kanaToKanjiPrompt: 'Which kanji form best matches "{reading}" in the sentence? {sentence}',
     kanjiToKanaTitle: 'Kanji Reading',
     kanjiToKanaPrompt: 'Choose the best reading of "{word}" in the sentence. {sentence}',
+    nameReadingTitle: 'Name Reading',
+    nameReadingPrompt: 'How is "{word}" read when used as a personal or place name? {sentence}',
+    grammar: 'Grammar & Usage',
+    grammarTitle: 'Grammar Choice',
     mojiGoiTitle: 'JLPT Vocabulary',
     mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
     yourAnswer: 'Your answer',
@@ -566,11 +587,17 @@ export default function App() {
 
   const locale = normalizeLocale(settings.locale);
   const allQuestions = useMemo(() => buildQuestions(items, locale), [items, locale]);
+  const availableKinds = useMemo(
+    () => QUESTION_KIND_ORDER.filter((kind) => allQuestions.some((question) => question.kind === kind)),
+    [allQuestions],
+  );
   const questions = useMemo(
     () => allQuestions.filter((question) => question.kind === selectedKind),
     [allQuestions, selectedKind],
   );
   const activeQuestion = questions[activeIndex % Math.max(questions.length, 1)];
+  const practiceAnsweredCount = questions.filter((question) => Boolean(answers[question.id])).length;
+  const practiceComplete = questions.length > 0 && practiceAnsweredCount === questions.length;
   const activeWord = items[wordIndex % Math.max(items.length, 1)];
   const answeredCount = Object.keys(answers).length;
   const correctCount = Object.values(answers).filter((answer) => answer.correct).length;
@@ -585,6 +612,12 @@ export default function App() {
     setActiveIndex(0);
     setWordIndex(0);
   }, [activeView, selectedDeck, selectedKind]);
+
+  useEffect(() => {
+    if (availableKinds.length && !availableKinds.includes(selectedKind)) {
+      setSelectedKind(availableKinds[0]);
+    }
+  }, [availableKinds, selectedKind]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -603,6 +636,9 @@ export default function App() {
   }, [activeView, items.length, studyPage]);
 
   function answerQuestion(question: Question, selected: string) {
+    if (answers[question.id]) {
+      return;
+    }
     const correct = selected === question.answer;
     const now = new Date();
     const nextAnswers = {
@@ -628,6 +664,17 @@ export default function App() {
     setProgress(nextProgress);
     writeStorage(STORAGE_ANSWERS, nextAnswers);
     writeStorage(STORAGE_PROGRESS, nextProgress);
+  }
+
+  function restartPractice() {
+    const questionIds = new Set(questions.map((question) => question.id));
+    const nextAnswers = Object.fromEntries(
+      Object.entries(answers).filter(([questionId]) => !questionIds.has(questionId)),
+    );
+    setAnswers(nextAnswers);
+    writeStorage(STORAGE_ANSWERS, nextAnswers);
+    setActiveIndex(0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   }
 
   function navigateTo(view: AppView, page: StudyPage = studyPage) {
@@ -747,6 +794,14 @@ export default function App() {
         <section className={`mx-auto grid w-full max-w-7xl min-w-0 flex-1 gap-5 px-4 py-4 md:px-8 md:py-5 lg:px-10 ${hasStudySidebar ? (filtersCollapsed ? 'lg:grid-cols-[72px_minmax(0,1fr)]' : 'lg:grid-cols-[280px_minmax(0,1fr)]') : ''}`}>
           {hasStudySidebar ? (
             <aside className="space-y-4">
+              <div className={filtersCollapsed ? 'lg:hidden' : ''}>
+                <StudyModeSwitch
+                  mode={studyPage}
+                  labels={labels}
+                  onChange={(page) => navigateTo(activeView, page)}
+                />
+              </div>
+
               <button
                 type="button"
                 onClick={() => setFiltersCollapsed((value) => !value)}
@@ -767,23 +822,10 @@ export default function App() {
                 </Panel>
               ) : null}
 
-              {!filtersCollapsed ? (
-              <Panel title={labels.page}>
-                <div className="grid gap-2">
-                  <SegmentButton active={studyPage === 'questions'} onClick={() => navigateTo(activeView, 'questions')}>
-                    {labels.questionPage}
-                  </SegmentButton>
-                  <SegmentButton active={studyPage === 'words'} onClick={() => navigateTo(activeView, 'words')}>
-                    {labels.wordPage}
-                  </SegmentButton>
-                </div>
-              </Panel>
-              ) : null}
-
               {!filtersCollapsed && studyPage === 'questions' ? (
                 <Panel title={labels.questionType}>
                   <div className="grid grid-cols-2 gap-2">
-                    {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
+                    {availableKinds.map((kind) => (
                       <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
                         {kindLabels[kind]}
                       </SegmentButton>
@@ -830,6 +872,8 @@ export default function App() {
                   activeQuestion={activeQuestion}
                   questionsLength={questions.length}
                   activeIndex={activeIndex}
+                  answeredCount={practiceAnsweredCount}
+                  complete={practiceComplete}
                   answers={answers}
                   items={data.items}
                   labels={labels}
@@ -837,7 +881,8 @@ export default function App() {
                   settings={settings}
                   onAnswer={answerQuestion}
                   onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-                  onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+                  onNext={() => setActiveIndex((index) => nextPracticeIndex(index, questions, answers))}
+                  onRestart={restartPractice}
                 />
               ) : (
                 <WordDetailPanel
@@ -880,33 +925,37 @@ export default function App() {
 
 function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
   const labels = translations[locale];
-  const readings = unique(items.map((item) => item.reading).filter(Boolean) as string[]);
-  const meanings = unique(items.map((item) => shortMeaning(itemMeaning(item, locale))));
-  const surfaces = unique(items.map((item) => item.original));
   const questions: Question[] = [];
 
   items.forEach((item, index) => {
+    const allowedKinds = new Set(questionKindsForItem(item));
     const meaning = itemMeaning(item, locale);
     const example = item.examples?.[0]?.ja;
     const sentence = questionSentence(item);
     const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
     const context = example ?? sentence;
     const meaningAnswer = shortMeaning(meaning);
-    const meaningChoices = choices(meaningAnswer, meanings, index + 1);
 
-    questions.push({
-      id: `${item.id}-meaning`,
-      itemId: item.id,
-      kind: 'meaning',
-      title: labels.meaningTitle,
-      prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
-      choices: meaningChoices,
-      answer: meaningAnswer,
-      ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
-    });
+    if (allowedKinds.has('grammar')) {
+      questions.push(buildGrammarQuestion(item, items, index, locale));
+    }
 
-    if (item.reading) {
-      const kanaToKanjiChoices = choices(item.original, surfaces, index + 2);
+    if (allowedKinds.has('meaning')) {
+      const meaningChoices = choices(meaningAnswer, questionPool(item, 'meaning', items, locale), index + 1);
+      questions.push({
+        id: `${item.id}-meaning`,
+        itemId: item.id,
+        kind: 'meaning',
+        title: labels.meaningTitle,
+        prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
+        choices: meaningChoices,
+        answer: meaningAnswer,
+        ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
+      });
+    }
+
+    if (item.reading && allowedKinds.has('kana_to_kanji')) {
+      const kanaToKanjiChoices = choices(item.original, questionPool(item, 'kana_to_kanji', items, locale), index + 2);
       questions.push({
         id: `${item.id}-kana-to-kanji`,
         itemId: item.id,
@@ -917,23 +966,72 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
         answer: item.original,
         ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
       });
-      const kanjiToKanaChoices = choices(item.reading, readings, index + 3);
+    }
+
+    if (item.reading && allowedKinds.has('kanji_to_kana')) {
+      const kanjiToKanaChoices = choices(item.reading, questionPool(item, 'kanji_to_kana', items, locale), index + 3);
+      const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
       questions.push({
         id: `${item.id}-kanji-to-kana`,
         itemId: item.id,
         kind: 'kanji_to_kana',
-        title: labels.kanjiToKanaTitle,
-        prompt: template(labels.kanjiToKanaPrompt, { word: item.original, sentence }),
+        title: isProperName ? labels.nameReadingTitle : labels.kanjiToKanaTitle,
+        prompt: template(isProperName ? labels.nameReadingPrompt : labels.kanjiToKanaPrompt, { word: item.original, sentence }),
         choices: kanjiToKanaChoices,
         answer: item.reading,
         ...buildQuestionExplanation(item, kanjiToKanaChoices, 'kanji_to_kana', items, locale, context),
       });
     }
 
-    questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    if (allowedKinds.has('moji_goi')) {
+      questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    }
   });
 
   return questions;
+}
+
+function questionKindsForItem(item: VocabItem): QuestionKind[] {
+  if (item.question_kinds !== undefined) {
+    return unique(item.question_kinds);
+  }
+  if (item.deck === 'name_reading' || item.type === 'proper_name') {
+    return [];
+  }
+  if (item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression') {
+    return ['grammar'];
+  }
+
+  const kinds: QuestionKind[] = ['moji_goi', 'meaning'];
+  if (item.reading && containsKanji(item.original)) {
+    kinds.push('kana_to_kanji', 'kanji_to_kana');
+  }
+  return kinds;
+}
+
+function containsKanji(value: string) {
+  return /[\u3400-\u9fff々〆ヵヶ]/u.test(value);
+}
+
+function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[], locale: Locale) {
+  const controlledDistractors = item.question_distractors?.[kind];
+  if (controlledDistractors) {
+    return controlledDistractors;
+  }
+
+  const suitableItems = items.filter(
+    (candidate) => candidate.id !== item.id && questionKindsForItem(candidate).includes(kind),
+  );
+  const sameDeckItems = suitableItems.filter((candidate) => candidate.deck === item.deck);
+  const candidates = sameDeckItems.length >= 3 ? sameDeckItems : suitableItems;
+
+  if (kind === 'meaning') {
+    return candidates.map((candidate) => shortMeaning(itemMeaning(candidate, locale)));
+  }
+  if (kind === 'kanji_to_kana') {
+    return candidates.map((candidate) => candidate.reading).filter(Boolean) as string[];
+  }
+  return candidates.map((candidate) => candidate.original);
 }
 
 function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
@@ -949,10 +1047,30 @@ function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
 function kindLabelsFor(locale: Locale): Record<QuestionKind, string> {
   const labels = translations[locale];
   return {
+    grammar: labels.grammar,
     moji_goi: labels.mojiGoi,
     meaning: labels.meaning,
     kana_to_kanji: labels.kanaToKanji,
     kanji_to_kana: labels.kanjiToKana,
+  };
+}
+
+function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
+  const labels = translations[locale];
+  const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
+  const context = example ?? questionSentence(item);
+  const prompt = example ? example.replace(item.original, '＿＿') : questionSentence(item, '＿＿');
+  const choiceList = choices(item.original, questionPool(item, 'grammar', allItems, locale), index + 5);
+
+  return {
+    id: `${item.id}-grammar`,
+    itemId: item.id,
+    kind: 'grammar',
+    title: labels.grammarTitle,
+    prompt,
+    choices: choiceList,
+    answer: item.original,
+    ...buildQuestionExplanation(item, choiceList, 'grammar', allItems, locale, context),
   };
 }
 
@@ -961,13 +1079,11 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
   const example = item.examples?.[0]?.ja;
   const answer = item.original;
   const meaning = itemMeaning(item, locale);
-  const otherSurfaces = allItems
-    .filter((candidate) => candidate.id !== item.id && candidate.deck === item.deck)
-    .map((candidate) => candidate.original);
+  const otherSurfaces = questionPool(item, 'moji_goi', allItems, locale);
   const prompt = example
     ? example.replace(item.original, '＿＿')
     : template(labels.mojiGoiMeaningPrompt, { meaning: shortMeaning(meaning) });
-  const choiceList = choices(answer, otherSurfaces.length >= 3 ? otherSurfaces : allItems.map((candidate) => candidate.original), index + 4);
+  const choiceList = choices(answer, otherSurfaces, index + 4);
   const context = example ?? `「${item.original}」`;
 
   return {
@@ -1017,8 +1133,16 @@ function correctReasonFor(item: VocabItem, kind: QuestionKind, locale: Locale, c
   const meaning = itemMeaning(item, locale);
   const reading = item.reading ?? '';
   const collocation = item.collocations?.find((value) => value.includes(item.original)) ?? context;
+  const isProperNameReading = kind === 'kanji_to_kana' && (item.deck === 'name_reading' || item.type === 'proper_name');
+
+  if (isProperNameReading) {
+    if (locale === 'ja') return `この項目では「${item.original}」という人名・地名のまとまりを「${reading}」と読みます。人名の読みは漢字一字ずつから一意に決められないため、教材・音声・本人の表記など、信頼できる出典に基づく読みを答えます。`;
+    if (locale === 'en') return `In this entry, the full personal or place name “${item.original}” is read “${reading}.” Name readings cannot always be derived uniquely from each kanji, so the answer follows the reading established by the source.`;
+    return `本词条记录的整体人名或地名「${item.original}」读作「${reading}」。人名读音通常不能按单个汉字机械拼接，因此应以教材、音频或本人标注等可靠来源为准。`;
+  }
 
   if (locale === 'ja') {
+    if (kind === 'grammar') return `「${context}」では、手順や手続きを実際に経ることを表す「${item.original}」が文の接続と意味に合います。${itemAnalysis(item, locale)}`;
     if (kind === 'meaning') return `「${item.original}」は「${meaning}」という意味です。「${context}」でもこの意味で使われているため、この言い換えが最も適切です。`;
     if (kind === 'kana_to_kanji') return `「${reading}」の表記は「${item.original}」です。「${context}」の語彙と一致し、意味は「${meaning}」です。`;
     if (kind === 'kanji_to_kana') return `「${item.original}」の読みは「${reading}」です。文中でも意味は「${meaning}」で、読み方は変わりません。`;
@@ -1026,12 +1150,14 @@ function correctReasonFor(item: VocabItem, kind: QuestionKind, locale: Locale, c
   }
 
   if (locale === 'en') {
+    if (kind === 'grammar') return `In “${context},” “${item.original}” fits both the sentence connection and the intended function of actually going through a step or procedure. ${itemAnalysis(item, locale)}`;
     if (kind === 'meaning') return `“${item.original}” means “${meaning}.” It keeps that meaning in “${context},” so this is the closest paraphrase.`;
     if (kind === 'kana_to_kanji') return `The kana “${reading}” is written “${item.original}.” It matches the word used in “${context}” and means “${meaning}.”`;
     if (kind === 'kanji_to_kana') return `“${item.original}” is read “${reading}.” The reading stays the same in this context, where the word means “${meaning}.”`;
     return `“${item.original}” means “${meaning}.” It forms a natural expression such as “${collocation},” which fits the sentence context.`;
   }
 
+  if (kind === 'grammar') return `在「${context}」中，需要表达实际经过步骤或手续，「${item.original}」在接续形式和语义功能上都成立。${itemAnalysis(item, locale)}`;
   if (kind === 'meaning') return `「${item.original}」的意思是“${meaning}”。在「${context}」中仍然使用这个核心义，因此该释义最接近原词。`;
   if (kind === 'kana_to_kanji') return `假名「${reading}」对应的正确表记是「${item.original}」。它与「${context}」中的词一致，意思是“${meaning}”。`;
   if (kind === 'kanji_to_kana') return `「${item.original}」读作「${reading}」。它在本句中的意思是“${meaning}”，语境不会改变这个读音。`;
@@ -1046,7 +1172,19 @@ function choiceExplanationFor(
   allItems: VocabItem[],
   locale: Locale,
 ) {
+  const isProperNameReading = kind === 'kanji_to_kana' && (target.deck === 'name_reading' || target.type === 'proper_name');
+
   if (correct) {
+    if (kind === 'grammar') {
+      if (locale === 'ja') return `文の接続、意味、自然な組み合わせのすべてに合う表現です。`;
+      if (locale === 'en') return `This expression matches the sentence connection, meaning, and natural usage.`;
+      return `这个表达同时符合句子接续、语义功能和自然搭配。`;
+    }
+    if (isProperNameReading) {
+      if (locale === 'ja') return `この項目に記録されている「${target.original}」全体の読みです。`;
+      if (locale === 'en') return `This is the reading recorded for the full name “${target.original}” in this entry.`;
+      return `这是本词条为「${target.original}」记录的整体读法。`;
+    }
     if (locale === 'ja') return kind === 'kanji_to_kana' ? `「${target.original}」の正しい読みです。` : `対象語の意味・表記・文脈に一致する正解です。`;
     if (locale === 'en') return kind === 'kanji_to_kana' ? `This is the correct reading of “${target.original}.”` : `This matches the target word's meaning, form, and context.`;
     return kind === 'kanji_to_kana' ? `这是「${target.original}」的正确读音。` : `这个选项与目标词的词义、表记和语境一致。`;
@@ -1054,6 +1192,21 @@ function choiceExplanationFor(
 
   const candidate = itemForChoice(choice, kind, allItems, locale);
   if (!candidate) {
+    const comparison = kind === 'grammar' ? target.comparisons?.find((entry) => entry.target === choice) : undefined;
+    if (comparison && locale === 'zh-CN') {
+      const difference = comparison.difference_zh.replace(/[。！？!?]$/u, '');
+      return `「${choice}」${difference}，但本句需要表达实际经过「手続き」，不是把某项信息作为判断依据。`;
+    }
+    if (kind === 'grammar') {
+      if (locale === 'ja') return `「${choice}」は、この文が求める接続または「手順・手続きを実際に経る」という意味に合いません。`;
+      if (locale === 'en') return `“${choice}” does not match the required connection or the meaning of actually going through a step or procedure.`;
+      return `「${choice}」不符合本句需要的接续形式，或不能表达实际经过步骤、手续的含义。`;
+    }
+    if (isProperNameReading) {
+      if (locale === 'ja') return `「${choice}」は、この項目に記録された「${target.original}」全体の読みではありません。人名は漢字を一字ずつ機械的に読みません。`;
+      if (locale === 'en') return `“${choice}” is not the recorded reading of the full name “${target.original}.” A name should not be derived mechanically one kanji at a time.`;
+      return `「${choice}」不是本词条记录的「${target.original}」整体读法。人名不能只按单个汉字机械拼读。`;
+    }
     if (locale === 'ja') return `対象語の意味または読みと一致しません。`;
     if (locale === 'en') return `This does not match the target word's meaning or reading.`;
     return `这个选项与目标词要求的词义或读音不一致。`;
@@ -1064,20 +1217,20 @@ function choiceExplanationFor(
 
   if (locale === 'ja') {
     if (kind === 'kana_to_kanji') return `「${candidate.original}」の読みは「${candidate.reading ?? '不明'}」で、「${target.reading}」の表記ではありません。`;
-    if (kind === 'kanji_to_kana') return `「${choice}」は「${candidate.original}」の読みであり、「${target.original}」の読みではありません。`;
+    if (kind === 'kanji_to_kana') return isProperNameReading ? `「${choice}」は別の項目「${candidate.original}」の読みで、「${target.original}」全体の読みとは異なります。` : `「${choice}」は「${candidate.original}」の読みであり、「${target.original}」の読みではありません。`;
     if (kind === 'meaning') return `この意味は「${candidate.original}」（${candidateMeaning}）に近く、「${target.original}」の中心的な意味とは異なります。`;
     return `「${candidate.original}」は「${candidateMeaning}」を表し${candidateCollocation ? `、「${candidateCollocation}」のように使います` : 'ます'}。本問の意味と結び付きません。`;
   }
 
   if (locale === 'en') {
     if (kind === 'kana_to_kanji') return `“${candidate.original}” is read “${candidate.reading ?? 'unknown'},” so it is not the spelling of “${target.reading}.”`;
-    if (kind === 'kanji_to_kana') return `“${choice}” is the reading of “${candidate.original},” not “${target.original}.”`;
+    if (kind === 'kanji_to_kana') return isProperNameReading ? `“${choice}” belongs to a different entry, “${candidate.original},” not to the full name “${target.original}.”` : `“${choice}” is the reading of “${candidate.original},” not “${target.original}.”`;
     if (kind === 'meaning') return `This meaning is closer to “${candidate.original}” (${candidateMeaning}), not the core meaning of “${target.original}.”`;
     return `“${candidate.original}” means “${candidateMeaning}”${candidateCollocation ? ` and is used in expressions such as “${candidateCollocation}”` : ''}. It does not fit this sentence.`;
   }
 
   if (kind === 'kana_to_kanji') return `「${candidate.original}」读作「${candidate.reading ?? 'unknown'}」，不是假名「${target.reading}」对应的表记。`;
-  if (kind === 'kanji_to_kana') return `「${choice}」是「${candidate.original}」的读音，不是「${target.original}」的读音。`;
+  if (kind === 'kanji_to_kana') return isProperNameReading ? `「${choice}」是另一个词条「${candidate.original}」的读音，不是「${target.original}」的整体读法。` : `「${choice}」是「${candidate.original}」的读音，不是「${target.original}」的读音。`;
   if (kind === 'meaning') return `这个释义更接近「${candidate.original}」（${candidateMeaning}），与「${target.original}」的核心意思不同。`;
   return `「${candidate.original}」表示“${candidateMeaning}”${candidateCollocation ? `，常见搭配是「${candidateCollocation}」` : ''}，与本句需要表达的意思不符。`;
 }
@@ -1143,6 +1296,19 @@ function nextIndex(index: number, total: number) {
 
 function previousIndex(index: number, total: number) {
   return total ? (index - 1 + total) % total : 0;
+}
+
+function nextPracticeIndex(index: number, questions: Question[], answers: AnswerState) {
+  if (!questions.length) {
+    return 0;
+  }
+  for (let offset = 1; offset <= questions.length; offset += 1) {
+    const candidate = (index + offset) % questions.length;
+    if (!answers[questions[candidate].id]) {
+      return candidate;
+    }
+  }
+  return nextIndex(index, questions.length);
 }
 
 function safeIndex(index: number, total: number) {
@@ -1362,6 +1528,41 @@ function SegmentButton({ active, children, onClick }: { active: boolean; childre
   );
 }
 
+function StudyModeSwitch({
+  mode,
+  labels,
+  onChange,
+}: {
+  mode: StudyPage;
+  labels: Record<string, string>;
+  onChange: (mode: StudyPage) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#c8bcae] bg-[#e9eee9] p-1 shadow-sm" role="group" aria-label={labels.studyMode}>
+      <button
+        type="button"
+        onClick={() => onChange('questions')}
+        aria-pressed={mode === 'questions'}
+        className={`h-10 rounded-md px-3 text-sm font-semibold transition ${
+          mode === 'questions' ? 'bg-[#173d35] text-white shadow-sm' : 'text-[#53605a] hover:bg-white/70'
+        }`}
+      >
+        {labels.questionPage}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('words')}
+        aria-pressed={mode === 'words'}
+        className={`h-10 rounded-md px-3 text-sm font-semibold transition ${
+          mode === 'words' ? 'bg-[#173d35] text-white shadow-sm' : 'text-[#53605a] hover:bg-white/70'
+        }`}
+      >
+        {labels.wordPage}
+      </button>
+    </div>
+  );
+}
+
 function NavButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
     <button
@@ -1558,6 +1759,8 @@ function PracticePanel({
   activeQuestion,
   questionsLength,
   activeIndex,
+  answeredCount,
+  complete,
   answers,
   items,
   labels,
@@ -1566,10 +1769,13 @@ function PracticePanel({
   onAnswer,
   onPrev,
   onNext,
+  onRestart,
 }: {
   activeQuestion?: Question;
   questionsLength: number;
   activeIndex: number;
+  answeredCount: number;
+  complete: boolean;
   answers: AnswerState;
   items: VocabItem[];
   labels: Record<string, string>;
@@ -1578,6 +1784,7 @@ function PracticePanel({
   onAnswer: (question: Question, selected: string) => void;
   onPrev: () => void;
   onNext: () => void;
+  onRestart: () => void;
 }) {
   return (
     <section className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
@@ -1589,8 +1796,9 @@ function PracticePanel({
             {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
           </p>
         </div>
-        <div className="flex h-10 min-w-28 items-center justify-center rounded-md bg-[#e8f0eb] px-3 text-sm font-semibold text-[#24473f]">
-          {questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}
+        <div className="flex min-h-10 min-w-32 flex-col items-center justify-center rounded-md bg-[#e8f0eb] px-3 py-1 text-[#24473f]">
+          <span className="text-sm font-semibold">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
+          <span className="text-xs">{labels.completed} {answeredCount} / {questionsLength}</span>
         </div>
       </div>
 
@@ -1612,8 +1820,9 @@ function PracticePanel({
                 <button
                   type="button"
                   key={choice}
+                  disabled={Boolean(answered)}
                   onClick={() => onAnswer(activeQuestion, choice)}
-                  className={`min-h-14 min-w-0 rounded-md border px-4 py-3 text-left text-base font-semibold break-words ${color}`}
+                  className={`min-h-14 min-w-0 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
                 >
                   {choice}
                 </button>
@@ -1624,11 +1833,13 @@ function PracticePanel({
           <AnswerPanel question={activeQuestion} answer={answers[activeQuestion.id]} items={items} showRuby={settings.showExplanationRuby} labels={labels} />
 
           <div className="mt-5 flex flex-wrap gap-2">
-            <button type="button" onClick={onPrev} className="h-10 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold">
-              {labels.prev}
-            </button>
-            <button type="button" onClick={onNext} className="h-10 rounded-md bg-[#24473f] px-4 text-sm font-semibold text-white">
-              {labels.next}
+            {questionsLength > 1 ? (
+              <button type="button" onClick={onPrev} className="h-10 rounded-md border border-[#c8bcae] bg-white px-4 text-sm font-semibold">
+                {labels.prev}
+              </button>
+            ) : null}
+            <button type="button" onClick={complete ? onRestart : onNext} className="h-10 rounded-md bg-[#24473f] px-4 text-sm font-semibold text-white">
+              {complete ? labels.restartPractice : labels.next}
             </button>
           </div>
         </>
@@ -1763,11 +1974,11 @@ function WordDetailPanel({
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
         <div className="flex items-center gap-2">
-          <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} />
+          {total > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} /> : null}
           <span className="min-w-20 rounded-md bg-[#e8f0eb] px-3 py-2 text-center text-sm font-semibold text-[#24473f]">
             {total ? `${safeIndex(index, total) + 1} / ${total}` : '0 / 0'}
           </span>
-          <ArrowButton label={labels.next} direction="right" onClick={onNext} />
+          {total > 1 ? <ArrowButton label={labels.next} direction="right" onClick={onNext} /> : null}
         </div>
       </div>
       <VocabCard
