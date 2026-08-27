@@ -391,7 +391,7 @@ export default function App() {
 
     setProgress(readStorage(STORAGE_PROGRESS, {}));
     setAnswers(readStorage(STORAGE_ANSWERS, {}));
-    setSettings(readStorage(STORAGE_SETTINGS, defaultSettings));
+    setSettings(normalizeSettings(readStorage(STORAGE_SETTINGS, defaultSettings)));
   }, []);
 
   const items = useMemo(() => {
@@ -401,7 +401,8 @@ export default function App() {
     return data.items.filter((item) => item.deck === selectedDeck);
   }, [data.items, selectedDeck]);
 
-  const allQuestions = useMemo(() => buildQuestions(items, settings.locale), [items, settings.locale]);
+  const locale = normalizeLocale(settings.locale);
+  const allQuestions = useMemo(() => buildQuestions(items, locale), [items, locale]);
   const questions = useMemo(
     () => allQuestions.filter((question) => question.kind === selectedKind),
     [allQuestions, selectedKind],
@@ -410,9 +411,9 @@ export default function App() {
   const answeredCount = Object.keys(answers).length;
   const correctCount = Object.values(answers).filter((answer) => answer.correct).length;
   const masteredCount = Object.values(progress).filter((item) => item.status === 'mastered').length;
-  const labels = translations[settings.locale];
-  const deckLabels = deckLabelsFor(settings.locale);
-  const kindLabels = kindLabelsFor(settings.locale);
+  const labels = translations[locale];
+  const deckLabels = deckLabelsFor(locale);
+  const kindLabels = kindLabelsFor(locale);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -454,8 +455,9 @@ export default function App() {
   }
 
   function updateSettings(nextSettings: DisplaySettings) {
-    setSettings(nextSettings);
-    writeStorage(STORAGE_SETTINGS, nextSettings);
+    const normalized = normalizeSettings(nextSettings);
+    setSettings(normalized);
+    writeStorage(STORAGE_SETTINGS, normalized);
   }
 
   return (
@@ -769,6 +771,18 @@ function readStorage<T>(key: string, fallback: T): T {
 
 function writeStorage(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function normalizeSettings(value: Partial<DisplaySettings> | undefined): DisplaySettings {
+  return {
+    ...defaultSettings,
+    ...(value ?? {}),
+    locale: normalizeLocale(value?.locale),
+  };
+}
+
+function normalizeLocale(value: unknown): Locale {
+  return value === 'ja' || value === 'en' || value === 'zh-CN' ? value : defaultSettings.locale;
 }
 
 function nextStatus(correct: number, wrong: number, reviewCount: number): ReviewStatus {
