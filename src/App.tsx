@@ -39,6 +39,7 @@ type VocabItem = {
   jlpt_level?: string;
   original: string;
   reading?: string;
+  paraphrase_ja?: string;
   meaning_zh: string;
   core_memory: string;
   part_of_speech?: string;
@@ -78,7 +79,7 @@ type Question = {
 };
 
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
-const STORAGE_ANSWERS = 'jlpt-vocab-answers-v1';
+const STORAGE_ANSWERS = 'jlpt-vocab-answers-jlpt-v2';
 const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
 const QUESTION_KIND_ORDER: QuestionKind[] = ['grammar', 'moji_goi', 'meaning', 'kana_to_kanji', 'kanji_to_kana'];
 
@@ -87,11 +88,11 @@ const translations = {
     deckAll: '全部',
     deckN1: 'N1/N2 词汇',
     deckExpression: '表达/活用',
-    deckName: '人名读法',
+    deckName: '补充・人名读法',
     meaning: '言い換え類義',
     kanaToKanji: '表記',
     kanjiToKana: '漢字読み',
-    mojiGoi: 'JLPT 語彙',
+    mojiGoi: '文脈規定',
     reset: '重置本地进度',
     resetProgressBody: '清除当前浏览器中的答题记录、复习次数和下次复习时间。词库内容和显示设置不会被删除。',
     resetConfirm: '确定要清除当前浏览器中的全部学习进度吗？此操作无法撤销。',
@@ -168,17 +169,18 @@ const translations = {
     noQuestion: '没有可练习题目',
     noQuestionBody: '当前筛选条件下没有题目。',
     meaningTitle: '言い換え類義',
-    meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
+    meaningInstruction: '下線の言葉に意味が最も近いものを、１・２・３・４から一つ選びなさい。',
     kanaToKanjiTitle: '表記',
-    kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
+    kanaToKanjiInstruction: '下線の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaInstruction: '下線の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。',
-    nameReadingTitle: '人名読み',
+    nameReadingTitle: '補充・人名読み',
     nameReadingInstruction: '下線の人名・地名の読み方として、最もよいものを一つ選んでください。',
-    grammar: '文法・表現',
-    grammarTitle: '语法选择',
-    mojiGoiTitle: 'JLPT 文字・語彙',
-    mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
+    grammar: '文の文法1',
+    grammarTitle: '文の文法1',
+    grammarInstruction: '次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
+    mojiGoiTitle: '文脈規定',
+    mojiGoiInstruction: '（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
     yourAnswer: '你的答案',
     rightAnswer: '正确答案',
     wrong: '错误',
@@ -198,11 +200,11 @@ const translations = {
     deckAll: 'すべて',
     deckN1: 'N1/N2 語彙',
     deckExpression: '表現・活用',
-    deckName: '人名読み',
+    deckName: '補充・人名読み',
     meaning: '言い換え類義',
     kanaToKanji: '表記',
     kanjiToKana: '漢字読み',
-    mojiGoi: 'JLPT 語彙',
+    mojiGoi: '文脈規定',
     reset: 'ローカル進捗をリセット',
     resetProgressBody: 'このブラウザ内の回答履歴、復習回数、次回復習日を削除します。語彙データと表示設定は残ります。',
     resetConfirm: 'このブラウザ内の学習進捗をすべて削除しますか？この操作は取り消せません。',
@@ -279,17 +281,18 @@ const translations = {
     noQuestion: '問題がありません',
     noQuestionBody: '現在の条件では問題がありません。',
     meaningTitle: '言い換え類義',
-    meaningPrompt: '次の文の「{word}」に最も近い意味を選んでください。{sentence}',
+    meaningInstruction: '下線の言葉に意味が最も近いものを、１・２・３・４から一つ選びなさい。',
     kanaToKanjiTitle: '表記',
-    kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
+    kanaToKanjiInstruction: '下線の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaInstruction: '下線の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。',
-    nameReadingTitle: '人名読み',
+    nameReadingTitle: '補充・人名読み',
     nameReadingInstruction: '下線の人名・地名の読み方として、最もよいものを一つ選んでください。',
-    grammar: '文法・表現',
-    grammarTitle: '文法・表現',
-    mojiGoiTitle: 'JLPT 文字・語彙',
-    mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
+    grammar: '文の文法1',
+    grammarTitle: '文の文法1',
+    grammarInstruction: '次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
+    mojiGoiTitle: '文脈規定',
+    mojiGoiInstruction: '（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
     yourAnswer: 'あなたの答え',
     rightAnswer: '正解',
     wrong: '不正解',
@@ -309,11 +312,11 @@ const translations = {
     deckAll: 'All',
     deckN1: 'N1/N2 Vocab',
     deckExpression: 'Expressions',
-    deckName: 'Name Readings',
+    deckName: 'Supplement: Name Readings',
     meaning: 'Paraphrase',
     kanaToKanji: 'Orthography',
     kanjiToKana: 'Kanji Reading',
-    mojiGoi: 'JLPT Vocabulary',
+    mojiGoi: 'Contextual Vocabulary',
     reset: 'Reset local progress',
     resetProgressBody: 'Clear answer history, review counts, and next-review times from this browser. Deck content and display settings are kept.',
     resetConfirm: 'Clear all study progress from this browser? This action cannot be undone.',
@@ -390,17 +393,18 @@ const translations = {
     noQuestion: 'No questions',
     noQuestionBody: 'No questions match the current filters.',
     meaningTitle: 'Paraphrase',
-    meaningPrompt: 'Choose the closest meaning of "{word}" in the sentence. {sentence}',
+    meaningInstruction: '下線の言葉に意味が最も近いものを、１・２・３・４から一つ選びなさい。',
     kanaToKanjiTitle: 'Orthography',
-    kanaToKanjiPrompt: 'Which kanji form best matches "{reading}" in the sentence? {sentence}',
+    kanaToKanjiInstruction: '下線の言葉を漢字で書くとき、最もよいものを、１・２・３・４から一つ選びなさい。',
     kanjiToKanaTitle: 'Kanji Reading',
-    kanjiToKanaInstruction: 'Choose the best reading of the underlined word from options 1, 2, 3, and 4.',
-    nameReadingTitle: 'Name Reading',
+    kanjiToKanaInstruction: '下線の言葉の読み方として最もよいものを、１・２・３・４から一つ選びなさい。',
+    nameReadingTitle: 'Supplement: Name Reading',
     nameReadingInstruction: 'Choose the best recorded reading of the underlined personal or place name.',
-    grammar: 'Grammar & Usage',
-    grammarTitle: 'Grammar Choice',
-    mojiGoiTitle: 'JLPT Vocabulary',
-    mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
+    grammar: 'Sentence Grammar 1',
+    grammarTitle: 'Sentence Grammar 1',
+    grammarInstruction: '次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
+    mojiGoiTitle: 'Contextual Vocabulary',
+    mojiGoiInstruction: '（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。',
     yourAnswer: 'Your answer',
     rightAnswer: 'Correct answer',
     wrong: 'Incorrect',
@@ -591,7 +595,11 @@ export default function App() {
   const items = useMemo(() => moduleItems(data.items, activeView, selectedDeck), [activeView, data.items, selectedDeck]);
 
   const locale = normalizeLocale(settings.locale);
-  const allQuestions = useMemo(() => buildQuestions(items, locale), [items, locale]);
+  const questionItems = useMemo(
+    () => selectedDeck === 'all' ? items.filter((item) => item.deck !== 'name_reading' && item.type !== 'proper_name') : items,
+    [items, selectedDeck],
+  );
+  const allQuestions = useMemo(() => buildQuestions(questionItems, locale), [questionItems, locale]);
   const availableKinds = useMemo(
     () => QUESTION_KIND_ORDER.filter((kind) => allQuestions.some((question) => question.kind === kind)),
     [allQuestions],
@@ -944,25 +952,26 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
 
   items.forEach((item, index) => {
     const allowedKinds = new Set(questionKindsForItem(item));
-    const meaning = itemMeaning(item, locale);
     const example = item.examples?.[0]?.ja;
     const sentence = questionSentence(item);
     const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
     const context = example ?? sentence;
-    const meaningAnswer = shortMeaning(meaning);
 
     if (allowedKinds.has('grammar')) {
       questions.push(buildGrammarQuestion(item, items, index, locale));
     }
 
-    if (allowedKinds.has('meaning')) {
-      const meaningChoices = choices(meaningAnswer, questionPool(item, 'meaning', items, locale), index + 1);
+    if (item.paraphrase_ja && allowedKinds.has('meaning')) {
+      const meaningAnswer = item.paraphrase_ja;
+      const meaningChoices = choices(meaningAnswer, questionPool(item, 'meaning', items), index + 1);
       questions.push({
-        id: `${item.id}-meaning`,
+        id: `${item.id}-meaning-jlpt-v1`,
         itemId: item.id,
         kind: 'meaning',
         title: labels.meaningTitle,
-        prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
+        instruction: labels.meaningInstruction,
+        prompt: sentence,
+        promptTarget: item.original,
         choices: meaningChoices,
         answer: meaningAnswer,
         ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
@@ -970,13 +979,15 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
     }
 
     if (item.reading && allowedKinds.has('kana_to_kanji')) {
-      const kanaToKanjiChoices = choices(item.original, questionPool(item, 'kana_to_kanji', items, locale), index + 2);
+      const kanaToKanjiChoices = choices(item.original, questionPool(item, 'kana_to_kanji', items), index + 2);
       questions.push({
-        id: `${item.id}-kana-to-kanji`,
+        id: `${item.id}-kana-to-kanji-jlpt-v1`,
         itemId: item.id,
         kind: 'kana_to_kanji',
         title: labels.kanaToKanjiTitle,
-        prompt: template(labels.kanaToKanjiPrompt, { reading: item.reading, sentence: kanaSentence }),
+        instruction: labels.kanaToKanjiInstruction,
+        prompt: kanaSentence,
+        promptTarget: item.reading,
         choices: kanaToKanjiChoices,
         answer: item.original,
         ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
@@ -984,10 +995,10 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
     }
 
     if (item.reading && allowedKinds.has('kanji_to_kana')) {
-      const kanjiToKanaChoices = choices(item.reading, questionPool(item, 'kanji_to_kana', items, locale), index + 3);
+      const kanjiToKanaChoices = choices(item.reading, questionPool(item, 'kanji_to_kana', items), index + 3);
       const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
       questions.push({
-        id: `${item.id}-kanji-to-kana`,
+        id: isProperName ? `${item.id}-name-reading-v1` : `${item.id}-kanji-to-kana-jlpt-v1`,
         itemId: item.id,
         kind: 'kanji_to_kana',
         title: isProperName ? labels.nameReadingTitle : labels.kanjiToKanaTitle,
@@ -1009,28 +1020,46 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
 }
 
 function questionKindsForItem(item: VocabItem): QuestionKind[] {
+  const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
+  const hasNaturalExample = Boolean(item.examples?.some((candidate) => candidate.ja.includes(item.original)));
+  let kinds: QuestionKind[];
+
   if (item.question_kinds !== undefined) {
-    return unique(item.question_kinds);
-  }
-  if (item.deck === 'name_reading' || item.type === 'proper_name') {
-    return [];
-  }
-  if (item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression') {
-    return ['grammar'];
+    kinds = unique(item.question_kinds);
+  } else if (isProperName) {
+    kinds = [];
+  } else if (item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression') {
+    kinds = ['grammar'];
+  } else {
+    kinds = ['moji_goi'];
+    if (item.paraphrase_ja) {
+      kinds.push('meaning');
+    }
+    if (item.reading && containsKanji(item.original)) {
+      kinds.push('kanji_to_kana');
+      if (['N2', 'N3', 'N4', 'N5'].includes(item.jlpt_level ?? '')) {
+        kinds.push('kana_to_kanji');
+      }
+    }
   }
 
-  const kinds: QuestionKind[] = ['moji_goi', 'meaning'];
-  if (item.reading && containsKanji(item.original)) {
-    kinds.push('kana_to_kanji', 'kanji_to_kana');
-  }
-  return kinds;
+  return kinds.filter((kind) => {
+    if (kind === 'meaning') return hasNaturalExample && Boolean(item.paraphrase_ja);
+    if (kind === 'kana_to_kanji') {
+      return hasNaturalExample && Boolean(item.reading) && containsKanji(item.original) && item.jlpt_level !== 'N1';
+    }
+    if (kind === 'kanji_to_kana') {
+      return Boolean(item.reading) && containsKanji(item.original) && (isProperName || hasNaturalExample);
+    }
+    return hasNaturalExample;
+  });
 }
 
 function containsKanji(value: string) {
   return /[\u3400-\u9fff々〆ヵヶ]/u.test(value);
 }
 
-function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[], locale: Locale) {
+function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[]) {
   const controlledDistractors = item.question_distractors?.[kind];
   if (controlledDistractors) {
     return controlledDistractors;
@@ -1043,7 +1072,7 @@ function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[], l
   const candidates = sameDeckItems.length >= 3 ? sameDeckItems : suitableItems;
 
   if (kind === 'meaning') {
-    return candidates.map((candidate) => shortMeaning(itemMeaning(candidate, locale)));
+    return candidates.map((candidate) => candidate.paraphrase_ja).filter(Boolean) as string[];
   }
   if (kind === 'kanji_to_kana') {
     return candidates.map((candidate) => candidate.reading).filter(Boolean) as string[];
@@ -1076,14 +1105,15 @@ function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: num
   const labels = translations[locale];
   const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
   const context = example ?? questionSentence(item);
-  const prompt = example ? example.replace(item.original, '＿＿') : questionSentence(item, '＿＿');
-  const choiceList = choices(item.original, questionPool(item, 'grammar', allItems, locale), index + 5);
+  const prompt = example ? example.replace(item.original, '（　）') : questionSentence(item, '（　）');
+  const choiceList = choices(item.original, questionPool(item, 'grammar', allItems), index + 5);
 
   return {
-    id: `${item.id}-grammar`,
+    id: `${item.id}-grammar-jlpt-v1`,
     itemId: item.id,
     kind: 'grammar',
     title: labels.grammarTitle,
+    instruction: labels.grammarInstruction,
     prompt,
     choices: choiceList,
     answer: item.original,
@@ -1093,21 +1123,19 @@ function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: num
 
 function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
   const labels = translations[locale];
-  const example = item.examples?.[0]?.ja;
+  const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
   const answer = item.original;
-  const meaning = itemMeaning(item, locale);
-  const otherSurfaces = questionPool(item, 'moji_goi', allItems, locale);
-  const prompt = example
-    ? example.replace(item.original, '＿＿')
-    : template(labels.mojiGoiMeaningPrompt, { meaning: shortMeaning(meaning) });
+  const otherSurfaces = questionPool(item, 'moji_goi', allItems);
+  const prompt = (example ?? questionSentence(item)).replace(item.original, '（　）');
   const choiceList = choices(answer, otherSurfaces, index + 4);
   const context = example ?? `「${item.original}」`;
 
   return {
-    id: `${item.id}-moji-goi`,
+    id: `${item.id}-moji-goi-jlpt-v1`,
     itemId: item.id,
     kind: 'moji_goi',
     title: labels.mojiGoiTitle,
+    instruction: labels.mojiGoiInstruction,
     prompt,
     choices: choiceList,
     answer,
@@ -1138,7 +1166,7 @@ function buildQuestionExplanation(
 
 function answerForKind(item: VocabItem, kind: QuestionKind, locale: Locale) {
   if (kind === 'meaning') {
-    return shortMeaning(itemMeaning(item, locale));
+    return item.paraphrase_ja ?? shortMeaning(itemMeaning(item, locale));
   }
   if (kind === 'kanji_to_kana') {
     return item.reading ?? '';
@@ -1207,7 +1235,7 @@ function choiceExplanationFor(
     return kind === 'kanji_to_kana' ? `这是「${target.original}」的正确读音。` : `这个选项与目标词的词义、表记和语境一致。`;
   }
 
-  const candidate = itemForChoice(choice, kind, allItems, locale);
+  const candidate = itemForChoice(choice, kind, allItems);
   if (!candidate) {
     const comparison = kind === 'grammar' ? target.comparisons?.find((entry) => entry.target === choice) : undefined;
     if (comparison && locale === 'zh-CN') {
@@ -1223,6 +1251,26 @@ function choiceExplanationFor(
       if (locale === 'ja') return `「${choice}」は、この項目に記録された「${target.original}」全体の読みではありません。人名は漢字を一字ずつ機械的に読みません。`;
       if (locale === 'en') return `“${choice}” is not the recorded reading of the full name “${target.original}.” A name should not be derived mechanically one kanji at a time.`;
       return `「${choice}」不是本词条记录的「${target.original}」整体读法。人名不能只按单个汉字机械拼读。`;
+    }
+    if (kind === 'kana_to_kanji') {
+      if (locale === 'ja') return `「${choice}」は「${target.reading}」の標準的な表記ではありません。文中の意味に合う漢字は「${target.original}」です。`;
+      if (locale === 'en') return `“${choice}” is not the standard spelling of “${target.reading}” in this context. The matching kanji form is “${target.original}.”`;
+      return `「${choice}」不是假名「${target.reading}」在该语境中的正确表记；符合词义的汉字是「${target.original}」。`;
+    }
+    if (kind === 'kanji_to_kana') {
+      if (locale === 'ja') return `「${choice}」は「${target.original}」の読みではありません。音読み・訓読みや濁音、長音の形に惑わされないことがポイントです。`;
+      if (locale === 'en') return `“${choice}” is not the reading of “${target.original}.” It is a distractor based on a plausible on/kun, voicing, or vowel-length confusion.`;
+      return `「${choice}」不是「${target.original}」的读音，它是利用音读、训读、浊音或长音混淆设置的干扰项。`;
+    }
+    if (kind === 'meaning') {
+      if (locale === 'ja') return `「${choice}」は、この文で使われている「${target.original}」の中心的な意味の言い換えにはなりません。`;
+      if (locale === 'en') return `“${choice}” is not the closest Japanese paraphrase of “${target.original}” as used in this sentence.`;
+      return `「${choice}」不是「${target.original}」在本句语境中最接近的日语言い換え。`;
+    }
+    if (kind === 'moji_goi') {
+      if (locale === 'ja') return `「${choice}」では文の意味、品詞、または自然な語の結び付きが合いません。`;
+      if (locale === 'en') return `“${choice}” does not fit the sentence's meaning, part of speech, or natural word combination.`;
+      return `「${choice}」不符合本句需要的词义、词性或自然搭配。`;
     }
     if (locale === 'ja') return `対象語の意味または読みと一致しません。`;
     if (locale === 'en') return `This does not match the target word's meaning or reading.`;
@@ -1252,9 +1300,9 @@ function choiceExplanationFor(
   return `「${candidate.original}」表示“${candidateMeaning}”${candidateCollocation ? `，常见搭配是「${candidateCollocation}」` : ''}，与本句需要表达的意思不符。`;
 }
 
-function itemForChoice(choice: string, kind: QuestionKind, items: VocabItem[], locale: Locale) {
+function itemForChoice(choice: string, kind: QuestionKind, items: VocabItem[]) {
   if (kind === 'meaning') {
-    return items.find((item) => shortMeaning(itemMeaning(item, locale)) === choice);
+    return items.find((item) => item.paraphrase_ja === choice);
   }
   if (kind === 'kanji_to_kana') {
     return items.find((item) => item.reading === choice);
@@ -1864,7 +1912,7 @@ function PracticePanel({
       {activeQuestion ? (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {activeQuestion.choices.map((choice) => {
+            {activeQuestion.choices.map((choice, choiceIndex) => {
               const answered = answers[activeQuestion.id];
               const isSelected = answered?.selected === choice;
               const isAnswer = choice === activeQuestion.answer;
@@ -1881,9 +1929,12 @@ function PracticePanel({
                   key={choice}
                   disabled={Boolean(answered)}
                   onClick={() => onAnswer(activeQuestion, choice)}
-                  className={`min-h-14 min-w-0 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
+                  className={`flex min-h-14 min-w-0 items-start gap-3 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
                 >
-                  {choice}
+                  <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-current text-xs">
+                    {choiceIndex + 1}
+                  </span>
+                  <span className="min-w-0 pt-0.5">{choice}</span>
                 </button>
               );
             })}
@@ -1949,7 +2000,7 @@ function AnswerPanel({
           <h3 className="text-sm font-semibold text-[#313934]">{labels.choiceAnalysisLabel}</h3>
           <div className="mt-2 divide-y divide-black/10">
             {question.choiceAnalysis.map((choice) => {
-              const linkedItem = choice.correct ? sourceItem : itemForChoice(choice.choice, question.kind, items, locale);
+              const linkedItem = choice.correct ? sourceItem : itemForChoice(choice.choice, question.kind, items);
               return (
                 <div key={choice.choice} className="grid gap-2 py-3 sm:grid-cols-[minmax(110px,auto)_1fr] sm:items-start sm:gap-4">
                   <div className="flex flex-wrap items-center gap-2">

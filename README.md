@@ -15,7 +15,7 @@ There are two supported workflows:
 - Module navigation for vocabulary, grammar, listening, reading, and mixed practice.
 - Shareable hash routes for each module, question page, word page, About page, and Settings page; browser back and forward navigation work on static hosting.
 - Countdown to the next JLPT test date.
-- Practice modes for JLPT `文字・語彙`, `言い換え類義`, `表記`, and `漢字読み`.
+- Level-appropriate, official-style practice for `文脈規定`, `言い換え類義`, `表記`, `漢字読み`, and `文の文法1`, with Japanese instructions and numbered choices.
 - Immediate correct/incorrect judging.
 - Structured explanations after each answer: full context, why the answer is correct, per-choice distractor analysis, and a memory point with useful comparisons.
 - Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.

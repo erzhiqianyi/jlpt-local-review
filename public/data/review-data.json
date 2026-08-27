@@ -9,7 +9,9 @@
       "jlpt_level": "N1",
       "original": "測定",
       "reading": "そくてい",
+      "paraphrase_ja": "数値を測る",
       "question_distractors": {
+        "moji_goi": ["認定", "養成", "概観"],
         "kanji_to_kana": ["そってい", "そくじょう", "しょくてい"]
       },
       "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
@@ -74,7 +76,9 @@
       "jlpt_level": "N1",
       "original": "認定",
       "reading": "にんてい",
+      "paraphrase_ja": "基準に照らして正式に認める",
       "question_distractors": {
+        "moji_goi": ["測定", "養成", "概観"],
         "kanji_to_kana": ["じんてい", "にんじょう", "じんじょう"]
       },
       "meaning_zh": "认定，根据标准正式判断其资格、事实或状态。",
@@ -137,7 +141,10 @@
       "jlpt_level": "N2",
       "original": "年々",
       "reading": "ねんねん",
+      "paraphrase_ja": "年を追うごとに",
       "question_distractors": {
+        "moji_goi": ["年中", "年内", "年末"],
+        "kana_to_kanji": ["念々", "然々", "年念"],
         "kanji_to_kana": ["ねんぜん", "ねんれん", "としねん"]
       },
       "meaning_zh": "逐年，一年比一年，强调随年份推进发生变化。",
@@ -196,7 +203,10 @@
       "jlpt_level": "N2",
       "original": "経過",
       "reading": "けいか",
+      "paraphrase_ja": "時間が過ぎる",
       "question_distractors": {
+        "moji_goi": ["発生", "成立", "終了"],
+        "kana_to_kanji": ["経果", "径過", "経化"],
         "kanji_to_kana": ["きょうか", "けいが", "けか"]
       },
       "meaning_zh": "时间经过；事情发展过程或后续情况。",
@@ -257,7 +267,9 @@
       "jlpt_level": "N1",
       "original": "概観",
       "reading": "がいかん",
+      "paraphrase_ja": "全体を大まかに見る",
       "question_distractors": {
+        "moji_goi": ["観測", "認定", "検討"],
         "kanji_to_kana": ["かいかん", "がいけん", "かいけん"]
       },
       "meaning_zh": "概观、概览，从整体上大致把握全貌。",
@@ -320,7 +332,9 @@
       "jlpt_level": "N1",
       "original": "養成",
       "reading": "ようせい",
+      "paraphrase_ja": "教育や訓練で育てる",
       "question_distractors": {
+        "moji_goi": ["認定", "測定", "概観"],
         "kanji_to_kana": ["ようじょう", "そうせい", "ようしょう"]
       },
       "meaning_zh": "培养、养成，通过教育训练把能力、习惯或人才培养出来。",
@@ -445,7 +459,10 @@
       "jlpt_level": "N2",
       "original": "豊富",
       "reading": "ほうふ",
+      "paraphrase_ja": "十分に多くある",
       "question_distractors": {
+        "moji_goi": ["重大", "正確", "安全"],
+        "kana_to_kanji": ["豊府", "邦富", "豊武"],
         "kanji_to_kana": ["ほうぶ", "ぼうふ", "ほうほ"]
       },
       "meaning_zh": "丰富、充足，数量或种类多而且内容充实。",
@@ -764,6 +781,7 @@
       "jlpt_level": "N1",
       "original": "遥",
       "reading": "はるか",
+      "question_kinds": [],
       "question_distractors": {
         "kanji_to_kana": ["はらか", "はるが", "ようか"]
       },
@@ -813,7 +831,9 @@
       "jlpt_level": "N1",
       "original": "辛抱",
       "reading": "しんぼう",
+      "paraphrase_ja": "我慢する",
       "question_distractors": {
+        "moji_goi": ["測定", "認定", "概観"],
         "kanji_to_kana": ["しんぽう", "しんほう", "からぼう"]
       },
       "meaning_zh": "忍耐、忍住，面对痛苦或不便咬牙撑过去。",
@@ -873,7 +893,10 @@
       "jlpt_level": "N2",
       "original": "目次",
       "reading": "もくじ",
+      "paraphrase_ja": "内容を項目順に示した一覧",
       "question_distractors": {
+        "moji_goi": ["表紙", "奥付", "本文"],
+        "kana_to_kanji": ["目字", "木次", "目辞"],
         "kanji_to_kana": ["もくし", "めじ", "もくつぎ"]
       },
       "meaning_zh": "目录，书、报告、论文前按章节或项目排列的内容列表。",

@@ -27,7 +27,8 @@ Each item:
   "jlpt_level": "N1",
   "original": "測定",
   "reading": "そくてい",
-  "question_kinds": ["moji_goi", "meaning", "kana_to_kanji", "kanji_to_kana"],
+  "paraphrase_ja": "数値を測る",
+  "question_kinds": ["moji_goi", "meaning", "kanji_to_kana"],
   "question_distractors": {
     "kanji_to_kana": ["そってい", "そくじょう", "しょくてい"]
   },
@@ -115,6 +116,7 @@ Recommended values:
 ## Optional But Useful Fields
 
 - `reading`
+- `paraphrase_ja` for the Japanese answer used by `meaning` / `言い換え類義`
 - `ruby_terms`
 - `localizations`
 - `jlpt_level`
@@ -154,22 +156,23 @@ Rules:
 
 The app generates these vocabulary practice types from item data:
 
-- `grammar`: `文法・表現`; choose the form that fits the sentence connection, grammatical function, and context.
-- `moji_goi`: JLPT-style `文字・語彙` sentence completion or vocabulary selection.
-- `meaning`: `言い換え類義`; choose the closest meaning for the target word in a sentence context.
-- `kana_to_kanji`: `表記`; choose the correct kanji form for a kana word in a sentence context.
+- `grammar`: `文の文法1`; choose the form that fits a Japanese sentence blank.
+- `moji_goi`: `文脈規定`; choose the word that fits a Japanese sentence blank.
+- `meaning`: `言い換え類義`; underline the target in a complete sentence and choose its closest Japanese paraphrase from four Japanese choices. This type requires `paraphrase_ja`.
+- `kana_to_kanji`: `表記`; underline the kana target in a complete sentence and choose the correct kanji form. Use this for N2-N5, not N1.
 - `kanji_to_kana`: `漢字読み`; use a complete natural Japanese sentence, mark the target kanji substring for visual underlining, and choose the correct reading from four kana-only options. Keep the shared task instruction separate from the sentence and do not repeat the target in a meta-prompt. Distractors should model plausible reading mistakes for the same kanji, not unrelated vocabulary readings.
 
-Question prompts, choices, and answer keys should stay plain text. Prefer sentence-context prompts over isolated word prompts. Full explanations may use kanji and can be annotated by the app when the learner enables explanation furigana.
+Every website question uses the official booklet pattern: a Japanese task instruction separate from the item, one natural Japanese sentence, four numbered choices, and no translated hint in the prompt or options. Question prompts, choices, and answer keys stay plain text. Full explanations may use the selected learner language and can be annotated by the app when explanation furigana is enabled.
 
 ### Question Suitability
 
 Do not generate all four question types for every item. Store the allowed types in `question_kinds`; an explicit empty array means the item stays available for review but does not generate an automatically scored question.
 
-- Ordinary kanji vocabulary with a reliable reading can usually use all four types.
+- N1 kanji vocabulary with a reliable reading and Japanese paraphrase can use `moji_goi`, `meaning`, and `kanji_to_kana`; N1 does not use `kana_to_kanji`.
+- N2-N5 kanji vocabulary may also use `kana_to_kanji` when the orthographic contrast is appropriate.
 - Kana-only vocabulary should not generate `kana_to_kanji` or `kanji_to_kana` unless the item explicitly teaches an orthographic contrast.
 - Grammar expressions and verb forms normally use `grammar` with a sentence blank and controlled, function-specific distractors. Add reading or spelling questions only when that is the learner's actual confusion.
-- `proper_name` items normally use only `kanji_to_kana`, and only when the source establishes one intended reading.
+- `proper_name` items normally use only the supplementary `kanji_to_kana` practice, and only when the source establishes one intended reading. Do not present it as an official JLPT type.
 - Names with multiple valid readings, uncertain readings, or AI-inferred candidate readings must use `question_kinds: []` until verified.
 
 Use `question_distractors` to provide controlled wrong options per question type. Distractors must be plausible for the tested skill, must not duplicate the answer, and must not be another valid answer in the given context. For a name-reading question, explain that the answer is the recorded whole-name reading and should be confirmed from the source rather than mechanically assembled from individual kanji.

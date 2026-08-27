@@ -43,15 +43,17 @@ For each item:
 
 The app supports these practice modes, but each item should opt into only the suitable modes through `question_kinds`:
 
-- `文法・表現`: choose the form that matches the sentence connection, grammatical function, and context.
-- `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
-- `言い換え類義`: choose the closest meaning for the target word in a sentence context.
-- `表記`: choose the correct kanji form for a kana word in a sentence context.
+- `文の文法1`: choose the form that matches the sentence connection, grammatical function, and context.
+- `文脈規定`: choose the word that fits a Japanese sentence blank.
+- `言い換え類義`: choose a Japanese paraphrase for the underlined word; add `paraphrase_ja` before enabling this type.
+- `表記`: choose the correct kanji form for the underlined kana word; use this for N2-N5, not N1.
 - `漢字読み`: choose the correct kana reading for a kanji word in a sentence context.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
 
 For `漢字読み`, follow the official JLPT booklet structure: keep the task instruction separate from the item, show one complete natural Japanese sentence, visually mark only the target kanji word for underlining, and provide four kana-only choices. Wrong choices should be plausible reading confusions for the same kanji, such as alternate on/kun readings, voicing, gemination, or long-vowel mistakes, rather than readings borrowed from unrelated vocabulary. Do not repeat the target in a meta-prompt such as `次の文の「認定」の読み方...` before the sentence.
+
+Apply the same official structure to every website question: Japanese task instruction separated from the item, one natural Japanese context, four numbered choices, and no Chinese or English hints in the prompt or options. Use the selected UI language only for explanations. N1 vocabulary items may use `moji_goi`, `meaning`, and `kanji_to_kana`; do not assign `kana_to_kanji` to N1. A future `用法` type needs four independently written usage sentences and must not be synthesized from the current fields. Treat personal and place-name readings as clearly labeled supplementary practice, not an official JLPT item type.
 
 For grammar expressions, prefer a sentence with a blank plus controlled distractors that test connection or function. Do not turn a grammar item into an isolated reading, spelling, or dictionary-meaning question unless that was the learner's actual confusion.
 
