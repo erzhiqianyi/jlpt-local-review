@@ -27,6 +27,7 @@ Each item:
   "jlpt_level": "N1",
   "original": "測定",
   "reading": "そくてい",
+  "meaning_ja": "一定の方法や器具を使って、数値を正確に調べること。",
   "paraphrase_ja": "数値を測る",
   "question_kinds": ["moji_goi", "meaning", "kanji_to_kana"],
   "question_distractors": {
@@ -116,6 +117,7 @@ Recommended values:
 ## Optional But Useful Fields
 
 - `reading`
+- `meaning_ja` for the Japanese dictionary-style definition shown on the reading page
 - `paraphrase_ja` for the Japanese answer used by `meaning` / `言い換え類義`
 - `ruby_terms`
 - `localizations`
@@ -133,6 +135,8 @@ Recommended values:
 ## Furigana Fields
 
 Every Japanese field that contains kanji should have kana reading metadata.
+
+The reading page has its own furigana switch. Keep `meaning_ja`, collocations, examples, and analysis as clean Japanese text, and include every needed kanji reading in `ruby_terms` so that switch controls the annotation consistently.
 
 Use `ruby_terms` arrays instead of embedding readings directly into display text:
 

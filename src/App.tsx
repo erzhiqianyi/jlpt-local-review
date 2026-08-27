@@ -39,6 +39,7 @@ type VocabItem = {
   jlpt_level?: string;
   original: string;
   reading?: string;
+  meaning_ja?: string;
   paraphrase_ja?: string;
   meaning_zh: string;
   core_memory: string;
@@ -166,6 +167,11 @@ const translations = {
     language: '界面语言',
     reviewRuby: '复习显示假名',
     explanationRuby: '解析显示假名',
+    furigana: '假名',
+    japaneseMeaning: '日语解释',
+    localizedMeaning: '中文解释',
+    examQuickNote: '考场快速记录',
+    collocationsLabel: '常用搭配',
     noQuestion: '没有可练习题目',
     noQuestionBody: '当前筛选条件下没有题目。',
     meaningTitle: '言い換え類義',
@@ -278,6 +284,11 @@ const translations = {
     language: '表示言語',
     reviewRuby: '復習にふりがな',
     explanationRuby: '解説にふりがな',
+    furigana: 'ふりがな',
+    japaneseMeaning: '日本語の説明',
+    localizedMeaning: '意味',
+    examQuickNote: '試験直前メモ',
+    collocationsLabel: 'よく使う組み合わせ',
     noQuestion: '問題がありません',
     noQuestionBody: '現在の条件では問題がありません。',
     meaningTitle: '言い換え類義',
@@ -390,6 +401,11 @@ const translations = {
     language: 'Language',
     reviewRuby: 'Show furigana in review',
     explanationRuby: 'Show furigana in explanations',
+    furigana: 'Furigana',
+    japaneseMeaning: 'Japanese definition',
+    localizedMeaning: 'English definition',
+    examQuickNote: 'Exam quick note',
+    collocationsLabel: 'Common combinations',
     noQuestion: 'No questions',
     noQuestionBody: 'No questions match the current filters.',
     meaningTitle: 'Paraphrase',
@@ -437,6 +453,62 @@ const NEXT_JLPT_AT = '2026-12-06T09:00:00+09:00';
 const JLPT_OFFICIAL_URL = 'https://www.jlpt.jp/e/';
 
 const defaultRubyTerms: RubyTerm[] = [
+  { text: '一定', reading: 'いってい' },
+  { text: '方法', reading: 'ほうほう' },
+  { text: '器具', reading: 'きぐ' },
+  { text: '使って', reading: 'つかって' },
+  { text: '数値', reading: 'すうち' },
+  { text: '正確', reading: 'せいかく' },
+  { text: '調べる', reading: 'しらべる' },
+  { text: '照らして', reading: 'てらして' },
+  { text: '認める', reading: 'みとめる' },
+  { text: '年を追う', reading: 'としをおう' },
+  { text: '進む', reading: 'すすむ' },
+  { text: '時間', reading: 'じかん' },
+  { text: '過ぎる', reading: 'すぎる' },
+  { text: '物事', reading: 'ものごと' },
+  { text: '進んで', reading: 'すすんで' },
+  { text: '後', reading: 'ご' },
+  { text: '様子', reading: 'ようす' },
+  { text: '大まか', reading: 'おおまか' },
+  { text: '見渡す', reading: 'みわたす' },
+  { text: '教育', reading: 'きょういく' },
+  { text: '訓練', reading: 'くんれん' },
+  { text: '能力', reading: 'のうりょく' },
+  { text: '育てる', reading: 'そだてる' },
+  { text: 'て形', reading: 'てけい' },
+  { text: '押す', reading: 'おす' },
+  { text: '実際', reading: 'じっさい' },
+  { text: '経る', reading: 'へる' },
+  { text: '数量', reading: 'すうりょう' },
+  { text: '多く', reading: 'おおく' },
+  { text: '十分', reading: 'じゅうぶん' },
+  { text: '日本人', reading: 'にほんじん' },
+  { text: '日本', reading: 'にほん' },
+  { text: '使われる', reading: 'つかわれる' },
+  { text: '姓名', reading: 'せいめい' },
+  { text: '姓', reading: 'せい' },
+  { text: '一般', reading: 'いっぱん' },
+  { text: '読み方', reading: 'よみかた' },
+  { text: '読む', reading: 'よむ' },
+  { text: '名前', reading: 'なまえ' },
+  { text: '女性名', reading: 'じょせいめい' },
+  { text: '地名', reading: 'ちめい' },
+  { text: '表記', reading: 'ひょうき' },
+  { text: '候補', reading: 'こうほ' },
+  { text: '距離', reading: 'きょり' },
+  { text: '程度', reading: 'ていど' },
+  { text: '非常', reading: 'ひじょう' },
+  { text: '離れて', reading: 'はなれて' },
+  { text: '人名', reading: 'じんめい' },
+  { text: '苦しさ', reading: 'くるしさ' },
+  { text: '不便', reading: 'ふべん' },
+  { text: '耐える', reading: 'たえる' },
+  { text: '書籍', reading: 'しょせき' },
+  { text: '一覧', reading: 'いちらん' },
+  { text: '並べた', reading: 'ならべた' },
+  { text: '章', reading: 'しょう' },
+  { text: '順', reading: 'じゅん' },
   { text: '測定機器', reading: 'そくていきき' },
   { text: '日本経済', reading: 'にほんけいざい' },
   { text: '近代文学', reading: 'きんだいぶんがく' },
@@ -749,6 +821,7 @@ export default function App() {
         jlpt_level: item.jlpt_level,
         original: item.original,
         reading: item.reading,
+        meaning_ja: item.meaning_ja,
         meaning: itemMeaning(item, locale),
         input_at: item.input_at,
       })),
@@ -912,11 +985,10 @@ export default function App() {
                   item={activeWord}
                   index={wordIndex}
                   total={items.length}
-                  progress={activeWord ? progress[activeWord.id] : undefined}
                   showRuby={settings.showReviewRuby}
                   labels={labels}
-                  deckLabels={deckLabels}
                   locale={locale}
+                  onShowRubyChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
                   onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
                   onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
                 />
@@ -1491,13 +1563,6 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
-function formatDate(value: string | undefined, locale: Locale) {
-  if (!value) {
-    return '-';
-  }
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(value));
-}
-
 function getCountdown(target: string) {
   const diff = Math.max(0, new Date(target).getTime() - Date.now());
   const totalMinutes = Math.floor(diff / 60_000);
@@ -2060,22 +2125,20 @@ function WordDetailPanel({
   item,
   index,
   total,
-  progress,
   showRuby,
   labels,
-  deckLabels,
   locale,
+  onShowRubyChange,
   onPrevious,
   onNext,
 }: {
   item?: VocabItem;
   index: number;
   total: number;
-  progress?: ProgressState[string];
   showRuby: boolean;
   labels: Record<string, string>;
-  deckLabels: Record<Deck | 'all', string>;
   locale: Locale;
+  onShowRubyChange: (checked: boolean) => void;
   onPrevious: () => void;
   onNext: () => void;
 }) {
@@ -2107,9 +2170,10 @@ function WordDetailPanel({
       onTouchStart={(event) => setTouchStart(event.changedTouches[0]?.clientX ?? null)}
       onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <CompactToggle checked={showRuby} label={labels.furigana} onChange={onShowRubyChange} />
           {total > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} /> : null}
           <span className="min-w-20 rounded-md bg-[#e8f0eb] px-3 py-2 text-center text-sm font-semibold text-[#24473f]">
             {total ? `${safeIndex(index, total) + 1} / ${total}` : '0 / 0'}
@@ -2119,13 +2183,25 @@ function WordDetailPanel({
       </div>
       <VocabCard
         item={item}
-        progress={progress}
         showRuby={showRuby}
         labels={labels}
-        deckLabels={deckLabels}
         locale={locale}
       />
     </section>
+  );
+}
+
+function CompactToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f]">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-4 w-4 accent-[#24473f]"
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 
@@ -2145,17 +2221,13 @@ function ArrowButton({ label, direction, onClick }: { label: string; direction: 
 
 function VocabCard({
   item,
-  progress,
   showRuby,
   labels,
-  deckLabels,
   locale,
 }: {
   item: VocabItem;
-  progress?: ProgressState[string];
   showRuby: boolean;
   labels: Record<string, string>;
-  deckLabels: Record<Deck | 'all', string>;
   locale: Locale;
 }) {
   const meaning = localized(item, locale, 'meaning') ?? item.meaning_zh;
@@ -2163,36 +2235,46 @@ function VocabCard({
   const analysis = localized(item, locale, 'analysis') ?? item.analysis;
   return (
     <article className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded bg-[#24473f] px-2 py-1 text-xs font-semibold text-white">{deckLabels[item.deck]}</span>
-        <span className="rounded bg-[#ead9c7] px-2 py-1 text-xs font-semibold text-[#6f412d]">{item.jlpt_level ?? 'unknown'}</span>
-        <span className="rounded bg-[#edf0e9] px-2 py-1 text-xs font-semibold text-[#52645c]">{progress?.status ?? 'new'}</span>
-        {item.content_origin === 'ai_generated' ? (
-          <span className="rounded bg-[#fff0c7] px-2 py-1 text-xs font-semibold text-[#765016]">{labels.aiGeneratedLabel}</span>
-        ) : null}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-[#62645f]">
-        <span className="rounded bg-[#f8f3eb] px-2 py-1">{labels.reviewCount}: {progress?.reviewCount ?? 0}</span>
-        <span className="rounded bg-[#f8f3eb] px-2 py-1">{labels.nextReview}: {formatDate(progress?.nextReviewAt, locale)}</span>
-      </div>
-      <h3 className="mt-3 text-2xl font-semibold">
+      <h3 className="text-3xl font-semibold">
         <RubyText text={item.original} items={[item]} enabled={showRuby} />
       </h3>
-      <p className="mt-3 text-sm font-semibold">{meaning}</p>
-      <p className="mt-2 text-sm leading-6 text-[#5f625b]">{coreMemory}</p>
+      <div className="mt-5 grid gap-5 border-t border-[#e5ddd1] pt-5 md:grid-cols-2">
+        <section>
+          <h4 className="text-xs font-semibold text-[#856033]">{labels.japaneseMeaning}</h4>
+          <p className="mt-2 text-sm leading-7 text-[#313934]">
+            <RubyText text={item.meaning_ja ?? '-'} items={[item]} enabled={showRuby} />
+          </p>
+        </section>
+        {locale !== 'ja' ? (
+          <section>
+            <h4 className="text-xs font-semibold text-[#856033]">{labels.localizedMeaning}</h4>
+            <p className="mt-2 text-sm leading-7 text-[#313934]">{meaning}</p>
+          </section>
+        ) : null}
+      </div>
+      <section className="mt-5 border-t border-[#e5ddd1] pt-5">
+        <h4 className="text-xs font-semibold text-[#856033]">{labels.examQuickNote}</h4>
+        <p className="mt-2 text-sm leading-7 text-[#313934]">{coreMemory}</p>
+      </section>
       {item.collocations?.length ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {item.collocations.slice(0, 4).map((collocation) => (
-            <span key={collocation} className="rounded-md bg-[#f4eee6] px-2 py-1 text-xs text-[#554f48]">
-              <RubyText text={collocation} items={[item]} enabled={showRuby} />
-            </span>
-          ))}
-        </div>
+        <section className="mt-5 border-t border-[#e5ddd1] pt-5">
+          <h4 className="text-xs font-semibold text-[#856033]">{labels.collocationsLabel}</h4>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {item.collocations.slice(0, 4).map((collocation) => (
+              <span key={collocation} className="rounded-md bg-[#f4eee6] px-2 py-1 text-xs text-[#554f48]">
+                <RubyText text={collocation} items={[item]} enabled={showRuby} />
+              </span>
+            ))}
+          </div>
+        </section>
       ) : null}
       {analysis ? (
-        <p className="mt-3 rounded-md bg-[#f8f3eb] p-3 text-xs leading-5 text-[#62645f]">
-          {labels.analysis}：<RubyText text={analysis} items={[item]} enabled={showRuby} />
-        </p>
+        <section className="mt-5 border-t border-[#e5ddd1] pt-5">
+          <h4 className="text-xs font-semibold text-[#856033]">{labels.analysis}</h4>
+          <p className="mt-2 text-sm leading-7 text-[#5f625b]">
+            <RubyText text={analysis} items={[item]} enabled={showRuby} />
+          </p>
+        </section>
       ) : null}
       {item.content_origin === 'ai_generated' && item.verification_status !== 'verified' ? (
         <p className="mt-3 rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-xs leading-5 text-[#6f4a16]">

@@ -18,7 +18,7 @@ There are two supported workflows:
 - Level-appropriate, official-style practice for `文脈規定`, `言い換え類義`, `表記`, `漢字読み`, and `文の文法1`, with Japanese instructions and numbered choices.
 - Immediate correct/incorrect judging.
 - Structured explanations after each answer: full context, why the answer is correct, per-choice distractor analysis, and a memory point with useful comparisons.
-- Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.
+- A focused reading page with an in-page furigana switch, Japanese definitions, learner-language definitions, exam quick notes, collocations, and analysis. Questions and answer choices stay unannotated.
 - Multilingual UI and multilingual data support through `localizations`.
 - Local-only progress with `localStorage`.
 - Exportable study records for AI analysis and next-plan generation.
@@ -125,7 +125,7 @@ jlpt-vocab-answers-v1
 
 This means a new deployment can update the vocabulary data without deleting each user's local review progress.
 
-Japanese text that contains kanji should include kana support through `reading` and `ruby_terms`. The app has separate settings for showing furigana in review cards and answer explanations.
+Japanese text that contains kanji should include kana support through `reading` and `ruby_terms`. Each item should also include `meaning_ja` for its Japanese dictionary-style definition. The reading page has a direct furigana switch, while answer explanations keep their separate setting.
 
 For multilingual decks, keep Japanese source fields stable and add learner-facing translations under `localizations`, for example `en.meaning`, `ja.core_memory`, or `ko.analysis`.
 

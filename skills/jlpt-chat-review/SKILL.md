@@ -32,6 +32,8 @@ For each item:
 - Write Chinese explanations for review.
 - When the user asks for multiple languages, keep the Japanese source fields stable and write translated learner-facing text under `localizations`.
 - Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
+- Add `meaning_ja` as a concise Japanese dictionary-style definition for every vocabulary item. Keep it distinct from the learner-language meaning and from `core_memory`.
+- Write `core_memory` as a short exam-room recall note: the minimum cue needed to recognize the word, usage, or contrast quickly. Do not duplicate the full analysis.
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Do not add furigana or ruby markup inside quiz prompts, choices, selected answers, or correct answers. Furigana is only for review cards and explanations.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.

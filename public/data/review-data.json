@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-27T20:20:00+09:00",
+  "generated_at": "2026-08-27T23:05:12+09:00",
   "items": [
     {
       "id": "n1-vocab-001",
@@ -9,6 +9,7 @@
       "jlpt_level": "N1",
       "original": "測定",
       "reading": "そくてい",
+      "meaning_ja": "一定の方法や器具を使って、数値を正確に調べること。",
       "paraphrase_ja": "数値を測る",
       "question_distractors": {
         "moji_goi": ["認定", "養成", "概観"],
@@ -76,6 +77,7 @@
       "jlpt_level": "N1",
       "original": "認定",
       "reading": "にんてい",
+      "meaning_ja": "基準に照らして、資格・事実・状態などを正式に認めること。",
       "paraphrase_ja": "基準に照らして正式に認める",
       "question_distractors": {
         "moji_goi": ["測定", "養成", "概観"],
@@ -141,6 +143,7 @@
       "jlpt_level": "N2",
       "original": "年々",
       "reading": "ねんねん",
+      "meaning_ja": "年が進むにつれて。年を追うごとに。",
       "paraphrase_ja": "年を追うごとに",
       "question_distractors": {
         "moji_goi": ["年中", "年内", "年末"],
@@ -203,6 +206,7 @@
       "jlpt_level": "N2",
       "original": "経過",
       "reading": "けいか",
+      "meaning_ja": "時間が過ぎること。また、物事が進んでいく過程やその後の状態。",
       "paraphrase_ja": "時間が過ぎる",
       "question_distractors": {
         "moji_goi": ["発生", "成立", "終了"],
@@ -267,6 +271,7 @@
       "jlpt_level": "N1",
       "original": "概観",
       "reading": "がいかん",
+      "meaning_ja": "全体の様子を大まかに見渡すこと。",
       "paraphrase_ja": "全体を大まかに見る",
       "question_distractors": {
         "moji_goi": ["観測", "認定", "検討"],
@@ -332,6 +337,7 @@
       "jlpt_level": "N1",
       "original": "養成",
       "reading": "ようせい",
+      "meaning_ja": "教育や訓練によって、能力・習慣・人材などを育てること。",
       "paraphrase_ja": "教育や訓練で育てる",
       "question_distractors": {
         "moji_goi": ["認定", "測定", "概観"],
@@ -395,6 +401,7 @@
       "jlpt_level": "N2",
       "original": "踏んで",
       "reading": "ふんで",
+      "meaning_ja": "「踏む」のて形。足で押すこと。また、手順や段階を実際に経ること。",
       "question_kinds": [
         "grammar"
       ],
@@ -459,6 +466,7 @@
       "jlpt_level": "N2",
       "original": "豊富",
       "reading": "ほうふ",
+      "meaning_ja": "数量や種類が多く、内容も十分にあること。",
       "paraphrase_ja": "十分に多くある",
       "question_distractors": {
         "moji_goi": ["重大", "正確", "安全"],
@@ -522,6 +530,7 @@
       "jlpt_level": "unknown",
       "original": "服部",
       "reading": "はっとり",
+      "meaning_ja": "日本で使われる姓の一つ。一般に「はっとり」と読む。",
       "question_kinds": [
         "kanji_to_kana"
       ],
@@ -569,6 +578,7 @@
       "jlpt_level": "unknown",
       "original": "智里",
       "reading": "ちさと",
+      "meaning_ja": "日本人の名前に使われる読み方の一つ。この項目では「ちさと」と読む。",
       "question_kinds": [
         "kanji_to_kana"
       ],
@@ -613,6 +623,7 @@
       "jlpt_level": "unknown",
       "original": "佐野",
       "reading": "さの",
+      "meaning_ja": "日本で使われる姓や地名の一つ。一般に「さの」と読む。",
       "question_kinds": [
         "kanji_to_kana"
       ],
@@ -660,6 +671,7 @@
       "jlpt_level": "unknown",
       "original": "智子",
       "reading": "ともこ",
+      "meaning_ja": "日本人の女性名の一つ。この項目では「ともこ」と読む。",
       "question_kinds": [
         "kanji_to_kana"
       ],
@@ -704,6 +716,7 @@
       "jlpt_level": "unknown",
       "original": "新谷",
       "reading": "しんたに",
+      "meaning_ja": "日本で使われる姓の一つ。この項目では「しんたに」を読みの候補とする。",
       "question_kinds": [],
       "meaning_zh": "常见日本姓氏读法。",
       "core_memory": "默认候选 しんたに，但人名可有其他特殊读法。",
@@ -746,6 +759,7 @@
       "jlpt_level": "unknown",
       "original": "新谷遥",
       "reading": "しんたに はるか",
+      "meaning_ja": "日本人の姓名として使われる表記。この項目では「しんたに はるか」を読みの候補とする。",
       "question_kinds": [],
       "meaning_zh": "普通日本姓名的自然读法候选。",
       "core_memory": "新谷=しんたに，遥=はるか。",
@@ -781,6 +795,7 @@
       "jlpt_level": "N1",
       "original": "遥",
       "reading": "はるか",
+      "meaning_ja": "距離・時間・程度が非常に離れている様子。人名では「はるか」と読むことがある。",
       "question_kinds": [],
       "question_distractors": {
         "kanji_to_kana": ["はらか", "はるが", "ようか"]
@@ -831,6 +846,7 @@
       "jlpt_level": "N1",
       "original": "辛抱",
       "reading": "しんぼう",
+      "meaning_ja": "苦しさや不便を我慢して耐えること。",
       "paraphrase_ja": "我慢する",
       "question_distractors": {
         "moji_goi": ["測定", "認定", "概観"],
@@ -893,6 +909,7 @@
       "jlpt_level": "N2",
       "original": "目次",
       "reading": "もくじ",
+      "meaning_ja": "書籍や文書の内容を、章や項目の順に並べた一覧。",
       "paraphrase_ja": "内容を項目順に示した一覧",
       "question_distractors": {
         "moji_goi": ["表紙", "奥付", "本文"],
