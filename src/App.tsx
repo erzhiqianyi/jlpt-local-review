@@ -559,9 +559,9 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7f3] text-[#1f2522]">
+    <main className="min-h-screen max-w-full overflow-x-hidden bg-[#f5f7f3] text-[#1f2522]">
       <header className="sticky top-0 z-20 border-b border-[#d7dfd6] bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+        <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <div className="flex items-center justify-between gap-3">
             <button type="button" onClick={() => setActiveView('vocabulary')} className="text-lg font-semibold tracking-normal text-[#173d35]">
               {labels.brand}
@@ -570,7 +570,7 @@ export default function App() {
               GitHub
             </a>
           </div>
-          <nav className="flex gap-2 overflow-x-auto pb-1 lg:pb-0">
+          <nav className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 lg:pb-0">
             {navItems(labels).map((item) => (
               <NavButton key={item.view} active={activeView === item.view} onClick={() => setActiveView(item.view)}>
                 {item.label}
@@ -586,8 +586,8 @@ export default function App() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-7xl gap-4 px-4 py-5 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-10">
-        <div className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm md:p-6">
+      <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 py-5 md:px-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-10">
+        <div className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm md:p-6">
           <p className="text-sm font-semibold text-[#7d6032]">Local-first JLPT system</p>
           <h1 className="mt-2 max-w-3xl text-3xl font-semibold leading-tight md:text-4xl">{labels.heroTitle}</h1>
           <p className="mt-3 max-w-3xl text-base leading-7 text-[#5f625b]">{labels.heroBody}</p>
@@ -602,13 +602,13 @@ export default function App() {
         <CountdownCard countdown={countdown} labels={labels} />
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
+      <section className="mx-auto grid max-w-7xl min-w-0 gap-4 px-4 pb-5 md:grid-cols-2 md:px-8 lg:grid-cols-5 lg:px-10">
         {moduleStats.map((module) => (
           <ModuleCard key={module.view} module={module} active={activeView === module.view} onClick={() => setActiveView(module.view)} />
         ))}
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
+      <section className="mx-auto grid max-w-7xl min-w-0 gap-5 px-4 pb-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
         {activeView !== 'about' && activeView !== 'settings' ? (
           <aside className="space-y-4">
             {(activeView === 'vocabulary' || activeView === 'mixed') ? (
@@ -642,7 +642,7 @@ export default function App() {
           </aside>
         ) : null}
 
-        <div className={activeView === 'about' ? 'lg:col-span-2' : 'space-y-5'}>
+        <div className={activeView === 'about' ? 'min-w-0 lg:col-span-2' : 'min-w-0 space-y-5'}>
           {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
           {activeView === 'settings' ? (
             <Panel title={labels.settings}>
@@ -694,7 +694,7 @@ export default function App() {
       </section>
 
       <footer className="border-t border-[#d9d0c3] bg-[#fffaf2]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-sm text-[#5f625b] md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-2 px-5 py-5 text-sm text-[#5f625b] md:flex-row md:items-center md:justify-between md:px-8 lg:px-10">
           <p>© 2026 Itsuki. All rights reserved.</p>
           <div className="flex flex-wrap gap-4">
             <a className="font-semibold text-[#24473f] hover:underline" href="https://x.com/itsuki_maer" target="_blank" rel="noreferrer">
@@ -1008,7 +1008,7 @@ function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
+    <div className="min-w-0 rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
       <p className="text-xs font-semibold text-[#6b6a64]">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>
@@ -1020,7 +1020,7 @@ function SegmentButton({ active, children, onClick }: { active: boolean; childre
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-10 rounded-md border px-3 py-2 text-sm font-semibold ${
+      className={`min-h-10 min-w-0 rounded-md border px-3 py-2 text-sm font-semibold break-words ${
         active ? 'border-[#24473f] bg-[#24473f] text-white' : 'border-[#d9d0c3] bg-white text-[#4f5651] hover:bg-[#f6eee3]'
       }`}
     >
@@ -1045,7 +1045,7 @@ function NavButton({ active, children, onClick }: { active: boolean; children: R
 
 function CountdownCard({ countdown, labels }: { countdown: { days: number; hours: number; minutes: number }; labels: Record<string, string> }) {
   return (
-    <aside className="rounded-lg border border-[#cbd6cf] bg-[#173d35] p-5 text-white shadow-sm md:p-6">
+    <aside className="min-w-0 rounded-lg border border-[#cbd6cf] bg-[#173d35] p-5 text-white shadow-sm md:p-6">
       <p className="text-sm font-semibold text-[#cfe0d7]">{labels.countdownTitle}</p>
       <p className="mt-2 text-xl font-semibold">{labels.countdownDate}</p>
       <div className="mt-5 grid grid-cols-3 gap-2">
@@ -1082,7 +1082,7 @@ function ModuleCard({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-36 rounded-lg border p-4 text-left shadow-sm transition ${
+      className={`min-h-36 min-w-0 rounded-lg border p-4 text-left shadow-sm transition ${
         active ? 'border-[#173d35] bg-[#e7f0eb]' : 'border-[#d7dfd6] bg-white hover:bg-[#f7faf6]'
       }`}
     >
@@ -1090,19 +1090,19 @@ function ModuleCard({
         <h2 className="text-lg font-semibold">{module.title}</h2>
         <span className="rounded bg-white px-2 py-1 text-xs font-semibold text-[#52645c]">{module.count}</span>
       </div>
-      <p className="mt-3 text-sm leading-6 text-[#626c66]">{module.body}</p>
+      <p className="mt-3 break-words text-sm leading-6 text-[#626c66]">{module.body}</p>
     </button>
   );
 }
 
 function AboutPanel({ labels }: { labels: Record<string, string> }) {
   return (
-    <section className="grid gap-4 lg:grid-cols-2">
-      <article className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+    <section className="grid min-w-0 gap-4 lg:grid-cols-2">
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
         <h2 className="text-2xl font-semibold">{labels.aboutTitle}</h2>
         <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.aboutBody}</p>
       </article>
-      <article className="rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
         <h2 className="text-2xl font-semibold">{labels.deployTitle}</h2>
         <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.deployBody}</p>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -1120,7 +1120,7 @@ function AboutPanel({ labels }: { labels: Record<string, string> }) {
 
 function EmptyModule({ labels }: { labels: Record<string, string> }) {
   return (
-    <section className="rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
+    <section className="min-w-0 rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
       <h2 className="text-2xl font-semibold">{labels.moduleEmptyTitle}</h2>
       <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.moduleEmptyBody}</p>
     </section>
@@ -1195,7 +1195,7 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm">
+    <section className="min-w-0 rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm">
       <h2 className="text-base font-semibold">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -1228,12 +1228,12 @@ function PracticePanel({
   onNext: () => void;
 }) {
   return (
-    <section className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+    <section className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
           <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
-          <p className="mt-3 text-lg leading-8 text-[#353b37]">
+          <p className="mt-3 break-words text-lg leading-8 text-[#353b37]">
             {activeQuestion ? activeQuestion.prompt : labels.noQuestionBody}
           </p>
         </div>
@@ -1261,7 +1261,7 @@ function PracticePanel({
                   type="button"
                   key={choice}
                   onClick={() => onAnswer(activeQuestion, choice)}
-                  className={`min-h-14 rounded-md border px-4 py-3 text-left text-base font-semibold ${color}`}
+                  className={`min-h-14 min-w-0 rounded-md border px-4 py-3 text-left text-base font-semibold break-words ${color}`}
                 >
                   {choice}
                 </button>
@@ -1337,7 +1337,7 @@ function VocabCard({
   const coreMemory = localized(item, locale, 'core_memory') ?? item.core_memory;
   const analysis = localized(item, locale, 'analysis') ?? item.analysis;
   return (
-    <article className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm">
+    <article className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded bg-[#24473f] px-2 py-1 text-xs font-semibold text-white">{deckLabels[item.deck]}</span>
         <span className="rounded bg-[#ead9c7] px-2 py-1 text-xs font-semibold text-[#6f412d]">{item.jlpt_level ?? 'unknown'}</span>
