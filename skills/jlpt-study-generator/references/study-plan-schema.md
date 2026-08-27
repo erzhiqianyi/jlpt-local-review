@@ -45,7 +45,7 @@ Each task should specify `module`, `minutes`, `activity`, `content_ids`, and whe
 
 ## Generated Website Item Metadata
 
-Add these fields to every generated item that may be merged into `public/data/review-data.json`:
+Add these fields to every generated item that may be merged into monthly archives under `public/data/review-data/YYYY/MM.json`:
 
 ```json
 {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 type Locale = 'zh-CN' | 'ja' | 'en';
-type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'about' | 'settings';
+type AppView = 'home' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'drafts' | 'about' | 'settings';
 type StudyPage = 'questions' | 'words';
 type AppRoute = { view: AppView; page: StudyPage };
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
@@ -23,6 +23,11 @@ type ProgressEntry = {
 };
 type ProgressState = Record<string, ProgressEntry>;
 type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean; locale: Locale };
+type AuthUser = { id: number; username: string };
+type StudyState = { answers: AnswerState; progress: ProgressState; settings: DisplaySettings };
+type DraftSummary = { id: string; title: string; status: string; created_at: string; updated_at: string };
+type DraftAnnotation = { id: string; body: string; created_at: string };
+type ReviewPackDraft = DraftSummary & { content: unknown; annotations: DraftAnnotation[] };
 type RubyTerm = { text: string; reading: string };
 type LocalizedText = {
   meaning?: string;
@@ -52,6 +57,8 @@ type VocabItem = {
   content_origin?: 'user_provided' | 'ai_generated';
   verification_status?: 'unverified' | 'needs_review' | 'verified';
   level_confidence?: 'low' | 'medium' | 'high';
+  question_kinds?: QuestionKind[];
+  question_distractors?: Partial<Record<QuestionKind, string[]>>;
 };
 
 type ReviewData = {
@@ -73,9 +80,8 @@ type Question = {
   choiceAnalysis: { choice: string; correct: boolean; explanation: string }[];
 };
 
-const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
-const STORAGE_ANSWERS = 'jlpt-vocab-answers-v1';
-const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
+const STORAGE_TOKEN = 'jlpt-auth-token-v1';
+const QUESTION_KIND_ORDER: QuestionKind[] = ['moji_goi', 'meaning', 'kana_to_kanji', 'kanji_to_kana'];
 
 const translations = {
   'zh-CN': {
@@ -87,9 +93,6 @@ const translations = {
     kanaToKanji: '表記',
     kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
-    reset: '重置本地进度',
-    resetProgressBody: '清除当前浏览器中的答题记录、复习次数和下次复习时间。词库内容和显示设置不会被删除。',
-    resetConfirm: '确定要清除当前浏览器中的全部学习进度吗？此操作无法撤销。',
     items: '词条',
     questions: '题目',
     answered: '已作答',
@@ -105,20 +108,63 @@ const translations = {
     hideFilters: '收起筛选',
     showFilters: '展开筛选',
     settings: '设置',
-    exportStudyRecord: '导出学习记录',
-    exportStudyRecordBody: '下载当前浏览器里的答题记录、复习次数、下次复习时间和 AI 分析提示。把 JSON 给 Codex 或 Claude Code 后，可以分析弱点、生成 7 天学习计划和新的复习内容。',
-    exportStudyRecordButton: '导出 JSON',
-    exportForAI: '给 AI 分析',
+    account: '用户',
+    currentUser: '当前用户',
+    logout: '退出登录',
     skillTitle: '两种技能工作流',
-    skillBody: '使用 jlpt-chat-review 技能，把聊天里的单词、句子、语法疑问和完整题目整理成 review-data.json。技能会记录输入时间、输出多语言说明、生成 JLPT 题型，并把假名标注放在可控制的 ruby_terms 中。',
+    skillBody: '使用 jlpt-chat-review 技能，把聊天里的单词、句子、语法疑问和完整题目整理成按月归档的 review-data JSON。技能会记录输入时间、输出多语言说明、生成 JLPT 题型，并把假名标注放在可控制的 ruby_terms 中。',
     generatorSkillBody: '没有自己的输入内容时，使用 jlpt-study-generator。它会根据目标级别、备考天数、每日时间和训练模块生成通用计划及首周学习内容。AI 生成材料不是 JLPT 官方内容，读音、含义、答案和级别需要你自行核对。',
+    mcpTitle: '接入 MCP',
+    mcpBody: '本地 MCP server 使用同一个 JSON 资料层和 SQLite 学习记录。启动命令是 npm run mcp，在 MCP 客户端里把 command 指向 node，args 指向 server/mcp-server.mjs。',
+    mcpAuth: '认证方式：先调用 login，输入这个应用里的本地账号名和密码，后续工具传入返回的 token。',
+    mcpTools: '当前工具：get_review_data、get_study_record、list_due_reviews、analyze_weak_points、generate_daily_review_pack、create_review_pack_draft、get_draft_revision_context。写入先进入草稿，用户可预览和批注。',
+    mcpCodexGuideTitle: '以 Codex 接入为例',
+    mcpCodexGuideBody: 'Codex 通过 STDIO 启动这个本地 MCP server。它不会直接连正式题库文件，而是通过工具读取 JSON 资料、SQLite 学习记录和草稿批注。',
+    mcpFlowTitle: '工作流',
+    mcpFlowApp: '本地应用',
+    mcpFlowAppBody: '注册账号、练习、预览草稿、写批注。',
+    mcpFlowBackend: '本地后台',
+    mcpFlowBackendBody: '读取 JSON 资料，保存 SQLite 用户数据。',
+    mcpFlowMcp: 'MCP Server',
+    mcpFlowMcpBody: '把学习记录、弱点分析、草稿上下文暴露给 Codex。',
+    mcpFlowCodex: 'Codex',
+    mcpFlowCodexBody: '生成复习草稿，根据用户批注优化下一版。',
+    mcpSetupTitle: '接入步骤',
+    mcpStepOne: '1. 在这个 worktree 运行 npm install，并用 npm run dev 启动前端和后台。',
+    mcpStepTwo: '2. 打开应用，创建一个本地账号和密码；MCP 的 login 工具会复用这个账号。',
+    mcpStepThree: '3. 在 Codex 的 config.toml 里加入 jlpt_review MCP server 配置。',
+    mcpStepFour: '4. 重启 Codex，在输入框使用 /mcp 确认 jlpt_review 已连接。',
+    mcpStepFive: '5. 让 Codex 调用 generate_daily_review_pack 或 create_review_pack_draft；然后回到草稿页预览、批注，再用 get_draft_revision_context 继续优化。',
+    mcpConfigTitle: 'Codex config.toml 示例',
+    mcpPromptTitle: '可以这样对 Codex 说',
+    mcpPromptExample: '请使用 jlpt_review MCP，登录我的本地 JLPT 账号，读取 get_study_record，分析弱点，创建一个 30 分钟的 daily review pack 草稿。不要直接改月度归档 JSON。',
+    mcpImplementationTitle: 'MCP 是怎么实现的',
+    mcpImplementationServer: 'server/mcp-server.mjs 是一个 STDIO MCP server，接收 JSON-RPC 消息，响应 initialize、tools/list 和 tools/call。',
+    mcpImplementationStorage: 'server/storage.mjs 是共享数据层：题库资源从 public/data/review-data/YYYY/MM.json 聚合读取，用户、会话、进度、草稿和批注写入 SQLite。',
+    mcpImplementationAuth: 'MCP 工具不直接信任调用方。先用 login 换取本地 session token，其他工具必须带 token 才能读取个人学习数据。',
+    mcpImplementationDraft: 'agent 生成内容先保存为 review_pack_drafts。用户在草稿页预览并写批注后，get_draft_revision_context 会把草稿、批注和学习记录合成下一轮优化输入。',
+    navDrafts: '草稿',
+    draftsTitle: '复习草稿',
+    draftsBody: 'MCP 或后台生成的复习资料先进入草稿。你可以在这里预览、写批注，再让 agent 根据批注优化下一版。',
+    createDailyDraft: '生成今日草稿',
+    noDrafts: '还没有草稿',
+    noDraftsBody: '先生成一个今日草稿，或让 MCP 调用 create_review_pack_draft 保存 agent 生成内容。',
+    draftPreview: '草稿预览',
+    draftAnnotations: '用户批注',
+    addAnnotation: '添加批注',
+    annotationPlaceholder: '写下需要调整的地方，例如题量太多、解释不够细、例句不自然、想按语法点重排。',
+    saveAnnotation: '保存批注',
+    revisionContext: '复制优化上下文',
+    revisionContextCopied: '优化上下文已复制，可以交给 Codex 或 MCP agent 继续改。',
+    draftStatus: '状态',
+    updatedAt: '更新',
     aiGeneratedLabel: 'AI 生成',
     unverifiedContentNotice: '这项内容由 AI 生成且尚未核对，请自行判断读音、含义、答案和 JLPT 级别。',
     workflowTitle: '推荐使用流程',
     workflowCapture: '1. 选择入口：输入自己的疑问，或只提供目标级别、备考天数和重点模块。',
     workflowGenerate: '2. 用 jlpt-chat-review 整理个人内容，或用 jlpt-study-generator 生成通用计划和材料。',
     workflowPractice: '3. 在网页里按单词、语法、听力、阅读、综合模块复习。',
-    workflowExport: '4. 从设置导出学习记录，再交给 AI 分析弱点、安排下一轮复习和生成新题。',
+    workflowExport: '4. 在草稿页预览 MCP 生成结果，写批注，再让 Codex 读取 revision context 优化下一版。',
     brand: 'JLPT Review',
     navHome: '首页',
     navVocabulary: '单词',
@@ -134,7 +180,7 @@ const translations = {
     hours: '小时',
     minutes: '分钟',
     heroTitle: '把每天的日语疑问变成可复习的 JLPT 题库',
-    heroBody: '聊天负责输入和整理，网页负责分模块复习。现在先做本地浏览器版，后续可以接账号系统。',
+    heroBody: '聊天负责输入和整理，后台负责账号、学习记录和个性化数据，网页负责分模块复习。',
     moduleVocabularyTitle: '单词模块',
     moduleVocabularyBody: '处理 JLPT 文字・語彙、言い換え類義、表記、漢字読み。',
     moduleGrammarTitle: '语法模块',
@@ -148,7 +194,7 @@ const translations = {
     moduleEmptyTitle: '这个模块还没有内容',
     moduleEmptyBody: '后续用技能输入对应材料后，这里会单独生成练习和解析。',
     aboutTitle: '应用介绍',
-    aboutBody: '这是一个本地优先的 JLPT 学习工具。你可以整理自己的疑问，也可以只提供目标级别和备考时间，让 AI 生成通用学习计划。网页负责复习、判分和浏览器本地进度。',
+    aboutBody: '这是一个本地优先的 JLPT 学习工具。你可以整理自己的疑问，也可以只提供目标级别和备考时间，让 AI 生成通用学习计划。后台负责资料读取、账号、判分记录和复习进度。',
     deployTitle: '自己部署',
     deployBody: 'Fork GitHub 仓库，选择使用示例数据或 npm run data:blank 创建空白数据，然后部署到 Cloudflare Pages。',
     deck: 'Deck',
@@ -165,6 +211,8 @@ const translations = {
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    nameReadingTitle: '人名読み',
+    nameReadingPrompt: '「{word}」作为人名或地名时，读法是什么？{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
     yourAnswer: '你的答案',
@@ -180,7 +228,7 @@ const translations = {
     choiceFits: '符合',
     choiceDoesNotFit: '不符合',
     contact: '联系',
-    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，在浏览器本地练习 JLPT 文字・語彙、言い換え類義、表記和漢字読み。',
+    intro: '使用 Codex 或 Claude Code 整理自己的学习记录，通过本地后台练习 JLPT 文字・語彙、言い換え類義、表記和漢字読み。',
   },
   ja: {
     deckAll: 'すべて',
@@ -191,9 +239,6 @@ const translations = {
     kanaToKanji: '表記',
     kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
-    reset: 'ローカル進捗をリセット',
-    resetProgressBody: 'このブラウザ内の回答履歴、復習回数、次回復習日を削除します。語彙データと表示設定は残ります。',
-    resetConfirm: 'このブラウザ内の学習進捗をすべて削除しますか？この操作は取り消せません。',
     items: '項目',
     questions: '問題',
     answered: '回答済み',
@@ -209,20 +254,63 @@ const translations = {
     hideFilters: 'フィルターを閉じる',
     showFilters: 'フィルターを開く',
     settings: '設定',
-    exportStudyRecord: '学習記録を書き出す',
-    exportStudyRecordBody: 'このブラウザ内の回答履歴、復習回数、次回復習日、AI 分析用プロンプトを JSON で保存します。JSON を Codex や Claude Code に渡すと、弱点分析、7日間の学習計画、新しい復習内容の作成に使えます。',
-    exportStudyRecordButton: 'JSON を書き出す',
-    exportForAI: 'AI に分析させる',
+    account: 'ユーザー',
+    currentUser: '現在のユーザー',
+    logout: 'ログアウト',
     skillTitle: '2つのスキル',
-    skillBody: 'jlpt-chat-review スキルで、チャット内の語彙・文・文法の疑問・問題を review-data.json に整理します。入力時刻、多言語説明、JLPT 形式の問題、表示制御できる ruby_terms を扱います。',
+    skillBody: 'jlpt-chat-review スキルで、チャット内の語彙・文・文法の疑問・問題を月別アーカイブの review-data JSON に整理します。入力時刻、多言語説明、JLPT 形式の問題、表示制御できる ruby_terms を扱います。',
     generatorSkillBody: '自分の入力素材がない場合は jlpt-study-generator を使います。目標レベル、日数、1日の学習時間、重点分野から一般的な計画と最初の7日分の教材を作ります。AI生成教材はJLPT公式ではないため、読み・意味・答え・レベルを自分で確認してください。',
+    mcpTitle: 'MCP 接続',
+    mcpBody: 'ローカル MCP server は同じ JSON 教材層と SQLite 学習記録を使います。起動コマンドは npm run mcp です。MCP クライアントでは command を node、args を server/mcp-server.mjs に設定します。',
+    mcpAuth: '認証方法：まず login を呼び、このアプリのローカルユーザー名とパスワードを入力します。以後のツールには返された token を渡します。',
+    mcpTools: '現在のツール：get_review_data、get_study_record、list_due_reviews、analyze_weak_points、generate_daily_review_pack、create_review_pack_draft、get_draft_revision_context。書き込みはまずドラフトに入り、ユーザーがプレビューとコメントを行えます。',
+    mcpCodexGuideTitle: 'Codex 接続例',
+    mcpCodexGuideBody: 'Codex は STDIO でこのローカル MCP server を起動します。正式な問題データを直接編集せず、ツール経由で JSON 教材、SQLite 学習記録、ドラフトコメントを読みます。',
+    mcpFlowTitle: 'ワークフロー',
+    mcpFlowApp: 'ローカルアプリ',
+    mcpFlowAppBody: 'アカウント作成、練習、ドラフトプレビュー、コメント入力。',
+    mcpFlowBackend: 'ローカルバックエンド',
+    mcpFlowBackendBody: 'JSON 教材を読み、SQLite にユーザーデータを保存。',
+    mcpFlowMcp: 'MCP Server',
+    mcpFlowMcpBody: '学習記録、弱点分析、ドラフト文脈を Codex に公開。',
+    mcpFlowCodex: 'Codex',
+    mcpFlowCodexBody: '復習ドラフトを作成し、ユーザーコメントから次版を改善。',
+    mcpSetupTitle: '接続手順',
+    mcpStepOne: '1. この worktree で npm install を実行し、npm run dev でフロントエンドとバックエンドを起動します。',
+    mcpStepTwo: '2. アプリを開いてローカルユーザー名とパスワードを作成します。MCP の login ツールも同じアカウントを使います。',
+    mcpStepThree: '3. Codex の config.toml に jlpt_review MCP server 設定を追加します。',
+    mcpStepFour: '4. Codex を再起動し、入力欄で /mcp を使って jlpt_review の接続を確認します。',
+    mcpStepFive: '5. Codex に generate_daily_review_pack または create_review_pack_draft を呼ばせます。その後ドラフト画面でプレビューとコメントを行い、get_draft_revision_context で改善を続けます。',
+    mcpConfigTitle: 'Codex config.toml 例',
+    mcpPromptTitle: 'Codex への依頼例',
+    mcpPromptExample: 'jlpt_review MCP を使って、私のローカル JLPT アカウントにログインし、get_study_record を読んで弱点を分析し、30分の daily review pack ドラフトを作ってください。月別アーカイブ JSON は直接変更しないでください。',
+    mcpImplementationTitle: 'MCP の実装',
+    mcpImplementationServer: 'server/mcp-server.mjs は STDIO MCP server で、JSON-RPC メッセージを受け取り、initialize、tools/list、tools/call に応答します。',
+    mcpImplementationStorage: 'server/storage.mjs は共有データ層です。問題データは public/data/review-data/YYYY/MM.json から集約し、ユーザー、セッション、進捗、ドラフト、コメントは SQLite に保存します。',
+    mcpImplementationAuth: 'MCP ツールは呼び出し元をそのまま信頼しません。まず login でローカル session token を取得し、他のツールは token 付きで個人学習データを読みます。',
+    mcpImplementationDraft: 'agent の生成内容はまず review_pack_drafts に保存されます。ユーザーがドラフト画面でプレビューとコメントを行うと、get_draft_revision_context がドラフト、コメント、学習記録を次の改善入力にまとめます。',
+    navDrafts: 'ドラフト',
+    draftsTitle: '復習ドラフト',
+    draftsBody: 'MCP またはバックエンドが生成した復習教材はまずドラフトに入ります。ここでプレビューし、コメントを書き、agent に次の版を改善させます。',
+    createDailyDraft: '今日のドラフトを作成',
+    noDrafts: 'ドラフトがありません',
+    noDraftsBody: '今日のドラフトを作成するか、MCP の create_review_pack_draft で agent の生成内容を保存します。',
+    draftPreview: 'ドラフトプレビュー',
+    draftAnnotations: 'ユーザーコメント',
+    addAnnotation: 'コメントを追加',
+    annotationPlaceholder: '調整したい点を書きます。例：問題数が多すぎる、説明を詳しくしたい、例文が不自然、文法項目別に並べたい。',
+    saveAnnotation: 'コメントを保存',
+    revisionContext: '改善用コンテキストをコピー',
+    revisionContextCopied: '改善用コンテキストをコピーしました。Codex または MCP agent に渡して続けられます。',
+    draftStatus: '状態',
+    updatedAt: '更新',
     aiGeneratedLabel: 'AI生成',
     unverifiedContentNotice: 'この内容はAIが生成した未確認の教材です。読み・意味・答え・JLPTレベルを自分で確認してください。',
     workflowTitle: 'おすすめの使い方',
     workflowCapture: '1. 自分の疑問を入力するか、目標レベル・日数・重点分野だけを指定するか選びます。',
     workflowGenerate: '2. 個人素材は jlpt-chat-review、一般計画と教材は jlpt-study-generator で作成します。',
     workflowPractice: '3. Web で語彙・文法・聴解・読解・総合のモジュール別に復習します。',
-    workflowExport: '4. 設定から学習記録を書き出し、AI に弱点分析と次の復習計画を作らせます。',
+    workflowExport: '4. ドラフト画面で MCP の生成結果をプレビューし、コメントを書き、Codex に revision context を読ませて次版を改善します。',
     brand: 'JLPT Review',
     navHome: 'ホーム',
     navVocabulary: '語彙',
@@ -238,7 +326,7 @@ const translations = {
     hours: '時間',
     minutes: '分',
     heroTitle: '毎日の疑問を復習できる JLPT デッキへ',
-    heroBody: 'チャットで入力と整理を行い、Web アプリで分野別に復習します。今はローカルブラウザ版で、将来はアカウント連携も想定しています。',
+    heroBody: 'チャットで入力と整理を行い、バックエンドでアカウントと学習記録を管理し、Web アプリで分野別に復習します。',
     moduleVocabularyTitle: '語彙モジュール',
     moduleVocabularyBody: 'JLPT 文字・語彙、言い換え類義、表記、漢字読みを扱います。',
     moduleGrammarTitle: '文法モジュール',
@@ -252,7 +340,7 @@ const translations = {
     moduleEmptyTitle: 'このモジュールにはまだ内容がありません',
     moduleEmptyBody: '該当する学習素材をスキルで入力すると、ここに練習と解説が生成されます。',
     aboutTitle: 'アプリ紹介',
-    aboutBody: 'これはローカル優先の JLPT 学習ツールです。自分の疑問を整理する方法と、目標レベルと期間から一般的な計画を生成する方法があります。Web アプリが復習・採点・ブラウザ内の進捗を担当します。',
+    aboutBody: 'これはローカル優先の JLPT 学習ツールです。自分の疑問を整理する方法と、目標レベルと期間から一般的な計画を生成する方法があります。バックエンドが教材読み込み、アカウント、採点記録、復習進捗を担当します。',
     deployTitle: '自分でデプロイ',
     deployBody: 'GitHub リポジトリを fork し、サンプルデータを使うか npm run data:blank で空データを作成して、Cloudflare Pages にデプロイします。',
     deck: 'Deck',
@@ -269,6 +357,8 @@ const translations = {
     kanaToKanjiPrompt: '次の文の「{reading}」を漢字で書くと、最もよいものはどれですか。{sentence}',
     kanjiToKanaTitle: '漢字読み',
     kanjiToKanaPrompt: '次の文の「{word}」の読み方として、最もよいものはどれですか。{sentence}',
+    nameReadingTitle: '人名読み',
+    nameReadingPrompt: '「{word}」を人名または地名として読む場合、最も適切な読みはどれですか。{sentence}',
     mojiGoiTitle: 'JLPT 文字・語彙',
     mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
     yourAnswer: 'あなたの答え',
@@ -284,7 +374,7 @@ const translations = {
     choiceFits: '適切',
     choiceDoesNotFit: '不適切',
     contact: '連絡先',
-    intro: 'Codex や Claude Code で整理した学習記録を使い、JLPT 文字・語彙・言い換え類義・表記・漢字読みをブラウザ内で復習します。',
+    intro: 'Codex や Claude Code で整理した学習記録を使い、ローカルバックエンドで JLPT 文字・語彙・言い換え類義・表記・漢字読みを復習します。',
   },
   en: {
     deckAll: 'All',
@@ -295,9 +385,6 @@ const translations = {
     kanaToKanji: 'Orthography',
     kanjiToKana: 'Kanji Reading',
     mojiGoi: 'JLPT Vocabulary',
-    reset: 'Reset local progress',
-    resetProgressBody: 'Clear answer history, review counts, and next-review times from this browser. Deck content and display settings are kept.',
-    resetConfirm: 'Clear all study progress from this browser? This action cannot be undone.',
     items: 'Items',
     questions: 'Questions',
     answered: 'Answered',
@@ -313,20 +400,63 @@ const translations = {
     hideFilters: 'Hide Filters',
     showFilters: 'Show Filters',
     settings: 'Settings',
-    exportStudyRecord: 'Export Study Record',
-    exportStudyRecordBody: 'Download answers, review counts, next-review times, and an AI analysis prompt from this browser. Give the JSON to Codex or Claude Code to analyze weak points, create a 7-day plan, and generate new review content.',
-    exportStudyRecordButton: 'Export JSON',
-    exportForAI: 'Analyze With AI',
+    account: 'User',
+    currentUser: 'Current User',
+    logout: 'Logout',
     skillTitle: 'Two Skill Workflows',
-    skillBody: 'Use the jlpt-chat-review skill to turn words, sentences, grammar questions, and full JLPT problems from chat into review-data.json. The skill records input time, multilingual explanations, JLPT question types, and display-controlled ruby_terms.',
+    skillBody: 'Use the jlpt-chat-review skill to turn words, sentences, grammar questions, and full JLPT problems from chat into monthly review-data JSON archives. The skill records input time, multilingual explanations, JLPT question types, and display-controlled ruby_terms.',
     generatorSkillBody: 'When you have no source material, use jlpt-study-generator. It creates a general plan and the first seven days of content from your target level, available days, daily time, and focus modules. AI-generated material is not official JLPT content; verify readings, meanings, answers, and level assignments yourself.',
+    mcpTitle: 'Connect MCP',
+    mcpBody: 'The local MCP server uses the same JSON resource layer and SQLite study records as the app. Start it with npm run mcp. In an MCP client, set command to node and args to server/mcp-server.mjs.',
+    mcpAuth: 'Auth flow: call login first with the local username and password from this app, then pass the returned token to the other tools.',
+    mcpTools: 'Current tools: get_review_data, get_study_record, list_due_reviews, analyze_weak_points, generate_daily_review_pack, create_review_pack_draft, and get_draft_revision_context. Writes land in drafts first so the user can preview and annotate them.',
+    mcpCodexGuideTitle: 'Codex Example',
+    mcpCodexGuideBody: 'Codex starts this local MCP server over STDIO. It does not directly edit the official deck. It reads JSON resources, SQLite study records, and draft annotations through tools.',
+    mcpFlowTitle: 'Workflow',
+    mcpFlowApp: 'Local App',
+    mcpFlowAppBody: 'Create an account, practice, preview drafts, and add annotations.',
+    mcpFlowBackend: 'Local Backend',
+    mcpFlowBackendBody: 'Read JSON resources and store user data in SQLite.',
+    mcpFlowMcp: 'MCP Server',
+    mcpFlowMcpBody: 'Expose study records, weak-point analysis, and draft context to Codex.',
+    mcpFlowCodex: 'Codex',
+    mcpFlowCodexBody: 'Generate review drafts and improve the next version from user comments.',
+    mcpSetupTitle: 'Setup Steps',
+    mcpStepOne: '1. Run npm install in this worktree, then run npm run dev to start the frontend and backend.',
+    mcpStepTwo: '2. Open the app and create a local username and password. The MCP login tool uses the same account.',
+    mcpStepThree: '3. Add the jlpt_review MCP server to Codex config.toml.',
+    mcpStepFour: '4. Restart Codex and use /mcp in the composer to confirm jlpt_review is connected.',
+    mcpStepFive: '5. Ask Codex to call generate_daily_review_pack or create_review_pack_draft. Preview and annotate it in Drafts, then use get_draft_revision_context for the next revision.',
+    mcpConfigTitle: 'Codex config.toml Example',
+    mcpPromptTitle: 'Example Codex Prompt',
+    mcpPromptExample: 'Use the jlpt_review MCP server, log in to my local JLPT account, read get_study_record, analyze weak points, and create a 30-minute daily review pack draft. Do not directly edit monthly resource JSON.',
+    mcpImplementationTitle: 'How MCP Works',
+    mcpImplementationServer: 'server/mcp-server.mjs is a STDIO MCP server. It reads JSON-RPC messages and responds to initialize, tools/list, and tools/call.',
+    mcpImplementationStorage: 'server/storage.mjs is the shared data layer. Deck resources are aggregated from public/data/review-data/YYYY/MM.json, while users, sessions, progress, drafts, and annotations are stored in SQLite.',
+    mcpImplementationAuth: 'MCP tools do not trust callers by default. Call login first to receive a local session token, then pass that token to tools that read personal study data.',
+    mcpImplementationDraft: 'Agent output is saved into review_pack_drafts first. After the user previews and annotates it, get_draft_revision_context combines the draft, annotations, and study record for the next optimization pass.',
+    navDrafts: 'Drafts',
+    draftsTitle: 'Review Drafts',
+    draftsBody: 'Review material generated by MCP or the backend lands here first. Preview it, add comments, then ask the agent to optimize the next revision from those annotations.',
+    createDailyDraft: 'Generate Today Draft',
+    noDrafts: 'No drafts yet',
+    noDraftsBody: 'Generate a daily draft, or ask MCP to call create_review_pack_draft with agent-generated content.',
+    draftPreview: 'Draft Preview',
+    draftAnnotations: 'User Annotations',
+    addAnnotation: 'Add Annotation',
+    annotationPlaceholder: 'Write what should change, such as fewer questions, deeper explanations, more natural examples, or grouping by grammar point.',
+    saveAnnotation: 'Save Annotation',
+    revisionContext: 'Copy Revision Context',
+    revisionContextCopied: 'Revision context copied. Give it to Codex or an MCP agent to continue refining.',
+    draftStatus: 'Status',
+    updatedAt: 'Updated',
     aiGeneratedLabel: 'AI generated',
     unverifiedContentNotice: 'This item was generated by AI and has not been verified. Check its reading, meaning, answer, and JLPT level yourself.',
     workflowTitle: 'Recommended Flow',
     workflowCapture: '1. Choose an entry point: provide your own questions, or only a target level, study days, and focus modules.',
     workflowGenerate: '2. Use jlpt-chat-review for personal material, or jlpt-study-generator for a general plan and content.',
     workflowPractice: '3. Review by vocabulary, grammar, listening, reading, and mixed modules in the web app.',
-    workflowExport: '4. Export the study record from Settings, then ask AI to analyze weak points, plan the next review, and generate new content.',
+    workflowExport: '4. Preview MCP output in Drafts, add annotations, then ask Codex to read the revision context and improve the next version.',
     brand: 'JLPT Review',
     navHome: 'Home',
     navVocabulary: 'Vocabulary',
@@ -342,7 +472,7 @@ const translations = {
     hours: 'hours',
     minutes: 'minutes',
     heroTitle: 'Turn daily Japanese questions into a reviewable JLPT deck',
-    heroBody: 'Use chat for capture and structuring, then use the web app for module-based review. It is local-first now and ready for accounts later.',
+    heroBody: 'Use chat for capture and structuring, the backend for accounts and study records, and the web app for module-based review.',
     moduleVocabularyTitle: 'Vocabulary Module',
     moduleVocabularyBody: 'JLPT vocabulary, paraphrase, orthography, and kanji-reading questions.',
     moduleGrammarTitle: 'Grammar Module',
@@ -356,7 +486,7 @@ const translations = {
     moduleEmptyTitle: 'No content in this module yet',
     moduleEmptyBody: 'Add matching study material through the skill, then this area will generate practice and explanations.',
     aboutTitle: 'About This App',
-    aboutBody: 'This is a local-first JLPT study tool. You can structure your own questions or generate a general plan from a target level and study duration. The web app handles review, scoring, and browser-local progress.',
+    aboutBody: 'This is a local-first JLPT study tool. You can structure your own questions or generate a general plan from a target level and study duration. The backend handles resource loading, accounts, scoring records, and review progress.',
     deployTitle: 'Deploy Your Own',
     deployBody: 'Fork the GitHub repo, keep the sample data or run npm run data:blank, then deploy it to Cloudflare Pages.',
     deck: 'Deck',
@@ -373,6 +503,8 @@ const translations = {
     kanaToKanjiPrompt: 'Which kanji form best matches "{reading}" in the sentence? {sentence}',
     kanjiToKanaTitle: 'Kanji Reading',
     kanjiToKanaPrompt: 'Choose the best reading of "{word}" in the sentence. {sentence}',
+    nameReadingTitle: 'Name Reading',
+    nameReadingPrompt: 'How is "{word}" read when used as a personal or place name? {sentence}',
     mojiGoiTitle: 'JLPT Vocabulary',
     mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
     yourAnswer: 'Your answer',
@@ -388,7 +520,7 @@ const translations = {
     choiceFits: 'Fits',
     choiceDoesNotFit: 'Does not fit',
     contact: 'Contact',
-    intro: 'Turn your Codex or Claude Code study chats into a local browser deck for JLPT vocabulary, paraphrase, orthography, and kanji-reading practice.',
+    intro: 'Turn your Codex or Claude Code study chats into a local backend-powered deck for JLPT vocabulary, paraphrase, orthography, and kanji-reading practice.',
   },
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -518,6 +650,13 @@ const defaultRubyTerms: RubyTerm[] = [
 
 export default function App() {
   const [data, setData] = useState<ReviewData>(fallbackData);
+  const [authToken, setAuthToken] = useState<string>(() => (typeof window === 'undefined' ? '' : localStorage.getItem(STORAGE_TOKEN) ?? ''));
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+  const [drafts, setDrafts] = useState<DraftSummary[]>([]);
+  const [activeDraft, setActiveDraft] = useState<ReviewPackDraft | null>(null);
+  const [draftAnnotation, setDraftAnnotation] = useState('');
   const [selectedDeck, setSelectedDeck] = useState<Deck | 'all'>('all');
   const [selectedKind, setSelectedKind] = useState<QuestionKind>('moji_goi');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -532,15 +671,48 @@ export default function App() {
   const studyPage = route.page;
 
   useEffect(() => {
-    fetch('/data/review-data.json')
-      .then((response) => response.json())
-      .then((json: ReviewData) => setData(json))
-      .catch(() => setData(fallbackData));
+    let cancelled = false;
 
-    setProgress(readStorage(STORAGE_PROGRESS, {}));
-    setAnswers(readStorage(STORAGE_ANSWERS, {}));
-    setSettings(normalizeSettings(readStorage(STORAGE_SETTINGS, defaultSettings)));
-  }, []);
+    async function restoreSession() {
+      if (!authToken) {
+        setAuthLoading(false);
+        return;
+      }
+
+      try {
+        const me = await apiRequest<{ user: AuthUser }>('/api/me', { token: authToken });
+        const [reviewData, studyState, draftList] = await Promise.all([
+          apiRequest<ReviewData>('/api/review-data', { token: authToken }),
+          apiRequest<StudyState>('/api/study-state', { token: authToken }),
+          apiRequest<{ drafts: DraftSummary[] }>('/api/drafts', { token: authToken }),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setUser(me.user);
+        setData(reviewData);
+        applyStudyState(studyState);
+        setDrafts(draftList.drafts ?? []);
+        setAuthError('');
+      } catch (error) {
+        if (!cancelled) {
+          localStorage.removeItem(STORAGE_TOKEN);
+          setAuthToken('');
+          setUser(null);
+          setAuthError(error instanceof Error ? error.message : 'Session expired');
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthLoading(false);
+        }
+      }
+    }
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setCountdown(getCountdown(NEXT_JLPT_AT)), 60_000);
@@ -566,6 +738,10 @@ export default function App() {
 
   const locale = normalizeLocale(settings.locale);
   const allQuestions = useMemo(() => buildQuestions(items, locale), [items, locale]);
+  const availableKinds = useMemo(
+    () => QUESTION_KIND_ORDER.filter((kind) => allQuestions.some((question) => question.kind === kind)),
+    [allQuestions],
+  );
   const questions = useMemo(
     () => allQuestions.filter((question) => question.kind === selectedKind),
     [allQuestions, selectedKind],
@@ -587,8 +763,14 @@ export default function App() {
   }, [activeView, selectedDeck, selectedKind]);
 
   useEffect(() => {
+    if (availableKinds.length && !availableKinds.includes(selectedKind)) {
+      setSelectedKind(availableKinds[0]);
+    }
+  }, [availableKinds, selectedKind]);
+
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (studyPage !== 'words' || activeView === 'home' || activeView === 'about' || activeView === 'settings' || activeView === 'listening' || activeView === 'reading') {
+      if (studyPage !== 'words' || activeView === 'home' || activeView === 'about' || activeView === 'settings' || activeView === 'drafts' || activeView === 'listening' || activeView === 'reading') {
         return;
       }
       if (event.key === 'ArrowLeft') {
@@ -626,8 +808,21 @@ export default function App() {
     };
     setAnswers(nextAnswers);
     setProgress(nextProgress);
-    writeStorage(STORAGE_ANSWERS, nextAnswers);
-    writeStorage(STORAGE_PROGRESS, nextProgress);
+    if (authToken) {
+      apiRequest<StudyState>('/api/answers', {
+        method: 'POST',
+        token: authToken,
+        body: {
+          questionId: question.id,
+          itemId: question.itemId,
+          selected,
+          correct,
+          progressEntry: nextProgress[question.itemId],
+        },
+      })
+        .then(applyStudyState)
+        .catch((error) => setAuthError(error instanceof Error ? error.message : 'Failed to save answer'));
+    }
   }
 
   function navigateTo(view: AppView, page: StudyPage = studyPage) {
@@ -642,57 +837,136 @@ export default function App() {
     window.location.hash = nextHash;
   }
 
-  function resetLocalProgress() {
-    if (!window.confirm(labels.resetConfirm)) {
-      return;
-    }
-    setAnswers({});
-    setProgress({});
-    localStorage.removeItem(STORAGE_ANSWERS);
-    localStorage.removeItem(STORAGE_PROGRESS);
-  }
-
   function updateSettings(nextSettings: DisplaySettings) {
     const normalized = normalizeSettings(nextSettings);
     setSettings(normalized);
-    writeStorage(STORAGE_SETTINGS, normalized);
+    if (authToken) {
+      apiRequest<{ settings: DisplaySettings }>('/api/study-state/settings', { method: 'PUT', token: authToken, body: normalized })
+        .then((response) => setSettings(normalizeSettings(response.settings)))
+        .catch((error) => setAuthError(error instanceof Error ? error.message : 'Failed to save settings'));
+    }
   }
 
-  function exportStudyRecord() {
-    const exportedAt = new Date().toISOString();
-    const payload = {
-      exported_at: exportedAt,
-      app: 'JLPT Review',
-      data_generated_at: data.generated_at,
-      locale,
-      summary: {
-        items: data.items.length,
-        questions: allQuestions.length,
-        answered: answeredCount,
-        correct: correctCount,
-        mastered: masteredCount,
-      },
-      items: data.items.map((item) => ({
-        id: item.id,
-        deck: item.deck,
-        type: item.type,
-        jlpt_level: item.jlpt_level,
-        original: item.original,
-        reading: item.reading,
-        meaning: itemMeaning(item, locale),
-        input_at: item.input_at,
-      })),
-      answers,
-      progress,
-      settings,
-      ai_prompt: [
-        '请分析这份 JLPT 学习记录。',
-        '请找出我的薄弱模块、容易错的题型、需要提前复习的词条。',
-        '请按照 Anki/遗忘曲线思想，为接下来 7 天生成复习计划。',
-        '请基于错题和即将到期的 nextReviewAt，生成新的 JLPT 练习题和解析。',
-      ].join('\n'),
-    };
-    downloadJSON(`jlpt-study-record-${exportedAt.slice(0, 10)}.json`, payload);
+  function applyStudyState(studyState: StudyState) {
+    setAnswers(studyState.answers ?? {});
+    setProgress(studyState.progress ?? {});
+    setSettings(normalizeSettings(studyState.settings));
+  }
+
+  async function handleAuth(mode: 'login' | 'register', username: string, password: string) {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const session = await apiRequest<{ user: AuthUser; token: string }>(`/api/auth/${mode}`, {
+        method: 'POST',
+        body: { username, password },
+      });
+      localStorage.setItem(STORAGE_TOKEN, session.token);
+      setAuthToken(session.token);
+      setUser(session.user);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Authentication failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    if (authToken) {
+      apiRequest('/api/auth/logout', { method: 'POST', token: authToken }).catch(() => undefined);
+    }
+    localStorage.removeItem(STORAGE_TOKEN);
+    setAuthToken('');
+    setUser(null);
+    setData(fallbackData);
+    setAnswers({});
+    setProgress({});
+    setSettings(defaultSettings);
+    setDrafts([]);
+    setActiveDraft(null);
+  }
+
+  async function refreshDrafts(selectId?: string) {
+    if (!authToken) {
+      return;
+    }
+    const list = await apiRequest<{ drafts: DraftSummary[] }>('/api/drafts', { token: authToken });
+    setDrafts(list.drafts ?? []);
+    const nextId = selectId ?? activeDraft?.id ?? list.drafts?.[0]?.id;
+    if (nextId) {
+      const response = await apiRequest<{ draft: ReviewPackDraft }>(`/api/drafts/${nextId}`, { token: authToken });
+      setActiveDraft(response.draft);
+    }
+  }
+
+  async function createDailyDraft() {
+    if (!authToken) {
+      return;
+    }
+    try {
+      const response = await apiRequest<{ draft: ReviewPackDraft }>('/api/drafts', {
+        method: 'POST',
+        token: authToken,
+        body: { kind: 'daily_review_pack', minutes: 30 },
+      });
+      setActiveDraft(response.draft);
+      setDraftAnnotation('');
+      await refreshDrafts(response.draft.id);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Failed to create draft');
+    }
+  }
+
+  async function selectDraft(id: string) {
+    if (!authToken) {
+      return;
+    }
+    try {
+      const response = await apiRequest<{ draft: ReviewPackDraft }>(`/api/drafts/${id}`, { token: authToken });
+      setActiveDraft(response.draft);
+      setDraftAnnotation('');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Failed to load draft');
+    }
+  }
+
+  async function saveDraftAnnotation() {
+    if (!authToken || !activeDraft || !draftAnnotation.trim()) {
+      return;
+    }
+    try {
+      const response = await apiRequest<{ draft: ReviewPackDraft }>(`/api/drafts/${activeDraft.id}/annotations`, {
+        method: 'POST',
+        token: authToken,
+        body: { body: draftAnnotation },
+      });
+      setActiveDraft(response.draft);
+      setDraftAnnotation('');
+      await refreshDrafts(response.draft.id);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Failed to save annotation');
+    }
+  }
+
+  async function copyDraftRevisionContext() {
+    if (!authToken || !activeDraft) {
+      return;
+    }
+    try {
+      const context = await apiRequest<Record<string, unknown>>(`/api/drafts/${activeDraft.id}/revision-context`, { token: authToken });
+      await navigator.clipboard.writeText(JSON.stringify(context, null, 2));
+      setAuthError(labels.revisionContextCopied);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Failed to copy revision context');
+    }
+  }
+
+  if (authLoading && !user) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <LoginScreen error={authError} loading={authLoading} onSubmit={handleAuth} />;
   }
 
   return (
@@ -716,6 +990,12 @@ export default function App() {
           </nav>
         </div>
       </header>
+
+      {authError ? (
+        <div className="mx-auto mt-3 w-full max-w-7xl px-4 md:px-8 lg:px-10">
+          <p className="rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-sm font-semibold text-[#6f4a16]">{authError}</p>
+        </div>
+      ) : null}
 
       {activeView === 'home' ? (
         <>
@@ -783,7 +1063,7 @@ export default function App() {
               {!filtersCollapsed && studyPage === 'questions' ? (
                 <Panel title={labels.questionType}>
                   <div className="grid grid-cols-2 gap-2">
-                    {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
+                    {availableKinds.map((kind) => (
                       <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
                         {kindLabels[kind]}
                       </SegmentButton>
@@ -796,35 +1076,30 @@ export default function App() {
 
           <div className={hasStudySidebar ? 'min-w-0 space-y-5' : 'min-w-0'}>
             {activeView === 'about' ? <AboutPanel labels={labels} /> : null}
+            {activeView === 'drafts' ? (
+              <DraftsPanel
+                labels={labels}
+                drafts={drafts}
+                activeDraft={activeDraft}
+                annotation={draftAnnotation}
+                onAnnotationChange={setDraftAnnotation}
+                onCreateDailyDraft={createDailyDraft}
+                onSelectDraft={selectDraft}
+                onSaveAnnotation={saveDraftAnnotation}
+                onCopyRevisionContext={copyDraftRevisionContext}
+              />
+            ) : null}
             {activeView === 'settings' ? (
-              <Panel title={labels.settings}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <SettingBlock title={labels.language}>
-                    <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
-                  </SettingBlock>
-                  <SettingBlock title={labels.display}>
-                    <div className="space-y-3">
-                      <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
-                      <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
-                    </div>
-                  </SettingBlock>
-                  <SettingBlock title={labels.exportStudyRecord}>
-                    <p className="text-sm leading-6 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
-                    <button type="button" onClick={exportStudyRecord} className="mt-4 rounded-md bg-[#173d35] px-4 py-2 text-sm font-semibold text-white">
-                      {labels.exportStudyRecordButton}
-                    </button>
-                  </SettingBlock>
-                  <SettingBlock title={labels.reset}>
-                    <p className="text-sm leading-6 text-[#5f625b]">{labels.resetProgressBody}</p>
-                    <button type="button" onClick={resetLocalProgress} className="mt-4 rounded-md border border-[#b65842] bg-white px-4 py-2 text-sm font-semibold text-[#9b412e] hover:bg-[#fae9e2]">
-                      {labels.reset}
-                    </button>
-                  </SettingBlock>
-                </div>
-              </Panel>
+              <SettingsView
+                labels={labels}
+                settings={settings}
+                username={user.username}
+                onLogout={handleLogout}
+                onUpdateSettings={updateSettings}
+              />
             ) : null}
             {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
-            {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
+            {activeView !== 'about' && activeView !== 'drafts' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
               studyPage === 'questions' ? (
                 <PracticePanel
                   activeQuestion={activeQuestion}
@@ -880,33 +1155,40 @@ export default function App() {
 
 function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
   const labels = translations[locale];
-  const readings = unique(items.map((item) => item.reading).filter(Boolean) as string[]);
-  const meanings = unique(items.map((item) => shortMeaning(itemMeaning(item, locale))));
-  const surfaces = unique(items.map((item) => item.original));
   const questions: Question[] = [];
 
   items.forEach((item, index) => {
+    const allowedKinds = new Set(questionKindsForItem(item));
     const meaning = itemMeaning(item, locale);
     const example = item.examples?.[0]?.ja;
     const sentence = questionSentence(item);
     const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
     const context = example ?? sentence;
     const meaningAnswer = shortMeaning(meaning);
-    const meaningChoices = choices(meaningAnswer, meanings, index + 1);
+    if (allowedKinds.has('meaning')) {
+      const meaningChoices = choices(
+        meaningAnswer,
+        questionPool(item, 'meaning', items, locale),
+        index + 1,
+      );
+      questions.push({
+        id: `${item.id}-meaning`,
+        itemId: item.id,
+        kind: 'meaning',
+        title: labels.meaningTitle,
+        prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
+        choices: meaningChoices,
+        answer: meaningAnswer,
+        ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
+      });
+    }
 
-    questions.push({
-      id: `${item.id}-meaning`,
-      itemId: item.id,
-      kind: 'meaning',
-      title: labels.meaningTitle,
-      prompt: template(labels.meaningPrompt, { word: item.original, sentence }),
-      choices: meaningChoices,
-      answer: meaningAnswer,
-      ...buildQuestionExplanation(item, meaningChoices, 'meaning', items, locale, context),
-    });
-
-    if (item.reading) {
-      const kanaToKanjiChoices = choices(item.original, surfaces, index + 2);
+    if (item.reading && allowedKinds.has('kana_to_kanji')) {
+      const kanaToKanjiChoices = choices(
+        item.original,
+        questionPool(item, 'kana_to_kanji', items, locale),
+        index + 2,
+      );
       questions.push({
         id: `${item.id}-kana-to-kanji`,
         itemId: item.id,
@@ -917,23 +1199,77 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
         answer: item.original,
         ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
       });
-      const kanjiToKanaChoices = choices(item.reading, readings, index + 3);
+    }
+
+    if (item.reading && allowedKinds.has('kanji_to_kana')) {
+      const kanjiToKanaChoices = choices(
+        item.reading,
+        questionPool(item, 'kanji_to_kana', items, locale),
+        index + 3,
+      );
+      const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
       questions.push({
         id: `${item.id}-kanji-to-kana`,
         itemId: item.id,
         kind: 'kanji_to_kana',
-        title: labels.kanjiToKanaTitle,
-        prompt: template(labels.kanjiToKanaPrompt, { word: item.original, sentence }),
+        title: isProperName ? labels.nameReadingTitle : labels.kanjiToKanaTitle,
+        prompt: template(isProperName ? labels.nameReadingPrompt : labels.kanjiToKanaPrompt, { word: item.original, sentence }),
         choices: kanjiToKanaChoices,
         answer: item.reading,
         ...buildQuestionExplanation(item, kanjiToKanaChoices, 'kanji_to_kana', items, locale, context),
       });
     }
 
-    questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    if (allowedKinds.has('moji_goi')) {
+      questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    }
   });
 
   return questions;
+}
+
+function questionKindsForItem(item: VocabItem): QuestionKind[] {
+  if (item.question_kinds !== undefined) {
+    return unique(item.question_kinds);
+  }
+
+  if (item.deck === 'name_reading' || item.type === 'proper_name') {
+    return [];
+  }
+
+  if (item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression') {
+    return ['moji_goi', 'meaning'];
+  }
+
+  const kinds: QuestionKind[] = ['moji_goi', 'meaning'];
+  if (item.reading && containsKanji(item.original)) {
+    kinds.push('kana_to_kanji', 'kanji_to_kana');
+  }
+  return kinds;
+}
+
+function containsKanji(value: string) {
+  return /[\u3400-\u9fff々〆ヵヶ]/u.test(value);
+}
+
+function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[], locale: Locale) {
+  const controlledDistractors = item.question_distractors?.[kind];
+  if (controlledDistractors) {
+    return controlledDistractors;
+  }
+
+  const suitableItems = items.filter((candidate) =>
+    candidate.id !== item.id && questionKindsForItem(candidate).includes(kind));
+  const sameDeckItems = suitableItems.filter((candidate) => candidate.deck === item.deck);
+  const candidates = sameDeckItems.length >= 3 ? sameDeckItems : suitableItems;
+
+  if (kind === 'meaning') {
+    return candidates.map((candidate) => shortMeaning(itemMeaning(candidate, locale)));
+  }
+  if (kind === 'kanji_to_kana') {
+    return candidates.map((candidate) => candidate.reading).filter(Boolean) as string[];
+  }
+  return candidates.map((candidate) => candidate.original);
 }
 
 function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
@@ -961,13 +1297,11 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
   const example = item.examples?.[0]?.ja;
   const answer = item.original;
   const meaning = itemMeaning(item, locale);
-  const otherSurfaces = allItems
-    .filter((candidate) => candidate.id !== item.id && candidate.deck === item.deck)
-    .map((candidate) => candidate.original);
+  const otherSurfaces = questionPool(item, 'moji_goi', allItems, locale);
   const prompt = example
     ? example.replace(item.original, '＿＿')
     : template(labels.mojiGoiMeaningPrompt, { meaning: shortMeaning(meaning) });
-  const choiceList = choices(answer, otherSurfaces.length >= 3 ? otherSurfaces : allItems.map((candidate) => candidate.original), index + 4);
+  const choiceList = choices(answer, otherSurfaces, index + 4);
   const context = example ?? `「${item.original}」`;
 
   return {
@@ -1017,6 +1351,13 @@ function correctReasonFor(item: VocabItem, kind: QuestionKind, locale: Locale, c
   const meaning = itemMeaning(item, locale);
   const reading = item.reading ?? '';
   const collocation = item.collocations?.find((value) => value.includes(item.original)) ?? context;
+  const isProperNameReading = kind === 'kanji_to_kana' && (item.deck === 'name_reading' || item.type === 'proper_name');
+
+  if (isProperNameReading) {
+    if (locale === 'ja') return `この項目では「${item.original}」という人名・地名のまとまりを「${reading}」と読みます。人名の読みは漢字一字ずつの音読み・訓読みから一意に決められないため、教材・音声・本人の表記など、信頼できる出典で確認した読みを答えます。`;
+    if (locale === 'en') return `In this entry, the full personal or place name “${item.original}” is read “${reading}.” Name readings cannot always be derived uniquely from each kanji, so the answer must follow a reliable source such as the textbook, audio, or the person's own notation.`;
+    return `本词条记录的整体人名或地名「${item.original}」读作「${reading}」。人名读音通常不能按每个汉字的音读、训读机械拼接，因此本题以教材、音频或本人标注等可靠来源确认的整体读法为答案。`;
+  }
 
   if (locale === 'ja') {
     if (kind === 'meaning') return `「${item.original}」は「${meaning}」という意味です。「${context}」でもこの意味で使われているため、この言い換えが最も適切です。`;
@@ -1046,7 +1387,14 @@ function choiceExplanationFor(
   allItems: VocabItem[],
   locale: Locale,
 ) {
+  const isProperNameReading = kind === 'kanji_to_kana' && (target.deck === 'name_reading' || target.type === 'proper_name');
+
   if (correct) {
+    if (isProperNameReading) {
+      if (locale === 'ja') return `この項目に記録されている「${target.original}」全体の読みです。`;
+      if (locale === 'en') return `This is the reading recorded for the full name “${target.original}” in this entry.`;
+      return `这是本词条为「${target.original}」记录的整体读法。`;
+    }
     if (locale === 'ja') return kind === 'kanji_to_kana' ? `「${target.original}」の正しい読みです。` : `対象語の意味・表記・文脈に一致する正解です。`;
     if (locale === 'en') return kind === 'kanji_to_kana' ? `This is the correct reading of “${target.original}.”` : `This matches the target word's meaning, form, and context.`;
     return kind === 'kanji_to_kana' ? `这是「${target.original}」的正确读音。` : `这个选项与目标词的词义、表记和语境一致。`;
@@ -1054,6 +1402,11 @@ function choiceExplanationFor(
 
   const candidate = itemForChoice(choice, kind, allItems, locale);
   if (!candidate) {
+    if (isProperNameReading) {
+      if (locale === 'ja') return `「${choice}」は、この項目で確認された「${target.original}」全体の読みではありません。人名は漢字を一字ずつ機械的に読まず、出典で確認します。`;
+      if (locale === 'en') return `“${choice}” is not the recorded reading of the full name “${target.original}.” Do not derive a name mechanically one kanji at a time; verify it from the source.`;
+      return `「${choice}」不是本词条记录的「${target.original}」整体读法。人名不能只按单个汉字机械拼读，应以教材、音频或本人标注为准。`;
+    }
     if (locale === 'ja') return `対象語の意味または読みと一致しません。`;
     if (locale === 'en') return `This does not match the target word's meaning or reading.`;
     return `这个选项与目标词要求的词义或读音不一致。`;
@@ -1064,20 +1417,26 @@ function choiceExplanationFor(
 
   if (locale === 'ja') {
     if (kind === 'kana_to_kanji') return `「${candidate.original}」の読みは「${candidate.reading ?? '不明'}」で、「${target.reading}」の表記ではありません。`;
-    if (kind === 'kanji_to_kana') return `「${choice}」は「${candidate.original}」の読みであり、「${target.original}」の読みではありません。`;
+    if (kind === 'kanji_to_kana') return isProperNameReading
+      ? `「${choice}」は別の項目「${candidate.original}」の読みです。この項目で確認された「${target.original}」全体の読みとは異なります。`
+      : `「${choice}」は「${candidate.original}」の読みであり、「${target.original}」の読みではありません。`;
     if (kind === 'meaning') return `この意味は「${candidate.original}」（${candidateMeaning}）に近く、「${target.original}」の中心的な意味とは異なります。`;
     return `「${candidate.original}」は「${candidateMeaning}」を表し${candidateCollocation ? `、「${candidateCollocation}」のように使います` : 'ます'}。本問の意味と結び付きません。`;
   }
 
   if (locale === 'en') {
     if (kind === 'kana_to_kanji') return `“${candidate.original}” is read “${candidate.reading ?? 'unknown'},” so it is not the spelling of “${target.reading}.”`;
-    if (kind === 'kanji_to_kana') return `“${choice}” is the reading of “${candidate.original},” not “${target.original}.”`;
+    if (kind === 'kanji_to_kana') return isProperNameReading
+      ? `“${choice}” is recorded for a different entry, “${candidate.original},” not for the full name “${target.original}.”`
+      : `“${choice}” is the reading of “${candidate.original},” not “${target.original}.”`;
     if (kind === 'meaning') return `This meaning is closer to “${candidate.original}” (${candidateMeaning}), not the core meaning of “${target.original}.”`;
     return `“${candidate.original}” means “${candidateMeaning}”${candidateCollocation ? ` and is used in expressions such as “${candidateCollocation}”` : ''}. It does not fit this sentence.`;
   }
 
   if (kind === 'kana_to_kanji') return `「${candidate.original}」读作「${candidate.reading ?? 'unknown'}」，不是假名「${target.reading}」对应的表记。`;
-  if (kind === 'kanji_to_kana') return `「${choice}」是「${candidate.original}」的读音，不是「${target.original}」的读音。`;
+  if (kind === 'kanji_to_kana') return isProperNameReading
+    ? `「${choice}」是另一个词条「${candidate.original}」记录的读音，不是本词条中「${target.original}」的整体读法。`
+    : `「${choice}」是「${candidate.original}」的读音，不是「${target.original}」的读音。`;
   if (kind === 'meaning') return `这个释义更接近「${candidate.original}」（${candidateMeaning}），与「${target.original}」的核心意思不同。`;
   return `「${candidate.original}」表示“${candidateMeaning}”${candidateCollocation ? `，常见搭配是「${candidateCollocation}」` : ''}，与本句需要表达的意思不符。`;
 }
@@ -1130,7 +1489,7 @@ function supportsStudyPage(view: AppView) {
 }
 
 function isAppView(value: string): value is AppView {
-  return ['home', 'vocabulary', 'grammar', 'listening', 'reading', 'mixed', 'about', 'settings'].includes(value);
+  return ['home', 'vocabulary', 'grammar', 'listening', 'reading', 'mixed', 'drafts', 'about', 'settings'].includes(value);
 }
 
 function shouldCollapseFilters() {
@@ -1169,27 +1528,23 @@ function questionSentence(item: VocabItem, replacement = item.original) {
   return `「${replacement}」`;
 }
 
-function readStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
+async function apiRequest<T = unknown>(
+  path: string,
+  options: { method?: string; token?: string; body?: unknown } = {},
+): Promise<T> {
+  const response = await fetch(path, {
+    method: options.method ?? 'GET',
+    headers: {
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof json.error === 'string' ? json.error : `Request failed: ${response.status}`);
   }
-}
-
-function writeStorage(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function downloadJSON(filename: string, value: unknown) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  return json as T;
 }
 
 function normalizeSettings(value: Partial<DisplaySettings> | undefined): DisplaySettings {
@@ -1275,7 +1630,7 @@ function moduleItems(items: VocabItem[], view: AppView, selectedDeck: Deck | 'al
   if (view === 'grammar') {
     return items.filter((item) => item.deck === 'grammar_expression');
   }
-  if (view === 'listening' || view === 'reading' || view === 'about' || view === 'settings') {
+  if (view === 'listening' || view === 'reading' || view === 'drafts' || view === 'about' || view === 'settings') {
     return [];
   }
   if (view === 'vocabulary') {
@@ -1299,6 +1654,7 @@ function navItems(labels: Record<string, string>) {
     { view: 'listening' as const, label: labels.navListening },
     { view: 'reading' as const, label: labels.navReading },
     { view: 'mixed' as const, label: labels.navMixed },
+    { view: 'drafts' as const, label: labels.navDrafts },
     { view: 'about' as const, label: labels.navAbout },
     { view: 'settings' as const, label: labels.settings },
   ];
@@ -1337,6 +1693,196 @@ function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
       count: items.length,
     },
   ];
+}
+
+function DraftsPanel({
+  labels,
+  drafts,
+  activeDraft,
+  annotation,
+  onAnnotationChange,
+  onCreateDailyDraft,
+  onSelectDraft,
+  onSaveAnnotation,
+  onCopyRevisionContext,
+}: {
+  labels: Record<string, string>;
+  drafts: DraftSummary[];
+  activeDraft: ReviewPackDraft | null;
+  annotation: string;
+  onAnnotationChange: (value: string) => void;
+  onCreateDailyDraft: () => void;
+  onSelectDraft: (id: string) => void;
+  onSaveAnnotation: () => void;
+  onCopyRevisionContext: () => void;
+}) {
+  return (
+    <section className="min-w-0 space-y-4">
+      <div className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold">{labels.draftsTitle}</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-[#5f625b]">{labels.draftsBody}</p>
+          </div>
+          <button type="button" onClick={onCreateDailyDraft} className="h-11 rounded-md bg-[#173d35] px-4 text-sm font-semibold text-white">
+            {labels.createDailyDraft}
+          </button>
+        </div>
+      </div>
+
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="min-w-0 rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm">
+          <h3 className="text-base font-semibold">{labels.draftsTitle}</h3>
+          <div className="mt-4 grid gap-2">
+            {drafts.length ? drafts.map((draft) => (
+              <button
+                type="button"
+                key={draft.id}
+                onClick={() => onSelectDraft(draft.id)}
+                className={`min-w-0 rounded-md border p-3 text-left text-sm ${
+                  activeDraft?.id === draft.id ? 'border-[#24473f] bg-[#e7f0eb]' : 'border-[#d9d0c3] bg-white hover:bg-[#f6eee3]'
+                }`}
+              >
+                <span className="block truncate font-semibold">{draft.title}</span>
+                <span className="mt-2 block text-xs text-[#62645f]">{labels.draftStatus}: {draft.status}</span>
+                <span className="mt-1 block text-xs text-[#62645f]">{labels.updatedAt}: {formatDate(draft.updated_at, 'zh-CN')}</span>
+              </button>
+            )) : (
+              <p className="rounded-md bg-white p-3 text-sm leading-6 text-[#5f625b]">{labels.noDraftsBody}</p>
+            )}
+          </div>
+        </aside>
+
+        <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+          {activeDraft ? (
+            <>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-[#856033]">{labels.draftPreview}</p>
+                  <h3 className="mt-1 text-2xl font-semibold">{activeDraft.title}</h3>
+                </div>
+                <button type="button" onClick={onCopyRevisionContext} className="h-10 rounded-md border border-[#cbd6cf] bg-white px-3 text-sm font-semibold text-[#24473f]">
+                  {labels.revisionContext}
+                </button>
+              </div>
+
+              <pre className="mt-4 max-h-[520px] overflow-auto rounded-md bg-[#f5f7f3] p-4 text-xs leading-5 text-[#27312c]">
+                {JSON.stringify(activeDraft.content, null, 2)}
+              </pre>
+
+              <section className="mt-5 border-t border-[#e2ddd3] pt-4">
+                <h4 className="text-base font-semibold">{labels.draftAnnotations}</h4>
+                <div className="mt-3 grid gap-2">
+                  {activeDraft.annotations.length ? activeDraft.annotations.map((item) => (
+                    <p key={item.id} className="rounded-md bg-[#fffaf4] p-3 text-sm leading-6 text-[#4f5b55]">
+                      {item.body}
+                    </p>
+                  )) : (
+                    <p className="rounded-md bg-[#f5f7f3] p-3 text-sm leading-6 text-[#5f625b]">{labels.addAnnotation}</p>
+                  )}
+                </div>
+                <textarea
+                  value={annotation}
+                  onChange={(event) => onAnnotationChange(event.target.value)}
+                  placeholder={labels.annotationPlaceholder}
+                  className="mt-4 min-h-28 w-full rounded-md border border-[#c8bcae] bg-white p-3 text-sm leading-6"
+                />
+                <button type="button" onClick={onSaveAnnotation} className="mt-3 h-10 rounded-md bg-[#173d35] px-4 text-sm font-semibold text-white">
+                  {labels.saveAnnotation}
+                </button>
+              </section>
+            </>
+          ) : (
+            <div className="rounded-md bg-[#f5f7f3] p-4">
+              <h3 className="text-xl font-semibold">{labels.noDrafts}</h3>
+              <p className="mt-2 text-sm leading-6 text-[#5f625b]">{labels.noDraftsBody}</p>
+            </div>
+          )}
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f5f7f3] px-4 text-[#1f2522]">
+      <div className="w-full max-w-md rounded-lg border border-[#d7dfd6] bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold text-[#7d6032]">JLPT Review</p>
+        <h1 className="mt-2 text-2xl font-semibold">Loading local backend data</h1>
+      </div>
+    </main>
+  );
+}
+
+function LoginScreen({
+  error,
+  loading,
+  onSubmit,
+}: {
+  error: string;
+  loading: boolean;
+  onSubmit: (mode: 'login' | 'register', username: string, password: string) => void;
+}) {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSubmit(mode, username, password);
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f5f7f3] px-4 text-[#1f2522]">
+      <section className="w-full max-w-md rounded-lg border border-[#d7dfd6] bg-white p-6 shadow-sm">
+        <p className="text-sm font-semibold text-[#7d6032]">Local Backend</p>
+        <h1 className="mt-2 text-2xl font-semibold">JLPT Review Login</h1>
+        <p className="mt-3 text-sm leading-6 text-[#5f625b]">
+          Create any local username and password. Personal progress is stored in SQLite on this machine.
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <SegmentButton active={mode === 'login'} onClick={() => setMode('login')}>
+            Login
+          </SegmentButton>
+          <SegmentButton active={mode === 'register'} onClick={() => setMode('register')}>
+            Register
+          </SegmentButton>
+        </div>
+
+        <form className="mt-5 space-y-4" onSubmit={submit}>
+          <label className="block text-sm font-semibold text-[#4f5651]">
+            Username
+            <input
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="mt-2 h-11 w-full rounded-md border border-[#c8bcae] bg-white px-3 text-base"
+              autoComplete="username"
+              pattern="[A-Za-z0-9_-]{3,32}"
+              required
+            />
+          </label>
+          <label className="block text-sm font-semibold text-[#4f5651]">
+            Password
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="mt-2 h-11 w-full rounded-md border border-[#c8bcae] bg-white px-3 text-base"
+              type="password"
+              autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              minLength={4}
+              required
+            />
+          </label>
+          {error ? <p className="rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-sm font-semibold text-[#6f4a16]">{error}</p> : null}
+          <button type="submit" disabled={loading} className="h-11 w-full rounded-md bg-[#173d35] px-4 text-sm font-semibold text-white disabled:opacity-60">
+            {loading ? 'Processing...' : mode === 'register' ? 'Create account' : 'Login'}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -1402,6 +1948,55 @@ function TimeBox({ value, label }: { value: number; label: string }) {
   );
 }
 
+function SettingsView({
+  labels,
+  settings,
+  username,
+  onLogout,
+  onUpdateSettings,
+}: {
+  labels: Record<string, string>;
+  settings: DisplaySettings;
+  username: string;
+  onLogout: () => void;
+  onUpdateSettings: (settings: DisplaySettings) => void;
+}) {
+  return (
+    <section className="min-w-0 rounded-lg border border-[#dfe5dc] bg-[#fbfcf8] p-5 shadow-sm md:p-6">
+      <h2 className="text-2xl font-semibold text-[#27312c]">{labels.settings}</h2>
+      <div className="mt-5 divide-y divide-[#e4e7df]">
+        <SettingsRow title={labels.account}>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-[#68716b]">{labels.currentUser}</span>
+            <span className="rounded-md bg-[#eef3ed] px-3 py-2 text-sm font-semibold text-[#31564c]">{username}</span>
+            <button type="button" onClick={onLogout} className="h-10 rounded-md border border-[#d1d8cf] bg-white px-4 text-sm font-semibold text-[#3f5f56] hover:bg-[#f3f6f1]">
+              {labels.logout}
+            </button>
+          </div>
+        </SettingsRow>
+        <SettingsRow title={labels.language}>
+          <LanguageSelect value={settings.locale} onChange={(locale) => onUpdateSettings({ ...settings, locale })} />
+        </SettingsRow>
+        <SettingsRow title={labels.display}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => onUpdateSettings({ ...settings, showReviewRuby: checked })} />
+            <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => onUpdateSettings({ ...settings, showExplanationRuby: checked })} />
+          </div>
+        </SettingsRow>
+      </div>
+    </section>
+  );
+}
+
+function SettingsRow({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-3 py-4 md:grid-cols-[180px_minmax(0,1fr)] md:items-start">
+      <h3 className="text-sm font-semibold text-[#46514c]">{title}</h3>
+      <div className="min-w-0">{children}</div>
+    </div>
+  );
+}
+
 function ModuleCard({
   module,
   active,
@@ -1441,6 +2036,17 @@ function AboutPanel({ labels }: { labels: Record<string, string> }) {
         <p className="mt-3 border-t border-[#e2ddd3] pt-3 text-sm leading-7 text-[#5f625b]">{labels.generatorSkillBody}</p>
       </article>
       <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm lg:col-span-2">
+        <h2 className="text-2xl font-semibold">{labels.mcpTitle}</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {[labels.mcpBody, labels.mcpAuth, labels.mcpTools].map((text) => (
+            <p key={text} className="rounded-md bg-[#f5f7f3] p-3 text-sm leading-6 text-[#4f5b55]">
+              {text}
+            </p>
+          ))}
+        </div>
+        <CodexMcpGuide labels={labels} />
+      </article>
+      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm lg:col-span-2">
         <h2 className="text-2xl font-semibold">{labels.workflowTitle}</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {[labels.workflowCapture, labels.workflowGenerate, labels.workflowPractice, labels.workflowExport].map((step) => (
@@ -1462,11 +2068,83 @@ function AboutPanel({ labels }: { labels: Record<string, string> }) {
           </a>
         </div>
       </article>
-      <article className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
-        <h2 className="text-2xl font-semibold">{labels.exportForAI}</h2>
-        <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
-      </article>
     </section>
+  );
+}
+
+function CodexMcpGuide({ labels }: { labels: Record<string, string> }) {
+  const flow = [
+    { title: labels.mcpFlowApp, body: labels.mcpFlowAppBody },
+    { title: labels.mcpFlowBackend, body: labels.mcpFlowBackendBody },
+    { title: labels.mcpFlowMcp, body: labels.mcpFlowMcpBody },
+    { title: labels.mcpFlowCodex, body: labels.mcpFlowCodexBody },
+  ];
+  const steps = [labels.mcpStepOne, labels.mcpStepTwo, labels.mcpStepThree, labels.mcpStepFour, labels.mcpStepFive];
+  const implementation = [
+    labels.mcpImplementationServer,
+    labels.mcpImplementationStorage,
+    labels.mcpImplementationAuth,
+    labels.mcpImplementationDraft,
+  ];
+  const config = [
+    '[mcp_servers.jlpt_review]',
+    'command = "node"',
+    'args = ["server/mcp-server.mjs"]',
+    'cwd = "/Users/itsuki/Documents/ChatGPT/JLPT-local-backend-auth-mcp"',
+    'startup_timeout_sec = 20',
+    'tool_timeout_sec = 60',
+  ].join('\n');
+
+  return (
+    <div className="mt-5 border-t border-[#e2ddd3] pt-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+        <section className="min-w-0">
+          <p className="text-sm font-semibold text-[#856033]">{labels.mcpCodexGuideTitle}</p>
+          <p className="mt-2 text-sm leading-7 text-[#5f625b]">{labels.mcpCodexGuideBody}</p>
+          <h3 className="mt-5 text-base font-semibold">{labels.mcpFlowTitle}</h3>
+          <div className="mt-3 grid gap-3 md:grid-cols-4">
+            {flow.map((item, index) => (
+              <div key={item.title} className="relative min-w-0 rounded-md border border-[#d7dfd6] bg-[#f5f7f3] p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#173d35] text-sm font-semibold text-white">
+                  {index + 1}
+                </div>
+                <h4 className="mt-3 text-sm font-semibold">{item.title}</h4>
+                <p className="mt-2 text-xs leading-5 text-[#5f625b]">{item.body}</p>
+                {index < flow.length - 1 ? (
+                  <span className="pointer-events-none absolute -right-3 top-6 hidden h-6 w-6 items-center justify-center rounded-full border border-[#cbd6cf] bg-white text-[#24473f] md:flex">
+                    →
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <h3 className="mt-5 text-base font-semibold">{labels.mcpSetupTitle}</h3>
+          <div className="mt-3 grid gap-2">
+            {steps.map((step) => (
+              <p key={step} className="rounded-md bg-[#fffaf4] p-3 text-sm leading-6 text-[#4f5b55]">
+                {step}
+              </p>
+            ))}
+          </div>
+          <h3 className="mt-5 text-base font-semibold">{labels.mcpImplementationTitle}</h3>
+          <div className="mt-3 grid gap-2">
+            {implementation.map((item) => (
+              <p key={item} className="rounded-md bg-[#f8faf5] p-3 text-sm leading-6 text-[#4f5b55]">
+                {item}
+              </p>
+            ))}
+          </div>
+        </section>
+        <aside className="min-w-0 rounded-md border border-[#d8cdbc] bg-[#fffaf4] p-4">
+          <h3 className="text-base font-semibold">{labels.mcpConfigTitle}</h3>
+          <pre className="mt-3 overflow-x-auto rounded-md bg-[#1f2522] p-4 text-xs leading-5 text-[#f5f7f3]">
+            {config}
+          </pre>
+          <h3 className="mt-5 text-base font-semibold">{labels.mcpPromptTitle}</h3>
+          <p className="mt-3 rounded-md bg-white p-3 text-sm leading-6 text-[#4f5b55]">{labels.mcpPromptExample}</p>
+        </aside>
+      </div>
+    </div>
   );
 }
 
@@ -1512,7 +2190,7 @@ function LanguageSelect({ value, onChange }: { value: Locale; onChange: (locale:
     <select
       value={value}
       onChange={(event) => onChange(event.target.value as Locale)}
-      className="h-11 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#574f48]"
+      className="h-11 rounded-md border border-[#d1d8cf] bg-white px-3 text-sm font-semibold text-[#46514c]"
       aria-label="Language"
     >
       <option value="zh-CN">简体中文</option>
@@ -1522,18 +2200,9 @@ function LanguageSelect({ value, onChange }: { value: Locale; onChange: (locale:
   );
 }
 
-function SettingBlock({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-[#e1d7c9] bg-white p-4">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <div className="mt-3">{children}</div>
-    </div>
-  );
-}
-
 function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[#d9d0c3] bg-white px-3 py-2 text-sm font-semibold text-[#4f5651]">
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[#d7ded5] bg-white px-3 py-2 text-sm font-semibold text-[#4f5651]">
       <span>{label}</span>
       <input
         type="checkbox"

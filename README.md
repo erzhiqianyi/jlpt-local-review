@@ -1,13 +1,13 @@
 # JLPT Master Deck
 
-A local-first JLPT review tool built from your own study chats or an AI-generated general plan. The app runs as a static Vite site, stores progress in the browser, and can be deployed to Cloudflare Pages.
+A local-first JLPT review tool built from your own study chats or an AI-generated general plan. The app now runs with a local Node backend: public study resources stay in JSON, while accounts, sessions, settings, answers, and review progress are stored in local SQLite.
 
 There are two supported workflows:
 
 1. Personalized review: chat with Codex or Claude Code about material you do not understand, then use `jlpt-chat-review` to structure it.
 2. General study generation: give `jlpt-study-generator` a target level, available days, daily study time, and focus modules. No source notes are required.
-3. Put selected generated items into `public/data/review-data.json` and practice in the local web app.
-4. Your answers and progress stay in browser storage.
+3. Put selected generated items into monthly files under `public/data/review-data/YYYY/MM.json` and practice in the local web app.
+4. Your answers and progress stay in `.local/jlpt.sqlite`.
 
 ## Features
 
@@ -20,11 +20,13 @@ There are two supported workflows:
 - Structured explanations after each answer: full context, why the answer is correct, per-choice distractor analysis, and a memory point with useful comparisons.
 - Optional furigana display for review cards and answer explanations. Questions and answer choices stay unannotated.
 - Multilingual UI and multilingual data support through `localizations`.
-- Local-only progress with `localStorage`.
+- Local username/password accounts backed by SQLite.
+- Local-only progress stored in `.local/jlpt.sqlite`.
 - Exportable study records for AI analysis and next-plan generation.
+- Review-pack drafts with in-app preview, user annotations, and revision context for MCP/agent optimization.
 - A second skill for generating a general study plan and original practice content without learner-provided notes.
 - Visible `AI generated` and `unverified` notices for generated entries that require learner review.
-- Static deployment friendly: no login, database, or backend required.
+- MCP-ready backend boundary for future personalized analysis and review-pack generation.
 
 ## Local Setup
 
@@ -33,13 +35,21 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite, usually:
+`npm run dev` starts both the local backend and the Vite app. Open:
 
 ```text
-http://localhost:5180/
+http://localhost:5191/
 ```
 
-Build the static site:
+The backend runs on:
+
+```text
+http://localhost:8791/
+```
+
+Create any local username and password from the login screen. The account is local to this machine.
+
+Build the frontend:
 
 ```bash
 npm run build
@@ -47,7 +57,7 @@ npm run build
 
 The production output is written to `dist`.
 
-Main pages have independent static-friendly addresses, for example:
+Main pages have independent hash addresses, for example:
 
 ```text
 /#/home
@@ -60,7 +70,7 @@ Main pages have independent static-friendly addresses, for example:
 
 ## Start With Your Own Data
 
-This repository includes an example deck. To use the included sample content, keep `public/data/review-data.json` as-is and run:
+This repository includes an example deck. To use the included sample content, keep the monthly files under `public/data/review-data/` as-is and run:
 
 ```bash
 npm install
@@ -74,7 +84,7 @@ npm run data:blank
 npm run dev
 ```
 
-Then use Codex or Claude Code to add your own study items back into `public/data/review-data.json`.
+Then use Codex or Claude Code to add your own study items into the matching monthly file under `public/data/review-data/YYYY/MM.json`. Personal answers and progress are stored separately in SQLite.
 
 ## Local Tunnel Preview
 
@@ -87,7 +97,7 @@ npm run dev
 The app runs on:
 
 ```text
-http://localhost:5180/
+http://localhost:5191/
 ```
 
 If you have Cloudflare Tunnel configured for this host, use:
@@ -96,7 +106,7 @@ If you have Cloudflare Tunnel configured for this host, use:
 npm run dev:tunnel
 ```
 
-This starts the Vite dev server on port `5180` and runs:
+This starts the Vite dev server on port `5191` and runs:
 
 ```bash
 cloudflared tunnel --config ~/.cloudflared/config.yml run satori-local
@@ -110,17 +120,16 @@ https://jlpt-local.erzhiqian.cc
 
 ## Data Model
 
-The app reads seed content from:
+The backend reads seed resource content from:
 
 ```text
-public/data/review-data.json
+public/data/review-data/YYYY/MM.json
 ```
 
-User progress is not written back to this file. It stays in the learner's browser under these local storage keys:
+User progress is not written back to this file. It stays in local SQLite:
 
 ```text
-jlpt-vocab-progress-v1
-jlpt-vocab-answers-v1
+.local/jlpt.sqlite
 ```
 
 This means a new deployment can update the vocabulary data without deleting each user's local review progress.
@@ -139,7 +148,7 @@ Each item should include an input timestamp:
 }
 ```
 
-Per-user review scheduling is stored in browser `localStorage`, not in the public seed data. For each item, the app records:
+Per-user review scheduling is stored in SQLite, not in the public seed data. For each item, the app records:
 
 ```json
 {
@@ -159,11 +168,13 @@ The review interval follows a simplified Anki/SM-2 style schedule:
 - Later correct reviews: previous interval multiplied by the item's ease factor.
 - Wrong review: next day again, with a lower ease factor.
 
-This keeps the repository data shareable while each learner's forgetting-curve schedule stays private in their own browser.
+This keeps the repository data shareable while each learner's forgetting-curve schedule stays private on their own machine.
+
+See [docs/local-backend-mcp.md](docs/local-backend-mcp.md) for the backend and MCP design.
 
 ## Export Study Records
 
-Open `设置` / `Settings` and use `导出学习记录` to download a JSON file from the current browser. The export includes:
+Open `设置` / `Settings` and use `导出学习记录` to download a JSON file assembled by the local backend. The export includes:
 
 - Current content version and item summary.
 - Answer history.
@@ -179,6 +190,18 @@ Give this exported JSON to Codex, Claude Code, or another AI assistant and ask i
 - Create new JLPT-style questions and explanations from the weak points.
 
 The export stays local. The app does not upload learning records by itself.
+
+## Draft Review Packs
+
+Open `草稿` / `Drafts` to preview review packs generated by the backend or MCP. A draft can collect user annotations such as "reduce question count", "make explanations more detailed", or "replace unnatural examples".
+
+The revision context endpoint combines the draft, annotations, study record, and an optimization prompt:
+
+```text
+GET /api/drafts/:id/revision-context
+```
+
+MCP clients can use `get_draft_revision_context` to read the same context and generate the next draft revision without directly changing the monthly resource files.
 
 ## Using Codex
 
@@ -201,11 +224,11 @@ Then chat naturally with Codex:
 
 ```text
 $jlpt-chat-review
-整理下面这些 JLPT 学习内容，生成适合本项目的 review-data.json。
+整理下面这些 JLPT 学习内容，生成适合本项目月度归档结构的 review-data JSON。
 输出语言：zh-CN, ja, en。
 ```
 
-Paste your notes, vocabulary explanations, sentences, or JLPT-style questions. Ask Codex to update `public/data/review-data.json`, then run:
+Paste your notes, vocabulary explanations, sentences, or JLPT-style questions. Ask Codex to update the matching monthly file under `public/data/review-data/YYYY/MM.json`, then run:
 
 ```bash
 npm run build
@@ -259,14 +282,14 @@ Claude Code does not need the Codex skill system. Use the same instructions manu
 2. For your own notes, tell Claude Code to read `skills/jlpt-chat-review/SKILL.md`.
 3. For a general plan without notes, tell it to read `skills/jlpt-study-generator/SKILL.md`.
 4. Give it the relevant notes, or just your target level, days, daily time, and focus modules.
-5. Ask it to update `public/data/review-data.json` only when you want generated vocabulary or grammar imported.
+5. Ask it to update the matching monthly JSON file only when you want generated vocabulary or grammar imported.
 6. Run `npm run build`.
 
 Example prompt:
 
 ```text
 Read skills/jlpt-chat-review/SKILL.md and use it as the data extraction guide.
-Convert the following JLPT vocabulary notes into public/data/review-data.json.
+Convert the following JLPT vocabulary notes into the matching monthly file under public/data/review-data/YYYY/MM.json.
 Do not include raw private chat transcripts. Keep only structured study records and explanations.
 ```
 

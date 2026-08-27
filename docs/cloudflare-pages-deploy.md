@@ -25,8 +25,8 @@
 
 - 不需要用户系统。
 - 不需要服务端 API。
-- 学习进度保存在浏览器 `localStorage`。
-- 内容种子在 `public/data/review-data.json`。
+- 学习进度保存在本地 SQLite。
+- 内容种子按月归档在 `public/data/review-data/YYYY/MM.json`。
 - `npm run build` 会生成 `dist/index.html` 和静态资源。
 
 ## 本地 Cloudflare Tunnel 预览
@@ -67,11 +67,11 @@ https://jlpt-local.erzhiqian.cc
 后续新增单词时：
 
 1. 在 Codex 或 Claude Code 里整理学习内容。
-2. 更新 `public/data/review-data.json`。
+2. 更新对应月份的 `public/data/review-data/YYYY/MM.json`。
 3. 提交并 push 到 GitHub。
 4. Cloudflare Pages 自动部署。
 
-用户浏览器里的学习进度不会跟随部署清空，因为它存在本地 `localStorage`。
+用户学习进度不会跟随资源部署清空，因为它存在本地 SQLite。
 
 ## 官方文档依据
 
