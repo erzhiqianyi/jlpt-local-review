@@ -26,13 +26,34 @@ Each item:
   "jlpt_level": "N1",
   "original": "測定",
   "reading": "そくてい",
+  "ruby_terms": [
+    {
+      "text": "測定",
+      "reading": "そくてい"
+    }
+  ],
   "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
   "core_memory": "按标准、用仪器把客观数据测出来。",
   "part_of_speech": "名词・サ变动词",
   "collocations": ["血圧を測定する", "測定結果"],
+  "collocation_ruby": [
+    [
+      { "text": "血圧", "reading": "けつあつ" },
+      { "text": "測定", "reading": "そくてい" }
+    ],
+    [
+      { "text": "測定", "reading": "そくてい" },
+      { "text": "結果", "reading": "けっか" }
+    ]
+  ],
   "examples": [
     {
       "ja": "室内の温度を測定した。",
+      "ruby": [
+        { "text": "室内", "reading": "しつない" },
+        { "text": "温度", "reading": "おんど" },
+        { "text": "測定", "reading": "そくてい" }
+      ],
       "zh": "测定了室内温度。"
     }
   ],
@@ -76,13 +97,36 @@ Recommended values:
 ## Optional But Useful Fields
 
 - `reading`
+- `ruby_terms`
 - `jlpt_level`
 - `part_of_speech`
 - `collocations`
+- `collocation_ruby`
 - `examples`
 - `comparisons`
 - `analysis`
 - `tags`
+
+## Furigana Fields
+
+Every Japanese field that contains kanji should have kana reading metadata.
+
+Use `ruby_terms` arrays instead of embedding readings directly into display text:
+
+```json
+[
+  { "text": "測定", "reading": "そくてい" },
+  { "text": "結果", "reading": "けっか" }
+]
+```
+
+Rules:
+
+- `text` is the exact kanji-containing substring found in the Japanese field.
+- `reading` is hiragana unless the source requires katakana.
+- Do not add readings for kana-only text.
+- For uncertain proper-name readings, include the most likely reading and mention uncertainty in `analysis`.
+- Keep base fields such as `original`, `collocations`, and `examples[].ja` clean, without parentheses readings.
 
 ## Privacy Rule
 

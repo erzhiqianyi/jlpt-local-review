@@ -6,6 +6,8 @@ type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 type QuestionKind = 'reading' | 'meaning' | 'collocation' | 'comparison' | 'moji_goi';
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ProgressState = Record<string, { correct: number; wrong: number; status: 'new' | 'learning' | 'review' | 'mastered' }>;
+type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean };
+type RubyTerm = { text: string; reading: string };
 
 type VocabItem = {
   id: string;
@@ -22,6 +24,7 @@ type VocabItem = {
   examples?: { ja: string; zh: string }[];
   comparisons?: { target: string; difference_zh: string }[];
   analysis?: string;
+  ruby_terms?: RubyTerm[];
   tags?: string[];
 };
 
@@ -43,6 +46,7 @@ type Question = {
 
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
 const STORAGE_ANSWERS = 'jlpt-vocab-answers-v1';
+const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
 
 const kindLabels: Record<QuestionKind, string> = {
   reading: '读音',
@@ -64,6 +68,121 @@ const fallbackData: ReviewData = {
   items: [],
 };
 
+const defaultSettings: DisplaySettings = {
+  showReviewRuby: true,
+  showExplanationRuby: true,
+};
+
+const defaultRubyTerms: RubyTerm[] = [
+  { text: '測定機器', reading: 'そくていきき' },
+  { text: '日本経済', reading: 'にほんけいざい' },
+  { text: '近代文学', reading: 'きんだいぶんがく' },
+  { text: '海外経験', reading: 'かいがいけいけん' },
+  { text: '安全基準', reading: 'あんぜんきじゅん' },
+  { text: '調査結果', reading: 'ちょうさけっか' },
+  { text: '測定結果', reading: 'そくていけっか' },
+  { text: '測定値', reading: 'そくていち' },
+  { text: '専門家', reading: 'せんもんか' },
+  { text: '三時間', reading: 'さんじかん' },
+  { text: '十年', reading: 'じゅうねん' },
+  { text: '治療後', reading: 'ちりょうご' },
+  { text: '手術後', reading: 'しゅじゅつご' },
+  { text: '専門的', reading: 'せんもんてき' },
+  { text: '判断力', reading: 'はんだんりょく' },
+  { text: '指導者', reading: 'しどうしゃ' },
+  { text: '手続き', reading: 'てつづき' },
+  { text: '必要', reading: 'ひつよう' },
+  { text: '正式', reading: 'せいしき' },
+  { text: '手順', reading: 'てじゅん' },
+  { text: '決定', reading: 'けってい' },
+  { text: '段階', reading: 'だんかい' },
+  { text: '学習', reading: 'がくしゅう' },
+  { text: '今後', reading: 'こんご' },
+  { text: '方針', reading: 'ほうしん' },
+  { text: '地域', reading: 'ちいき' },
+  { text: '自然', reading: 'しぜん' },
+  { text: '種類', reading: 'しゅるい' },
+  { text: '知識', reading: 'ちしき' },
+  { text: '資源', reading: 'しげん' },
+  { text: '栄養', reading: 'えいよう' },
+  { text: '語彙', reading: 'ごい' },
+  { text: '遠く', reading: 'とおく' },
+  { text: '予想', reading: 'よそう' },
+  { text: '上回る', reading: 'うわまわる' },
+  { text: '苦しい', reading: 'くるしい' },
+  { text: '時期', reading: 'じき' },
+  { text: '我慢', reading: 'がまん' },
+  { text: '忍耐', reading: 'にんたい' },
+  { text: '文書', reading: 'ぶんしょ' },
+  { text: '内容', reading: 'ないよう' },
+  { text: '項目', reading: 'こうもく' },
+  { text: '順番', reading: 'じゅんばん' },
+  { text: '詳しい', reading: 'くわしい' },
+  { text: '索引', reading: 'さくいん' },
+  { text: '血圧', reading: 'けつあつ' },
+  { text: '温度', reading: 'おんど' },
+  { text: '室内', reading: 'しつない' },
+  { text: '機械', reading: 'きかい' },
+  { text: '性能', reading: 'せいのう' },
+  { text: '結果', reading: 'けっか' },
+  { text: '製品', reading: 'せいひん' },
+  { text: '基準', reading: 'きじゅん' },
+  { text: '資格', reading: 'しかく' },
+  { text: '事実', reading: 'じじつ' },
+  { text: '状態', reading: 'じょうたい' },
+  { text: '認証', reading: 'にんしょう' },
+  { text: '承認', reading: 'しょうにん' },
+  { text: '指定', reading: 'してい' },
+  { text: '物価', reading: 'ぶっか' },
+  { text: '上昇', reading: 'じょうしょう' },
+  { text: '人口', reading: 'じんこう' },
+  { text: '減少', reading: 'げんしょう' },
+  { text: '技術', reading: 'ぎじゅつ' },
+  { text: '進歩', reading: 'しんぽ' },
+  { text: '毎年', reading: 'まいとし' },
+  { text: '徐々', reading: 'じょじょ' },
+  { text: '経過', reading: 'けいか' },
+  { text: '事故', reading: 'じこ' },
+  { text: '事件', reading: 'じけん' },
+  { text: '過程', reading: 'かてい' },
+  { text: '経緯', reading: 'けいい' },
+  { text: '病気', reading: 'びょうき' },
+  { text: '順調', reading: 'じゅんちょう' },
+  { text: '概観', reading: 'がいかん' },
+  { text: '歴史', reading: 'れきし' },
+  { text: '本章', reading: 'ほんしょう' },
+  { text: '全体', reading: 'ぜんたい' },
+  { text: '動向', reading: 'どうこう' },
+  { text: '状況', reading: 'じょうきょう' },
+  { text: '概要', reading: 'がいよう' },
+  { text: '概略', reading: 'がいりゃく' },
+  { text: '概況', reading: 'がいきょう' },
+  { text: '養成', reading: 'ようせい' },
+  { text: '読書', reading: 'どくしょ' },
+  { text: '習慣', reading: 'しゅうかん' },
+  { text: '人材', reading: 'じんざい' },
+  { text: '講座', reading: 'こうざ' },
+  { text: '育成', reading: 'いくせい' },
+  { text: '養う', reading: 'やしなう' },
+  { text: '踏んで', reading: 'ふんで' },
+  { text: '踏む', reading: 'ふむ' },
+  { text: '犬', reading: 'いぬ' },
+  { text: '足', reading: 'あし' },
+  { text: '申請', reading: 'しんせい' },
+  { text: '豊富', reading: 'ほうふ' },
+  { text: '遥か', reading: 'はるか' },
+  { text: '遥', reading: 'はるか' },
+  { text: '昔', reading: 'むかし' },
+  { text: '出来事', reading: 'できごと' },
+  { text: '辛抱', reading: 'しんぼう' },
+  { text: '目次', reading: 'もくじ' },
+  { text: '服部', reading: 'はっとり' },
+  { text: '智里', reading: 'ちさと' },
+  { text: '佐野', reading: 'さの' },
+  { text: '智子', reading: 'ともこ' },
+  { text: '新谷', reading: 'しんたに' },
+];
+
 export default function App() {
   const [data, setData] = useState<ReviewData>(fallbackData);
   const [selectedDeck, setSelectedDeck] = useState<Deck | 'all'>('all');
@@ -71,6 +190,7 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
+  const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
 
   useEffect(() => {
     fetch('/data/review-data.json')
@@ -80,6 +200,7 @@ export default function App() {
 
     setProgress(readStorage(STORAGE_PROGRESS, {}));
     setAnswers(readStorage(STORAGE_ANSWERS, {}));
+    setSettings(readStorage(STORAGE_SETTINGS, defaultSettings));
   }, []);
 
   const items = useMemo(() => {
@@ -128,6 +249,11 @@ export default function App() {
     setProgress({});
     localStorage.removeItem(STORAGE_ANSWERS);
     localStorage.removeItem(STORAGE_PROGRESS);
+  }
+
+  function updateSettings(nextSettings: DisplaySettings) {
+    setSettings(nextSettings);
+    writeStorage(STORAGE_SETTINGS, nextSettings);
   }
 
   return (
@@ -183,6 +309,21 @@ export default function App() {
             </div>
           </Panel>
 
+          <Panel title="假名标注">
+            <div className="space-y-3">
+              <Toggle
+                checked={settings.showReviewRuby}
+                label="复习卡片显示"
+                onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
+              />
+              <Toggle
+                checked={settings.showExplanationRuby}
+                label="题目解析显示"
+                onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })}
+              />
+            </div>
+          </Panel>
+
           <Panel title="练习规则">
             <ul className="space-y-2 text-sm leading-6 text-[#62645f]">
               <li>选择答案后立即判分。</li>
@@ -199,7 +340,13 @@ export default function App() {
               <div>
                 <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : '题目'}</p>
                 <h2 className="mt-2 text-2xl font-semibold">{activeQuestion?.title ?? '没有可练习题目'}</h2>
-                <p className="mt-3 text-lg leading-8 text-[#353b37]">{activeQuestion?.prompt ?? '当前筛选条件下没有题目。'}</p>
+                <p className="mt-3 text-lg leading-8 text-[#353b37]">
+                  {activeQuestion ? (
+                    <RubyText text={activeQuestion.prompt} items={data.items} enabled={settings.showReviewRuby} />
+                  ) : (
+                    '当前筛选条件下没有题目。'
+                  )}
+                </p>
               </div>
               <div className="flex h-10 min-w-28 items-center justify-center rounded-md bg-[#e8f0eb] px-3 text-sm font-semibold text-[#24473f]">
                 {questions.length ? `${activeIndex + 1} / ${questions.length}` : '0 / 0'}
@@ -227,13 +374,18 @@ export default function App() {
                         onClick={() => answerQuestion(activeQuestion, choice)}
                         className={`min-h-14 rounded-md border px-4 py-3 text-left text-base font-semibold ${color}`}
                       >
-                        {choice}
+                        <RubyText text={choice} items={data.items} enabled={settings.showReviewRuby} />
                       </button>
                     );
                   })}
                 </div>
 
-                <AnswerPanel question={activeQuestion} answer={answers[activeQuestion.id]} />
+                <AnswerPanel
+                  question={activeQuestion}
+                  answer={answers[activeQuestion.id]}
+                  items={data.items}
+                  showRuby={settings.showExplanationRuby}
+                />
 
                 <div className="mt-5 flex flex-wrap gap-2">
                   <button
@@ -257,7 +409,7 @@ export default function App() {
 
           <section className="grid gap-4 lg:grid-cols-2">
             {items.map((item) => (
-              <VocabCard key={item.id} item={item} progress={progress[item.id]} />
+              <VocabCard key={item.id} item={item} progress={progress[item.id]} showRuby={settings.showReviewRuby} />
             ))}
           </section>
         </div>
@@ -442,6 +594,20 @@ function SegmentButton({ active, children, onClick }: { active: boolean; childre
   );
 }
 
+function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[#d9d0c3] bg-white px-3 py-2 text-sm font-semibold text-[#4f5651]">
+      <span>{label}</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="h-5 w-5 accent-[#24473f]"
+      />
+    </label>
+  );
+}
+
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-lg border border-[#d8cdbc] bg-[#fffaf4] p-4 shadow-sm">
@@ -451,7 +617,17 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function AnswerPanel({ question, answer }: { question: Question; answer?: { selected: string; correct: boolean } }) {
+function AnswerPanel({
+  question,
+  answer,
+  items,
+  showRuby,
+}: {
+  question: Question;
+  answer?: { selected: string; correct: boolean };
+  items: VocabItem[];
+  showRuby: boolean;
+}) {
   if (!answer) {
     return (
       <div className="mt-5 rounded-lg border border-[#ded5c7] bg-[#fffaf4] p-4 text-sm leading-6 text-[#62645f]">
@@ -463,14 +639,16 @@ function AnswerPanel({ question, answer }: { question: Question; answer?: { sele
   return (
     <div className={`mt-5 rounded-lg border p-4 ${answer.correct ? 'border-[#3d735f] bg-[#e8f3ec]' : 'border-[#b65842] bg-[#fae9e2]'}`}>
       <p className="text-sm font-semibold">{answer.correct ? '正确' : '错误'}</p>
-      <p className="mt-2 text-sm">你的答案：{answer.selected}</p>
-      <p className="mt-1 text-sm">正确答案：{question.answer}</p>
-      <p className="mt-3 text-sm leading-6 text-[#3f4641]">{question.explanation}</p>
+      <p className="mt-2 text-sm">你的答案：<RubyText text={answer.selected} items={items} enabled={showRuby} /></p>
+      <p className="mt-1 text-sm">正确答案：<RubyText text={question.answer} items={items} enabled={showRuby} /></p>
+      <p className="mt-3 text-sm leading-6 text-[#3f4641]">
+        <RubyText text={question.explanation} items={items} enabled={showRuby} />
+      </p>
     </div>
   );
 }
 
-function VocabCard({ item, progress }: { item: VocabItem; progress?: ProgressState[string] }) {
+function VocabCard({ item, progress, showRuby }: { item: VocabItem; progress?: ProgressState[string]; showRuby: boolean }) {
   return (
     <article className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -478,18 +656,77 @@ function VocabCard({ item, progress }: { item: VocabItem; progress?: ProgressSta
         <span className="rounded bg-[#ead9c7] px-2 py-1 text-xs font-semibold text-[#6f412d]">{item.jlpt_level ?? 'unknown'}</span>
         <span className="rounded bg-[#edf0e9] px-2 py-1 text-xs font-semibold text-[#52645c]">{progress?.status ?? 'new'}</span>
       </div>
-      <h3 className="mt-3 text-2xl font-semibold">{item.original}</h3>
+      <h3 className="mt-3 text-2xl font-semibold">
+        <RubyText text={item.original} items={[item]} enabled={showRuby} />
+      </h3>
       {item.reading ? <p className="mt-1 text-sm font-semibold text-[#8c5a3d]">{item.reading}</p> : null}
       <p className="mt-3 text-sm font-semibold">{item.meaning_zh}</p>
       <p className="mt-2 text-sm leading-6 text-[#5f625b]">{item.core_memory}</p>
       {item.collocations?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {item.collocations.slice(0, 4).map((collocation) => (
-            <span key={collocation} className="rounded-md bg-[#f4eee6] px-2 py-1 text-xs text-[#554f48]">{collocation}</span>
+            <span key={collocation} className="rounded-md bg-[#f4eee6] px-2 py-1 text-xs text-[#554f48]">
+              <RubyText text={collocation} items={[item]} enabled={showRuby} />
+            </span>
           ))}
         </div>
       ) : null}
-      {item.analysis ? <p className="mt-3 rounded-md bg-[#f8f3eb] p-3 text-xs leading-5 text-[#62645f]">解析：{item.analysis}</p> : null}
+      {item.analysis ? (
+        <p className="mt-3 rounded-md bg-[#f8f3eb] p-3 text-xs leading-5 text-[#62645f]">
+          解析：<RubyText text={item.analysis} items={[item]} enabled={showRuby} />
+        </p>
+      ) : null}
     </article>
   );
+}
+
+function RubyText({ text, items, enabled }: { text: string; items: VocabItem[]; enabled: boolean }) {
+  if (!enabled) {
+    return <>{text}</>;
+  }
+
+  const terms = rubyTermsForItems(items);
+  if (!terms.length) {
+    return <>{text}</>;
+  }
+
+  const parts: React.ReactNode[] = [];
+  let index = 0;
+  while (index < text.length) {
+    const term = terms.find((candidate) => text.startsWith(candidate.surface, index));
+    if (!term) {
+      parts.push(text[index]);
+      index += 1;
+      continue;
+    }
+    parts.push(
+      <ruby key={`${term.surface}-${index}`}>
+        {term.surface}
+        <rp>(</rp>
+        <rt>{term.reading}</rt>
+        <rp>)</rp>
+      </ruby>,
+    );
+    index += term.surface.length;
+  }
+  return <>{parts}</>;
+}
+
+function rubyTermsForItems(items: VocabItem[]) {
+  const fromItems = items.flatMap((item) => [
+    ...(item.reading ? [{ text: item.original, reading: item.reading }] : []),
+    ...(item.ruby_terms ?? []),
+  ]);
+  const seen = new Set<string>();
+  return [...fromItems, ...defaultRubyTerms]
+    .filter((term) => {
+      const key = `${term.text}\u0000${term.reading}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .map((term) => ({ surface: term.text, reading: term.reading }))
+    .sort((a, b) => b.surface.length - a.surface.length);
 }

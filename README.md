@@ -15,6 +15,7 @@ The intended workflow is simple:
 - Practice modes for reading, meaning, collocations, comparison questions, and JLPT `文字・語彙`.
 - Immediate correct/incorrect judging.
 - Full explanations after each answer.
+- Optional furigana display for review cards and answer explanations.
 - Local-only progress with `localStorage`.
 - Static deployment friendly: no login, database, or backend required.
 
@@ -87,6 +88,8 @@ jlpt-vocab-answers-v1
 ```
 
 This means a new deployment can update the vocabulary data without deleting each user's local review progress.
+
+Japanese text that contains kanji should include kana support through `reading` and `ruby_terms`. The app has separate settings for showing furigana in review cards and answer explanations.
 
 ## Using Codex
 

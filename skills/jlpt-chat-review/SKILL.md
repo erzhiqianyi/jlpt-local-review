@@ -29,6 +29,7 @@ For each item:
 - Estimate JLPT level only when there is enough evidence; otherwise use `unknown`.
 - Write Chinese explanations for review.
 - Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
+- Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
 
 ## Practice Expectations
@@ -42,6 +43,8 @@ The app can generate these practice modes from each item:
 - `文字・語彙`: JLPT-style vocabulary selection in a sentence or meaning prompt.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
+
+Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support.
 
 ## Boundaries
 

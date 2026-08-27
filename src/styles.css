@@ -28,3 +28,10 @@ a {
 button {
   font: inherit;
 }
+
+rt {
+  color: #8c5a3d;
+  font-size: 0.62em;
+  font-weight: 600;
+  line-height: 1;
+}

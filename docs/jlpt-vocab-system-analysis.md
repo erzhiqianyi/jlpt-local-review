@@ -45,6 +45,7 @@ type VocabItem = {
   examples: { ja: string; zh: string }[];
   collocations: string[];
   comparisons: { target: string; differenceZh: string }[];
+  rubyTerms: { text: string; reading: string }[];
   examHint?: string;
   tags: string[];
 };
@@ -80,6 +81,7 @@ type ReviewState = {
 - `examHint`: 考场快速判断
 - `deck`: 学习分组
 - `tags`: `漢語`、`正式語`、`人名`、`比較` 等
+- `rubyTerms`: 所有含汉字日语片段的假名读音，用于页面开关式显示 ruby
 
 ## 练习系统
 
@@ -126,6 +128,7 @@ type ReviewState = {
 - 单词库：按 deck、标签、日期、掌握状态筛选。
 - 易混对比：集中复习 `測定・計測・測量`、`認定・認証・承認` 这类内容。
 - 数据管理：导入 Codex 生成的 JSON、导出浏览器学习进度、清空本地进度。
+- 显示设置：分别控制复习卡片和题目解析是否显示假名标注。
 
 ## 本地存储方案
 
