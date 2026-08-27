@@ -826,38 +826,32 @@ export default function App() {
             {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
             {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
               studyPage === 'questions' ? (
-                <>
-                  <ModuleHeader title={activeModuleTitle(activeView, labels)} subtitle={labels.practiceCopy} meta={`${questions.length} ${labels.questions}`} />
-                  <PracticePanel
-                    activeQuestion={activeQuestion}
-                    questionsLength={questions.length}
-                    activeIndex={activeIndex}
-                    answers={answers}
-                    items={data.items}
-                    labels={labels}
-                    kindLabels={kindLabels}
-                    settings={settings}
-                    onAnswer={answerQuestion}
-                    onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-                    onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
-                  />
-                </>
+                <PracticePanel
+                  activeQuestion={activeQuestion}
+                  questionsLength={questions.length}
+                  activeIndex={activeIndex}
+                  answers={answers}
+                  items={data.items}
+                  labels={labels}
+                  kindLabels={kindLabels}
+                  settings={settings}
+                  onAnswer={answerQuestion}
+                  onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
+                  onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+                />
               ) : (
-                <>
-                  <ModuleHeader title={activeModuleTitle(activeView, labels)} subtitle={labels.swipeHint} meta={`${items.length} ${labels.items}`} />
-                  <WordDetailPanel
-                    item={activeWord}
-                    index={wordIndex}
-                    total={items.length}
-                    progress={activeWord ? progress[activeWord.id] : undefined}
-                    showRuby={settings.showReviewRuby}
-                    labels={labels}
-                    deckLabels={deckLabels}
-                    locale={locale}
-                    onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
-                    onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
-                  />
-                </>
+                <WordDetailPanel
+                  item={activeWord}
+                  index={wordIndex}
+                  total={items.length}
+                  progress={activeWord ? progress[activeWord.id] : undefined}
+                  showRuby={settings.showReviewRuby}
+                  labels={labels}
+                  deckLabels={deckLabels}
+                  locale={locale}
+                  onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
+                  onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+                />
               )
             ) : null}
           </div>
@@ -1203,43 +1197,12 @@ function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
   ];
 }
 
-function activeModuleTitle(view: AppView, labels: Record<string, string>) {
-  if (view === 'grammar') {
-    return labels.moduleGrammarTitle;
-  }
-  if (view === 'mixed') {
-    return labels.moduleMixedTitle;
-  }
-  if (view === 'listening') {
-    return labels.moduleListeningTitle;
-  }
-  if (view === 'reading') {
-    return labels.moduleReadingTitle;
-  }
-  return labels.moduleVocabularyTitle;
-}
-
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
       <p className="text-xs font-semibold text-[#6b6a64]">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>
-  );
-}
-
-function ModuleHeader({ title, subtitle, meta }: { title: string; subtitle: string; meta: string }) {
-  return (
-    <section className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#856033]">JLPT</p>
-          <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#5f625b]">{subtitle}</p>
-        </div>
-        <span className="w-fit rounded-md bg-[#e8f0eb] px-3 py-2 text-sm font-semibold text-[#24473f]">{meta}</span>
-      </div>
-    </section>
   );
 }
 
