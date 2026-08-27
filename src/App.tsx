@@ -95,6 +95,17 @@ const translations = {
     noQuestion: '没有可练习题目',
     noQuestionBody: '当前筛选条件下没有题目。',
     beforeAnswer: '作答后会显示对错评判、正确答案和完整解析。',
+    meaningTitle: '单词意思判断',
+    meaningPrompt: '请选择最符合「{word}」的中文核心意思。',
+    kanaToKanjiTitle: '假名判断汉字',
+    kanaToKanjiPrompt: '「{reading}」对应哪一个汉字词？',
+    kanjiToKanaTitle: '汉字判断假名',
+    kanjiToKanaPrompt: '「{word}」的正确读音是哪一个？',
+    mojiGoiTitle: 'JLPT 文字・語彙',
+    mojiGoiMeaningPrompt: '中文意思「{meaning}」对应哪一个日语词？',
+    originalSentence: '原句是',
+    coreMeaning: '核心意思是',
+    readAs: '读作',
     yourAnswer: '你的答案',
     rightAnswer: '正确答案',
     wrong: '错误',
@@ -142,6 +153,17 @@ const translations = {
     noQuestion: '問題がありません',
     noQuestionBody: '現在の条件では問題がありません。',
     beforeAnswer: '回答後、判定・正解・解説が表示されます。',
+    meaningTitle: '意味判定',
+    meaningPrompt: '「{word}」の中心的な意味として最も近いものを選んでください。',
+    kanaToKanjiTitle: 'かなから漢字',
+    kanaToKanjiPrompt: '「{reading}」に対応する漢字語を選んでください。',
+    kanjiToKanaTitle: '漢字からかな',
+    kanjiToKanaPrompt: '「{word}」の正しい読みを選んでください。',
+    mojiGoiTitle: 'JLPT 文字・語彙',
+    mojiGoiMeaningPrompt: '意味「{meaning}」に対応する日本語を選んでください。',
+    originalSentence: '元の文',
+    coreMeaning: '中心的な意味',
+    readAs: '読み',
     yourAnswer: 'あなたの答え',
     rightAnswer: '正解',
     wrong: '不正解',
@@ -189,6 +211,17 @@ const translations = {
     noQuestion: 'No questions',
     noQuestionBody: 'No questions match the current filters.',
     beforeAnswer: 'After answering, scoring, the correct answer, and explanation will appear.',
+    meaningTitle: 'Meaning Check',
+    meaningPrompt: 'Choose the closest core meaning of "{word}".',
+    kanaToKanjiTitle: 'Kana to Kanji',
+    kanaToKanjiPrompt: 'Which kanji word matches "{reading}"?',
+    kanjiToKanaTitle: 'Kanji to Kana',
+    kanjiToKanaPrompt: 'Choose the correct reading of "{word}".',
+    mojiGoiTitle: 'JLPT Vocabulary',
+    mojiGoiMeaningPrompt: 'Which Japanese word matches the meaning "{meaning}"?',
+    originalSentence: 'Original sentence',
+    coreMeaning: 'Core meaning',
+    readAs: 'is read as',
     yourAnswer: 'Your answer',
     rightAnswer: 'Correct answer',
     wrong: 'Incorrect',
@@ -349,7 +382,7 @@ export default function App() {
     return data.items.filter((item) => item.deck === selectedDeck);
   }, [data.items, selectedDeck]);
 
-  const allQuestions = useMemo(() => buildQuestions(items), [items]);
+  const allQuestions = useMemo(() => buildQuestions(items, settings.locale), [items, settings.locale]);
   const questions = useMemo(
     () => allQuestions.filter((question) => question.kind === selectedKind),
     [allQuestions, selectedKind],
@@ -576,22 +609,27 @@ export default function App() {
   );
 }
 
-function buildQuestions(items: VocabItem[]): Question[] {
+function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
+  const labels = translations[locale];
   const readings = unique(items.map((item) => item.reading).filter(Boolean) as string[]);
-  const meanings = unique(items.map((item) => shortMeaning(item.meaning_zh)));
+  const meanings = unique(items.map((item) => shortMeaning(itemMeaning(item, locale))));
   const surfaces = unique(items.map((item) => item.original));
   const questions: Question[] = [];
 
   items.forEach((item, index) => {
+    const meaning = itemMeaning(item, locale);
+    const memory = itemMemory(item, locale);
+    const analysis = itemAnalysis(item, locale);
+
     questions.push({
       id: `${item.id}-meaning`,
       itemId: item.id,
       kind: 'meaning',
-      title: '单词意思判断',
-      prompt: `请选择最符合「${item.original}」的中文核心意思。`,
-      choices: choices(shortMeaning(item.meaning_zh), meanings, index + 1),
-      answer: shortMeaning(item.meaning_zh),
-      explanation: `${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
+      title: labels.meaningTitle,
+      prompt: template(labels.meaningPrompt, { word: item.original }),
+      choices: choices(shortMeaning(meaning), meanings, index + 1),
+      answer: shortMeaning(meaning),
+      explanation: `${meaning} ${analysis ?? memory}`,
     });
 
     if (item.reading) {
@@ -599,25 +637,25 @@ function buildQuestions(items: VocabItem[]): Question[] {
         id: `${item.id}-kana-to-kanji`,
         itemId: item.id,
         kind: 'kana_to_kanji',
-        title: '假名判断汉字',
-        prompt: `「${item.reading}」对应哪一个汉字词？`,
+        title: labels.kanaToKanjiTitle,
+        prompt: template(labels.kanaToKanjiPrompt, { reading: item.reading }),
         choices: choices(item.original, surfaces, index + 2),
         answer: item.original,
-        explanation: `「${item.original}」读作「${item.reading}」。${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
+        explanation: `「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
       });
       questions.push({
         id: `${item.id}-kanji-to-kana`,
         itemId: item.id,
         kind: 'kanji_to_kana',
-        title: '汉字判断假名',
-        prompt: `「${item.original}」的正确读音是哪一个？`,
+        title: labels.kanjiToKanaTitle,
+        prompt: template(labels.kanjiToKanaPrompt, { word: item.original }),
         choices: choices(item.reading, readings, index + 3),
         answer: item.reading,
-        explanation: `「${item.original}」读作「${item.reading}」。${item.meaning_zh} ${item.analysis ?? item.core_memory}`,
+        explanation: `「${item.original}」${labels.readAs}「${item.reading}」。${meaning} ${analysis ?? memory}`,
       });
     }
 
-    questions.push(buildMojiGoiQuestion(item, items, index));
+    questions.push(buildMojiGoiQuestion(item, items, index, locale));
   });
 
   return questions;
@@ -643,27 +681,31 @@ function kindLabelsFor(locale: Locale): Record<QuestionKind, string> {
   };
 }
 
-function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number): Question {
+function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
+  const labels = translations[locale];
   const example = item.examples?.[0]?.ja;
   const answer = item.original;
+  const meaning = itemMeaning(item, locale);
+  const memory = itemMemory(item, locale);
+  const analysis = itemAnalysis(item, locale);
   const otherSurfaces = allItems
     .filter((candidate) => candidate.id !== item.id && candidate.deck === item.deck)
     .map((candidate) => candidate.original);
   const prompt = example
     ? example.replace(item.original, '＿＿')
-    : `中文意思「${shortMeaning(item.meaning_zh)}」对应哪一个日语词？`;
+    : template(labels.mojiGoiMeaningPrompt, { meaning: shortMeaning(meaning) });
 
   return {
     id: `${item.id}-moji-goi`,
     itemId: item.id,
     kind: 'moji_goi',
-    title: 'JLPT 文字・語彙',
+    title: labels.mojiGoiTitle,
     prompt,
     choices: choices(answer, otherSurfaces.length >= 3 ? otherSurfaces : allItems.map((candidate) => candidate.original), index + 4),
     answer,
     explanation: example
-      ? `原句是「${example}」。这里需要「${item.original}」，意思是：${item.meaning_zh} ${item.analysis ?? ''}`
-      : `「${item.original}」的核心意思是：${item.meaning_zh} ${item.core_memory}`,
+      ? `${labels.originalSentence}「${example}」。${labels.coreMeaning}：${meaning} ${analysis ?? ''}`
+      : `「${item.original}」${labels.coreMeaning}：${meaning} ${memory}`,
   };
 }
 
@@ -966,10 +1008,23 @@ function VocabCard({
 }
 
 function localized(item: VocabItem, locale: Locale, key: keyof LocalizedText) {
-  if (locale === 'zh-CN') {
-    return undefined;
-  }
   return item.localizations?.[locale]?.[key];
+}
+
+function itemMeaning(item: VocabItem, locale: Locale) {
+  return localized(item, locale, 'meaning') ?? item.meaning_zh;
+}
+
+function itemMemory(item: VocabItem, locale: Locale) {
+  return localized(item, locale, 'core_memory') ?? item.core_memory;
+}
+
+function itemAnalysis(item: VocabItem, locale: Locale) {
+  return localized(item, locale, 'analysis') ?? item.analysis;
+}
+
+function template(value: string, variables: Record<string, string>) {
+  return Object.entries(variables).reduce((text, [key, replacement]) => text.replaceAll(`{${key}}`, replacement), value);
 }
 
 function RubyText({ text, items, enabled }: { text: string; items: VocabItem[]; enabled: boolean }) {
