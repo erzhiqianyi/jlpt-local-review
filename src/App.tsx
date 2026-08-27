@@ -92,6 +92,10 @@ const translations = {
     questionPage: '题目练习',
     wordPage: '词条页面',
     page: '页面',
+    filters: '筛选',
+    hideFilters: '收起筛选',
+    showFilters: '展开筛选',
+    moduleContent: '学习内容',
     swipeHint: '移动端左右滑动切换，电脑端可用箭头或键盘方向键。',
     practice: '今日练习',
     library: '词库',
@@ -200,6 +204,10 @@ const translations = {
     questionPage: '問題練習',
     wordPage: '語彙ページ',
     page: 'ページ',
+    filters: 'フィルター',
+    hideFilters: 'フィルターを閉じる',
+    showFilters: 'フィルターを開く',
+    moduleContent: '学習内容',
     swipeHint: 'モバイルでは左右スワイプ、PC では矢印またはキーボードで切り替えます。',
     practice: '今日の復習',
     library: '語彙帳',
@@ -308,6 +316,10 @@ const translations = {
     questionPage: 'Practice Questions',
     wordPage: 'Word Page',
     page: 'Page',
+    filters: 'Filters',
+    hideFilters: 'Hide Filters',
+    showFilters: 'Show Filters',
+    moduleContent: 'Study Content',
     swipeHint: 'Swipe on mobile, or use arrows and keyboard arrow keys on desktop.',
     practice: 'Practice',
     library: 'Library',
@@ -532,6 +544,7 @@ export default function App() {
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
   const [activeView, setActiveView] = useState<AppView>('home');
   const [studyPage, setStudyPage] = useState<StudyPage>('questions');
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
 
   useEffect(() => {
@@ -571,6 +584,7 @@ export default function App() {
   useEffect(() => {
     setActiveIndex(0);
     setWordIndex(0);
+    setFiltersCollapsed(false);
   }, [activeView, selectedDeck, selectedKind]);
 
   useEffect(() => {
@@ -722,10 +736,20 @@ export default function App() {
       ) : null}
 
       {activeView !== 'home' ? (
-        <section className="mx-auto grid max-w-7xl min-w-0 gap-5 px-4 py-5 md:px-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:px-10">
+        <section className={`mx-auto grid max-w-7xl min-w-0 gap-5 px-4 py-5 md:px-8 lg:px-10 ${filtersCollapsed ? 'lg:grid-cols-[72px_minmax(0,1fr)]' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
           {activeView !== 'about' && activeView !== 'settings' ? (
             <aside className="space-y-4">
-              {(activeView === 'vocabulary' || activeView === 'mixed') ? (
+              <Panel title={filtersCollapsed ? '' : labels.filters}>
+                <button
+                  type="button"
+                  onClick={() => setFiltersCollapsed((value) => !value)}
+                  className="w-full rounded-md border border-[#c8bcae] bg-white px-3 py-2 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]"
+                >
+                  {filtersCollapsed ? labels.filters : labels.hideFilters}
+                </button>
+              </Panel>
+
+              {!filtersCollapsed && (activeView === 'vocabulary' || activeView === 'mixed') ? (
                 <Panel title={labels.deck}>
                   <div className="grid gap-2">
                     {(Object.keys(deckLabels) as (Deck | 'all')[]).map((deck) => (
@@ -737,6 +761,7 @@ export default function App() {
                 </Panel>
               ) : null}
 
+              {!filtersCollapsed ? (
               <Panel title={labels.page}>
                 <div className="grid gap-2">
                   <SegmentButton active={studyPage === 'questions'} onClick={() => setStudyPage('questions')}>
@@ -747,8 +772,9 @@ export default function App() {
                   </SegmentButton>
                 </div>
               </Panel>
+              ) : null}
 
-              {studyPage === 'questions' ? (
+              {!filtersCollapsed && studyPage === 'questions' ? (
                 <Panel title={labels.questionType}>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(kindLabels) as QuestionKind[]).map((kind) => (
@@ -759,13 +785,6 @@ export default function App() {
                   </div>
                 </Panel>
               ) : null}
-
-              <Panel title={labels.display}>
-                <div className="space-y-3">
-                  <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
-                  <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
-                </div>
-              </Panel>
             </aside>
           ) : null}
 
@@ -795,32 +814,38 @@ export default function App() {
             {activeView === 'listening' || activeView === 'reading' ? <EmptyModule labels={labels} /> : null}
             {activeView !== 'about' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
               studyPage === 'questions' ? (
-                <PracticePanel
-                  activeQuestion={activeQuestion}
-                  questionsLength={questions.length}
-                  activeIndex={activeIndex}
-                  answers={answers}
-                  items={data.items}
-                  labels={labels}
-                  kindLabels={kindLabels}
-                  settings={settings}
-                  onAnswer={answerQuestion}
-                  onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-                  onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
-                />
+                <>
+                  <ModuleHeader title={activeModuleTitle(activeView, labels)} subtitle={labels.practiceCopy} meta={`${questions.length} ${labels.questions}`} />
+                  <PracticePanel
+                    activeQuestion={activeQuestion}
+                    questionsLength={questions.length}
+                    activeIndex={activeIndex}
+                    answers={answers}
+                    items={data.items}
+                    labels={labels}
+                    kindLabels={kindLabels}
+                    settings={settings}
+                    onAnswer={answerQuestion}
+                    onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
+                    onNext={() => setActiveIndex((index) => (questions.length ? (index + 1) % questions.length : 0))}
+                  />
+                </>
               ) : (
-                <WordDetailPanel
-                  item={activeWord}
-                  index={wordIndex}
-                  total={items.length}
-                  progress={activeWord ? progress[activeWord.id] : undefined}
-                  showRuby={settings.showReviewRuby}
-                  labels={labels}
-                  deckLabels={deckLabels}
-                  locale={locale}
-                  onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
-                  onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
-                />
+                <>
+                  <ModuleHeader title={activeModuleTitle(activeView, labels)} subtitle={labels.swipeHint} meta={`${items.length} ${labels.items}`} />
+                  <WordDetailPanel
+                    item={activeWord}
+                    index={wordIndex}
+                    total={items.length}
+                    progress={activeWord ? progress[activeWord.id] : undefined}
+                    showRuby={settings.showReviewRuby}
+                    labels={labels}
+                    deckLabels={deckLabels}
+                    locale={locale}
+                    onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
+                    onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+                  />
+                </>
               )
             ) : null}
           </div>
@@ -1166,12 +1191,43 @@ function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
   ];
 }
 
+function activeModuleTitle(view: AppView, labels: Record<string, string>) {
+  if (view === 'grammar') {
+    return labels.moduleGrammarTitle;
+  }
+  if (view === 'mixed') {
+    return labels.moduleMixedTitle;
+  }
+  if (view === 'listening') {
+    return labels.moduleListeningTitle;
+  }
+  if (view === 'reading') {
+    return labels.moduleReadingTitle;
+  }
+  return labels.moduleVocabularyTitle;
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
       <p className="text-xs font-semibold text-[#6b6a64]">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
     </div>
+  );
+}
+
+function ModuleHeader({ title, subtitle, meta }: { title: string; subtitle: string; meta: string }) {
+  return (
+    <section className="min-w-0 rounded-lg border border-[#d7dfd6] bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#856033]">JLPT</p>
+          <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
+          <p className="mt-2 text-sm leading-6 text-[#5f625b]">{subtitle}</p>
+        </div>
+        <span className="w-fit rounded-md bg-[#e8f0eb] px-3 py-2 text-sm font-semibold text-[#24473f]">{meta}</span>
+      </div>
+    </section>
   );
 }
 
