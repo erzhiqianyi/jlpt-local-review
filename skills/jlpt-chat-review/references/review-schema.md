@@ -29,7 +29,7 @@ Each item:
   "reading": "そくてい",
   "meaning_ja": "一定の方法や器具を使って、数値を正確に調べること。",
   "paraphrase_ja": "数値を測る",
-  "question_kinds": ["moji_goi", "meaning", "kanji_to_kana"],
+  "question_kinds": ["meaning"],
   "question_distractors": {
     "kanji_to_kana": ["そってい", "そくじょう", "しょくてい"]
   },
@@ -158,7 +158,7 @@ Rules:
 
 ## Practice Question Types
 
-The app generates these vocabulary practice types from item data:
+Generate mixed JLPT-style practice types from item data:
 
 - `grammar`: `文の文法1`; choose the form that fits a Japanese sentence blank.
 - `moji_goi`: `文脈規定`; choose the word that fits a Japanese sentence blank.
@@ -170,9 +170,11 @@ Every website question uses the official booklet pattern: a Japanese task instru
 
 ### Question Suitability
 
-Do not generate all four question types for every item. Store the allowed types in `question_kinds`; an explicit empty array means the item stays available for review but does not generate an automatically scored question.
+Do not generate all types for every item. The website mixes suitable question types automatically, so `question_kinds` should describe the item honestly instead of forcing a single default. An explicit empty array means the item stays available for review but does not generate an automatically scored question.
 
-- N1 kanji vocabulary with a reliable reading and Japanese paraphrase can use `moji_goi`, `meaning`, and `kanji_to_kana`; N1 does not use `kana_to_kanji`.
+Every non-`proper_name` item should be covered by at least one complete scored question. A complete question has one JLPT-style instruction, one natural Japanese prompt, four choices, one answer, and a full explanation. If the source material lacks a natural sentence, create a conservative example sentence before enabling a scored question.
+
+- N1 kanji vocabulary with a reliable reading, natural sentence, and Japanese paraphrase can use `moji_goi`, `meaning`, and `kanji_to_kana`; N1 does not use `kana_to_kanji` by default.
 - N2-N5 kanji vocabulary may also use `kana_to_kanji` when the orthographic contrast is appropriate.
 - Kana-only vocabulary should not generate `kana_to_kanji` or `kanji_to_kana` unless the item explicitly teaches an orthographic contrast.
 - Grammar expressions and verb forms normally use `grammar` with a sentence blank and controlled, function-specific distractors. Add reading or spelling questions only when that is the learner's actual confusion.

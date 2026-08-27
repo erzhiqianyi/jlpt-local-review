@@ -37,25 +37,26 @@ For each item:
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Do not add furigana or ruby markup inside quiz prompts, choices, selected answers, or correct answers. Furigana is only for review cards and explanations.
 - Put exam-style shortcut reasoning into `analysis`, not into a separate quiz type.
-- Choose `question_kinds` from the lexical function and evidence for that item. Do not generate every supported question type automatically.
-- For `proper_name` items, use only `kanji_to_kana` when the source establishes one intended reading. If the name has multiple possible readings or only an inferred candidate, set `question_kinds` to an empty array until the reading is verified.
+- Generate JLPT-style mixed practice data. Do not force every item into every question type; choose only the types that match the item.
+- Every non-`proper_name` item should have enough data to generate at least one complete scored question with one prompt, four choices, one answer, and a full explanation. If the user's source lacks a natural context sentence, create a conservative example sentence and mark uncertain parts in `analysis`.
+- For ordinary vocabulary, add `meaning` (`言い換え類義`) when a natural Japanese paraphrase exists, add `moji_goi` (`文脈規定`) when there is a complete natural sentence that can be blanked, and add `kanji_to_kana` (`漢字読み`) when the item contains kanji and has a reliable reading.
+- Add `kana_to_kanji` (`表記`) mainly for N2-N5 vocabulary when the spelling contrast is appropriate. Do not default to `kana_to_kanji` for N1 vocabulary.
+- For `proper_name` items, keep `question_kinds: []` unless a reliable name-reading practice is explicitly requested and verified.
 - Add `question_distractors` when a question needs controlled, type-appropriate wrong choices. For name readings, use reading-shaped distractors and never present another valid reading of the same person as wrong.
 
 ## Practice Expectations
 
-The app supports these practice modes, but each item should opt into only the suitable modes through `question_kinds`:
+For this website version, scored questions use mixed JLPT-style formats:
 
-- `文の文法1`: choose the form that matches the sentence connection, grammatical function, and context.
-- `文脈規定`: choose the word that fits a Japanese sentence blank.
-- `言い換え類義`: choose a Japanese paraphrase for the underlined word; add `paraphrase_ja` before enabling this type.
-- `表記`: choose the correct kanji form for the underlined kana word; use this for N2-N5, not N1.
-- `漢字読み`: choose the correct kana reading for a kanji word in a sentence context.
+- `文脈規定`: choose the word that naturally fits the blank in a complete Japanese sentence.
+- `言い換え類義`: choose the closest Japanese paraphrase for the underlined word; add `paraphrase_ja` before enabling this type.
+- `漢字読み`: choose the reading of an underlined kanji word in a complete Japanese sentence.
+- `表記`: choose the correct kanji spelling for an underlined kana word, mainly for N2-N5 items.
+- `文の文法1`: choose the grammar form that fits a sentence blank.
 
 Every generated question should support immediate correct/incorrect judging and a full explanation.
 
-For `漢字読み`, follow the official JLPT booklet structure: keep the task instruction separate from the item, show one complete natural Japanese sentence, visually mark only the target kanji word for underlining, and provide four kana-only choices. Wrong choices should be plausible reading confusions for the same kanji, such as alternate on/kun readings, voicing, gemination, or long-vowel mistakes, rather than readings borrowed from unrelated vocabulary. Do not repeat the target in a meta-prompt such as `次の文の「認定」の読み方...` before the sentence.
-
-Apply the same official structure to every website question: Japanese task instruction separated from the item, one natural Japanese context, four numbered choices, and no Chinese or English hints in the prompt or options. Use the selected UI language only for explanations. N1 vocabulary items may use `moji_goi`, `meaning`, and `kanji_to_kana`; do not assign `kana_to_kanji` to N1. A future `用法` type needs four independently written usage sentences and must not be synthesized from the current fields. Treat personal and place-name readings as clearly labeled supplementary practice, not an official JLPT item type.
+Apply the official JLPT-style structure: task instruction, complete natural context, target underlined in context, four options, and no Chinese/English hints inside the prompt or options.
 
 For grammar expressions, prefer a sentence with a blank plus controlled distractors that test connection or function. Do not turn a grammar item into an isolated reading, spelling, or dictionary-meaning question unless that was the learner's actual confusion.
 

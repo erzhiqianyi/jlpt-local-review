@@ -10,6 +10,14 @@ type StudyPage = 'questions' | 'words';
 type AppRoute = { view: AppView; page: StudyPage; itemId?: string };
 type AnswerState = Record<string, { selected: string; correct: boolean }>;
 type ReviewStatus = 'new' | 'learning' | 'review' | 'mastered';
+type SearchResult = {
+  item: VocabItem;
+  title: string;
+  subtitle: string;
+  moduleLabel: string;
+  matches: string[];
+  score: number;
+};
 type ProgressEntry = {
   correct: number;
   wrong: number;
@@ -22,7 +30,13 @@ type ProgressEntry = {
   nextReviewAt?: string;
 };
 type ProgressState = Record<string, ProgressEntry>;
-type DisplaySettings = { showReviewRuby: boolean; showExplanationRuby: boolean; locale: Locale };
+type FeedbackMode = 'immediate' | 'batch';
+type DisplaySettings = {
+  showReviewRuby: boolean;
+  showExplanationRuby: boolean;
+  locale: Locale;
+  feedbackMode: FeedbackMode;
+};
 type RubyTerm = { text: string; reading: string };
 type LocalizedText = {
   meaning?: string;
@@ -82,7 +96,6 @@ type Question = {
 const STORAGE_PROGRESS = 'jlpt-vocab-progress-v1';
 const STORAGE_ANSWERS = 'jlpt-vocab-answers-jlpt-v2';
 const STORAGE_SETTINGS = 'jlpt-display-settings-v1';
-const QUESTION_KIND_ORDER: QuestionKind[] = ['grammar', 'moji_goi', 'meaning', 'kana_to_kanji', 'kanji_to_kana'];
 
 const translations = {
   'zh-CN': {
@@ -111,6 +124,14 @@ const translations = {
     completed: '已完成',
     restartPractice: '重新练习',
     viewEntry: '打开词条',
+    searchPlaceholder: '查找单词、语法、技巧',
+    searchResults: '搜索结果',
+    noSearchResults: '没有找到匹配内容',
+    searchOpen: '打开搜索',
+    searchClear: '清空搜索',
+    searchModuleVocabulary: '单词',
+    searchModuleGrammar: '语法',
+    searchModuleTip: '技巧',
     filters: '筛选',
     hideFilters: '收起筛选',
     showFilters: '展开筛选',
@@ -162,7 +183,12 @@ const translations = {
     deployTitle: '自己部署',
     deployBody: 'Fork GitHub 仓库，选择使用示例数据或 npm run data:blank 创建空白数据，然后部署到 Cloudflare Pages。',
     deck: 'Deck',
-    questionType: '题型',
+    meaningTypeTitle: 'JLPT 题型',
+    meaningTypeIntroTitle: 'JLPT题型说明',
+    meaningTypeIntroBody: '练习按 JLPT 文字・語彙和文法的常见形式混合出题，不需要手动选择题型。系统会根据词条内容自动生成 文脈規定、言い換え類義、漢字読み，合适时加入 表記；语法项使用 文の文法1。',
+    answerFeedbackMode: '答案反馈方式',
+    feedbackModeImmediate: '每题答完立即显示',
+    feedbackModeBatch: '全部作答后统一显示',
     display: '显示设置',
     language: '界面语言',
     reviewRuby: '复习显示假名',
@@ -228,6 +254,14 @@ const translations = {
     completed: '完了',
     restartPractice: 'もう一度練習',
     viewEntry: '項目を開く',
+    searchPlaceholder: '語彙・文法・コツを検索',
+    searchResults: '検索結果',
+    noSearchResults: '一致する内容がありません',
+    searchOpen: '検索を開く',
+    searchClear: '検索を消去',
+    searchModuleVocabulary: '語彙',
+    searchModuleGrammar: '文法',
+    searchModuleTip: 'コツ',
     filters: 'フィルター',
     hideFilters: 'フィルターを閉じる',
     showFilters: 'フィルターを開く',
@@ -279,7 +313,12 @@ const translations = {
     deployTitle: '自分でデプロイ',
     deployBody: 'GitHub リポジトリを fork し、サンプルデータを使うか npm run data:blank で空データを作成して、Cloudflare Pages にデプロイします。',
     deck: 'Deck',
-    questionType: '問題形式',
+    meaningTypeTitle: 'JLPTの問題形式',
+    meaningTypeIntroTitle: 'JLPT問題形式',
+    meaningTypeIntroBody: 'JLPT の文字・語彙と文法の形式を混ぜて出題します。問題形式は手動で選ばず、項目に応じて 文脈規定・言い換え類義・漢字読み・表記、文法項目は 文の文法1 を使います。',
+    answerFeedbackMode: '回答フィードバック',
+    feedbackModeImmediate: '回答後すぐ採点',
+    feedbackModeBatch: '全問題回答後に表示',
     display: '表示設定',
     language: '表示言語',
     reviewRuby: '復習にふりがな',
@@ -345,6 +384,14 @@ const translations = {
     completed: 'Completed',
     restartPractice: 'Practice Again',
     viewEntry: 'Open Entry',
+    searchPlaceholder: 'Search words, grammar, tips',
+    searchResults: 'Search Results',
+    noSearchResults: 'No matching content',
+    searchOpen: 'Open search',
+    searchClear: 'Clear search',
+    searchModuleVocabulary: 'Vocabulary',
+    searchModuleGrammar: 'Grammar',
+    searchModuleTip: 'Tip',
     filters: 'Filters',
     hideFilters: 'Hide Filters',
     showFilters: 'Show Filters',
@@ -396,7 +443,12 @@ const translations = {
     deployTitle: 'Deploy Your Own',
     deployBody: 'Fork the GitHub repo, keep the sample data or run npm run data:blank, then deploy it to Cloudflare Pages.',
     deck: 'Deck',
-    questionType: 'Question Type',
+    meaningTypeTitle: 'JLPT Question Type',
+    meaningTypeIntroTitle: 'JLPT Question Type',
+    meaningTypeIntroBody: 'Practice mixes common JLPT vocabulary and grammar formats automatically. The app generates contextual vocabulary, paraphrase, kanji-reading, suitable orthography questions, and sentence grammar questions when the item supports them.',
+    answerFeedbackMode: 'Answer Feedback',
+    feedbackModeImmediate: 'Show result right after each answer',
+    feedbackModeBatch: 'Show results after completing all answers',
     display: 'Display',
     language: 'Language',
     reviewRuby: 'Show furigana in review',
@@ -447,6 +499,7 @@ const defaultSettings: DisplaySettings = {
   showReviewRuby: true,
   showExplanationRuby: true,
   locale: 'zh-CN',
+  feedbackMode: 'immediate',
 };
 
 const NEXT_JLPT_AT = '2026-12-06T09:00:00+09:00';
@@ -621,12 +674,12 @@ const defaultRubyTerms: RubyTerm[] = [
 export default function App() {
   const [data, setData] = useState<ReviewData>(fallbackData);
   const [selectedDeck, setSelectedDeck] = useState<Deck | 'all'>('all');
-  const [selectedKind, setSelectedKind] = useState<QuestionKind>('moji_goi');
   const [activeIndex, setActiveIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerState>({});
   const [progress, setProgress] = useState<ProgressState>({});
   const [settings, setSettings] = useState<DisplaySettings>(defaultSettings);
+  const [searchQuery, setSearchQuery] = useState('');
   const [route, setRoute] = useState<AppRoute>(() => routeFromHash(typeof window === 'undefined' ? '' : window.location.hash));
   const [filtersCollapsed, setFiltersCollapsed] = useState(() => shouldCollapseFilters());
   const [countdown, setCountdown] = useState(() => getCountdown(NEXT_JLPT_AT));
@@ -672,14 +725,7 @@ export default function App() {
     [items, selectedDeck],
   );
   const allQuestions = useMemo(() => buildQuestions(questionItems, locale), [questionItems, locale]);
-  const availableKinds = useMemo(
-    () => QUESTION_KIND_ORDER.filter((kind) => allQuestions.some((question) => question.kind === kind)),
-    [allQuestions],
-  );
-  const questions = useMemo(
-    () => allQuestions.filter((question) => question.kind === selectedKind),
-    [allQuestions, selectedKind],
-  );
+  const questions = allQuestions;
   const activeQuestion = questions[activeIndex % Math.max(questions.length, 1)];
   const practiceAnsweredCount = questions.filter((question) => Boolean(answers[question.id])).length;
   const practiceComplete = questions.length > 0 && practiceAnsweredCount === questions.length;
@@ -689,14 +735,15 @@ export default function App() {
   const masteredCount = Object.values(progress).filter((item) => item.status === 'mastered').length;
   const labels = translations[locale];
   const deckLabels = deckLabelsFor(locale);
-  const kindLabels = kindLabelsFor(locale);
   const moduleStats = moduleSummaries(data.items, labels);
+  const questionTypeIntros = [{ title: labels.meaningTypeTitle, instruction: labels.meaningTypeIntroBody }];
   const hasStudySidebar = activeView === 'vocabulary' || activeView === 'grammar' || activeView === 'mixed';
+  const searchResults = useMemo(() => searchItems(data.items, searchQuery, locale, labels), [data.items, labels, locale, searchQuery]);
 
   useEffect(() => {
     setActiveIndex(0);
     setWordIndex(0);
-  }, [activeView, selectedDeck, selectedKind]);
+  }, [activeView, selectedDeck]);
 
   useEffect(() => {
     if (studyPage !== 'words' || !route.itemId) {
@@ -707,12 +754,6 @@ export default function App() {
       setWordIndex(requestedIndex);
     }
   }, [items, route.itemId, studyPage]);
-
-  useEffect(() => {
-    if (availableKinds.length && !availableKinds.includes(selectedKind)) {
-      setSelectedKind(availableKinds[0]);
-    }
-  }, [availableKinds, selectedKind]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -782,6 +823,15 @@ export default function App() {
       return;
     }
     window.location.hash = nextHash;
+  }
+
+  function openSearchResult(item: VocabItem) {
+    const view: AppView = item.deck === 'grammar_expression' ? 'grammar' : 'vocabulary';
+    if (view === 'vocabulary') {
+      setSelectedDeck('all');
+    }
+    setSearchQuery('');
+    window.location.hash = routeHash(view, 'words', item.id);
   }
 
   function resetLocalProgress() {
@@ -857,6 +907,13 @@ export default function App() {
               </NavButton>
             ))}
           </nav>
+          <GlobalSearch
+            query={searchQuery}
+            results={searchResults}
+            labels={labels}
+            onQueryChange={setSearchQuery}
+            onOpenResult={openSearchResult}
+          />
         </div>
       </header>
 
@@ -882,6 +939,19 @@ export default function App() {
             {moduleStats.map((module) => (
               <ModuleCard key={module.view} module={module} active={false} onClick={() => navigateTo(module.view)} />
             ))}
+          </section>
+          <section className="mx-auto max-w-7xl min-w-0 px-4 pb-8 md:px-8 lg:px-10">
+            <Panel title={labels.meaningTypeIntroTitle}>
+              <p className="text-sm text-[#68716c]">{labels.meaningTypeIntroBody}</p>
+              <div className="mt-4">
+                {questionTypeIntros.map((intro) => (
+                  <div key={intro.title} className="rounded-md border border-[#d9d0c3] bg-[#fffdfa] p-3">
+                    <p className="text-sm font-semibold text-[#24473f]">{intro.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-[#5f625b]">{intro.instruction}</p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
           </section>
         </>
       ) : null}
@@ -918,17 +988,7 @@ export default function App() {
                 </Panel>
               ) : null}
 
-              {!filtersCollapsed && studyPage === 'questions' ? (
-                <Panel title={labels.questionType}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableKinds.map((kind) => (
-                      <SegmentButton key={kind} active={selectedKind === kind} onClick={() => setSelectedKind(kind)}>
-                        {kindLabels[kind]}
-                      </SegmentButton>
-                    ))}
-                  </div>
-                </Panel>
-              ) : null}
+              
             </aside>
           ) : null}
 
@@ -940,12 +1000,34 @@ export default function App() {
                   <SettingBlock title={labels.language}>
                     <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
                   </SettingBlock>
-                  <SettingBlock title={labels.display}>
-                    <div className="space-y-3">
-                      <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
-                      <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
-                    </div>
-                  </SettingBlock>
+                <SettingBlock title={labels.display}>
+                  <div className="space-y-3">
+                    <Toggle checked={settings.showReviewRuby} label={labels.reviewRuby} onChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })} />
+                    <Toggle checked={settings.showExplanationRuby} label={labels.explanationRuby} onChange={(checked) => updateSettings({ ...settings, showExplanationRuby: checked })} />
+                  </div>
+                </SettingBlock>
+                <SettingBlock title={labels.answerFeedbackMode}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ ...settings, feedbackMode: 'immediate' })}
+                      className={`h-11 rounded-md border px-3 text-sm font-semibold ${
+                        settings.feedbackMode === 'immediate' ? 'border-[#24473f] bg-[#24473f] text-white' : 'border-[#d9d0c3] bg-white text-[#4f5651]'
+                      }`}
+                    >
+                      {labels.feedbackModeImmediate}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ ...settings, feedbackMode: 'batch' })}
+                      className={`h-11 rounded-md border px-3 text-sm font-semibold ${
+                        settings.feedbackMode === 'batch' ? 'border-[#24473f] bg-[#24473f] text-white' : 'border-[#d9d0c3] bg-white text-[#4f5651]'
+                      }`}
+                    >
+                      {labels.feedbackModeBatch}
+                    </button>
+                  </div>
+                </SettingBlock>
                   <SettingBlock title={labels.exportStudyRecord}>
                     <p className="text-sm leading-6 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
                     <button type="button" onClick={exportStudyRecord} className="mt-4 rounded-md bg-[#173d35] px-4 py-2 text-sm font-semibold text-white">
@@ -970,10 +1052,11 @@ export default function App() {
                   activeIndex={activeIndex}
                   answeredCount={practiceAnsweredCount}
                   complete={practiceComplete}
+                  feedbackMode={settings.feedbackMode}
                   answers={answers}
                   items={data.items}
                   labels={labels}
-                  kindLabels={kindLabels}
+                  questionTypeLabel={labels.meaningTypeTitle}
                   settings={settings}
                   onAnswer={answerQuestion}
                   onPrev={() => setActiveIndex((index) => Math.max(index - 1, 0))}
@@ -1033,9 +1116,16 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
       questions.push(buildGrammarQuestion(item, items, index, locale));
     }
 
-    if (item.paraphrase_ja && allowedKinds.has('meaning')) {
-      const meaningAnswer = item.paraphrase_ja;
-      const meaningChoices = choices(meaningAnswer, questionPool(item, 'meaning', items), index + 1);
+    if (allowedKinds.has('moji_goi')) {
+      questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    }
+
+    if (allowedKinds.has('meaning')) {
+      const meaningAnswer = item.paraphrase_ja ?? item.meaning_ja;
+      if (!meaningAnswer) {
+        return;
+      }
+      const meaningChoices = choices(meaningAnswer, questionPool(item, 'meaning', items), index + 1, fallbackChoicesForKind(item, 'meaning'));
       questions.push({
         id: `${item.id}-meaning-jlpt-v1`,
         itemId: item.id,
@@ -1050,25 +1140,9 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
       });
     }
 
-    if (item.reading && allowedKinds.has('kana_to_kanji')) {
-      const kanaToKanjiChoices = choices(item.original, questionPool(item, 'kana_to_kanji', items), index + 2);
-      questions.push({
-        id: `${item.id}-kana-to-kanji-jlpt-v1`,
-        itemId: item.id,
-        kind: 'kana_to_kanji',
-        title: labels.kanaToKanjiTitle,
-        instruction: labels.kanaToKanjiInstruction,
-        prompt: kanaSentence,
-        promptTarget: item.reading,
-        choices: kanaToKanjiChoices,
-        answer: item.original,
-        ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
-      });
-    }
-
     if (item.reading && allowedKinds.has('kanji_to_kana')) {
-      const kanjiToKanaChoices = choices(item.reading, questionPool(item, 'kanji_to_kana', items), index + 3);
       const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
+      const kanjiToKanaChoices = choices(item.reading, questionPool(item, 'kanji_to_kana', items), index + 3, fallbackChoicesForKind(item, 'kanji_to_kana'));
       questions.push({
         id: isProperName ? `${item.id}-name-reading-v1` : `${item.id}-kanji-to-kana-jlpt-v1`,
         itemId: item.id,
@@ -1083,8 +1157,20 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
       });
     }
 
-    if (allowedKinds.has('moji_goi')) {
-      questions.push(buildMojiGoiQuestion(item, items, index, locale));
+    if (item.reading && allowedKinds.has('kana_to_kanji')) {
+      const kanaToKanjiChoices = choices(item.original, questionPool(item, 'kana_to_kanji', items), index + 2, fallbackChoicesForKind(item, 'kana_to_kanji'));
+      questions.push({
+        id: `${item.id}-kana-to-kanji-jlpt-v1`,
+        itemId: item.id,
+        kind: 'kana_to_kanji',
+        title: labels.kanaToKanjiTitle,
+        instruction: labels.kanaToKanjiInstruction,
+        prompt: kanaSentence,
+        promptTarget: item.reading,
+        choices: kanaToKanjiChoices,
+        answer: item.original,
+        ...buildQuestionExplanation(item, kanaToKanjiChoices, 'kana_to_kanji', items, locale, context),
+      });
     }
   });
 
@@ -1092,39 +1178,54 @@ function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
 }
 
 function questionKindsForItem(item: VocabItem): QuestionKind[] {
-  const isProperName = item.deck === 'name_reading' || item.type === 'proper_name';
-  const hasNaturalExample = Boolean(item.examples?.some((candidate) => candidate.ja.includes(item.original)));
-  let kinds: QuestionKind[];
+  if (item.deck === 'name_reading' || item.type === 'proper_name') {
+    return item.reading && containsKanji(item.original) && fallbackChoicesForKind(item, 'kanji_to_kana').length >= 3
+      ? ['kanji_to_kana']
+      : [];
+  }
 
-  if (item.question_kinds !== undefined) {
-    kinds = unique(item.question_kinds);
-  } else if (isProperName) {
-    kinds = [];
-  } else if (item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression') {
-    kinds = ['grammar'];
-  } else {
-    kinds = ['moji_goi'];
-    if (item.paraphrase_ja) {
-      kinds.push('meaning');
+  const hasContext = hasUsableQuestionContext(item);
+  const isGrammarItem = item.deck === 'grammar_expression' || item.type === 'verb_form' || item.type === 'expression';
+  const inferredKinds: QuestionKind[] = [];
+
+  if (isGrammarItem) {
+    if (hasContext) {
+      inferredKinds.push('grammar');
     }
-    if (item.reading && containsKanji(item.original)) {
-      kinds.push('kanji_to_kana');
+    if (item.paraphrase_ja || item.meaning_ja) {
+      inferredKinds.push('meaning');
+    }
+  } else {
+    if (hasContext) {
+      inferredKinds.push('moji_goi');
+    }
+    if (item.paraphrase_ja || item.meaning_ja) {
+      inferredKinds.push('meaning');
+    }
+    if (hasContext && item.reading && containsKanji(item.original) && questionPool(item, 'kanji_to_kana', [item]).length >= 3) {
+      inferredKinds.push('kanji_to_kana');
       if (['N2', 'N3', 'N4', 'N5'].includes(item.jlpt_level ?? '')) {
-        kinds.push('kana_to_kanji');
+        inferredKinds.push('kana_to_kanji');
       }
     }
   }
 
-  return kinds.filter((kind) => {
-    if (kind === 'meaning') return hasNaturalExample && Boolean(item.paraphrase_ja);
-    if (kind === 'kana_to_kanji') {
-      return hasNaturalExample && Boolean(item.reading) && containsKanji(item.original) && item.jlpt_level !== 'N1';
-    }
-    if (kind === 'kanji_to_kana') {
-      return Boolean(item.reading) && containsKanji(item.original) && (isProperName || hasNaturalExample);
-    }
-    return hasNaturalExample;
+  const listedKinds = item.question_kinds ?? [];
+  return unique([...inferredKinds, ...listedKinds]).filter((kind) => {
+    if (kind === 'grammar') return isGrammarItem && hasContext;
+    if (kind === 'moji_goi') return hasContext;
+    if (kind === 'meaning') return Boolean(item.paraphrase_ja || item.meaning_ja);
+    if (kind === 'kana_to_kanji') return hasContext && Boolean(item.reading) && containsKanji(item.original) && item.jlpt_level !== 'N1';
+    if (kind === 'kanji_to_kana') return hasContext && Boolean(item.reading) && containsKanji(item.original) && questionPool(item, 'kanji_to_kana', [item]).length >= 3;
+    return false;
   });
+}
+
+function hasUsableQuestionContext(item: VocabItem) {
+  return Boolean(
+    item.examples?.some((candidate) => candidate.ja.includes(item.original))
+    || item.collocations?.some((candidate) => candidate.includes(item.original)),
+  );
 }
 
 function containsKanji(value: string) {
@@ -1147,9 +1248,44 @@ function questionPool(item: VocabItem, kind: QuestionKind, items: VocabItem[]) {
     return candidates.map((candidate) => candidate.paraphrase_ja).filter(Boolean) as string[];
   }
   if (kind === 'kanji_to_kana') {
-    return candidates.map((candidate) => candidate.reading).filter(Boolean) as string[];
+    const nameReadingFallback = item.deck === 'name_reading' || item.type === 'proper_name'
+      ? ['さとう', 'たなか', 'やまだ', 'すずき', 'はるか', 'ともこ', 'ちさと', 'しんたに', 'はっとり']
+      : [];
+    return unique([...readingDistractors(item.reading ?? ''), ...nameReadingFallback]).filter((choice) => choice !== item.reading);
   }
   return candidates.map((candidate) => candidate.original);
+}
+
+function readingDistractors(reading: string) {
+  const replacements: [string, string][] = [
+    ['てい', 'たい'],
+    ['せい', 'しょう'],
+    ['せい', 'さい'],
+    ['せい', 'せ'],
+    ['しょう', 'せい'],
+    ['こう', 'こ'],
+    ['そう', 'そ'],
+    ['けい', 'け'],
+    ['ぼう', 'ほう'],
+    ['ほう', 'ぼう'],
+    ['かん', 'がん'],
+    ['にん', 'じん'],
+    ['く', 'っ'],
+    ['っ', 'く'],
+  ];
+  const variants = replacements
+    .map(([source, target]) => reading.includes(source) ? reading.replace(source, target) : '')
+    .filter(Boolean);
+  const synthetic = [
+    reading.replace(/う$/u, ''),
+    reading.replace(/(.)\1/u, '$1'),
+    reading.replace('ん', 'っ'),
+    reading.replace('ん', 'い'),
+    reading.replace('ん', 'んで'),
+    reading.length > 2 ? `${reading.slice(0, -1)}い` : '',
+    `${reading.slice(0, Math.max(1, reading.length - 1))}ん`,
+  ];
+  return unique([...variants, ...synthetic].filter((value) => value && value !== reading)).slice(0, 6);
 }
 
 function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
@@ -1162,23 +1298,12 @@ function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
   };
 }
 
-function kindLabelsFor(locale: Locale): Record<QuestionKind, string> {
-  const labels = translations[locale];
-  return {
-    grammar: labels.grammar,
-    moji_goi: labels.mojiGoi,
-    meaning: labels.meaning,
-    kana_to_kanji: labels.kanaToKanji,
-    kanji_to_kana: labels.kanjiToKana,
-  };
-}
-
 function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
   const labels = translations[locale];
   const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
   const context = example ?? questionSentence(item);
   const prompt = example ? example.replace(item.original, '（　）') : questionSentence(item, '（　）');
-  const choiceList = choices(item.original, questionPool(item, 'grammar', allItems), index + 5);
+  const choiceList = choices(item.original, questionPool(item, 'grammar', allItems), index + 5, fallbackChoicesForKind(item, 'grammar'));
 
   return {
     id: `${item.id}-grammar-jlpt-v1`,
@@ -1196,11 +1321,9 @@ function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: num
 function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
   const labels = translations[locale];
   const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
-  const answer = item.original;
-  const otherSurfaces = questionPool(item, 'moji_goi', allItems);
-  const prompt = (example ?? questionSentence(item)).replace(item.original, '（　）');
-  const choiceList = choices(answer, otherSurfaces, index + 4);
-  const context = example ?? `「${item.original}」`;
+  const context = example ?? questionSentence(item);
+  const prompt = context.replace(item.original, '（　）');
+  const choiceList = choices(item.original, questionPool(item, 'moji_goi', allItems), index + 4, fallbackChoicesForKind(item, 'moji_goi'));
 
   return {
     id: `${item.id}-moji-goi-jlpt-v1`,
@@ -1210,7 +1333,7 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
     instruction: labels.mojiGoiInstruction,
     prompt,
     choices: choiceList,
-    answer,
+    answer: item.original,
     ...buildQuestionExplanation(item, choiceList, 'moji_goi', allItems, locale, context),
   };
 }
@@ -1390,10 +1513,27 @@ function memoryPointFor(item: VocabItem, locale: Locale) {
   return unique(points.filter(Boolean) as string[]).join(' ');
 }
 
-function choices(answer: string, pool: string[], salt: number) {
-  const distractors = unique(pool.filter((item) => item && item !== answer)).slice(0, 12);
+function choices(answer: string, pool: string[], salt: number, fallback: string[] = []) {
+  const distractors = unique([...pool, ...fallback].filter((item) => item && item !== answer)).slice(0, 12);
   const selected = [answer, ...rotate(distractors, salt).slice(0, 3)];
   return rotate(unique(selected), salt % 4);
+}
+
+function fallbackChoicesForKind(item: VocabItem, kind: QuestionKind) {
+  if (kind === 'kanji_to_kana') {
+    return readingDistractors(item.reading ?? '');
+  }
+  if (kind === 'kana_to_kanji' || kind === 'moji_goi' || kind === 'grammar') {
+    return ['測定', '認定', '養成', '豊富', '概観', '経過', '辛抱', '目次'].filter((choice) => choice !== item.original);
+  }
+  return [
+    '一定の基準に基づいて正式に認めること。',
+    '数量や種類が多く十分にあること。',
+    '物事の全体を大まかに見渡すこと。',
+    '苦しさや不便を我慢して耐えること。',
+    '時間が過ぎ、物事がある段階まで進むこと。',
+    '能力や人材を時間をかけて育てること。',
+  ].filter((choice) => choice !== item.paraphrase_ja && choice !== item.meaning_ja);
 }
 
 function rotate<T>(items: T[], count: number) {
@@ -1473,6 +1613,9 @@ function questionSentence(item: VocabItem, replacement = item.original) {
   const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
   if (example) {
     return example.replace(item.original, replacement);
+  }
+  if (item.deck === 'name_reading' || item.type === 'proper_name') {
+    return `${replacement}さんは会議に出席しました。`;
   }
   const collocation = item.collocations?.find((candidate) => candidate.includes(item.original));
   if (collocation) {
@@ -1609,6 +1752,69 @@ function navItems(labels: Record<string, string>) {
   ];
 }
 
+function searchItems(items: VocabItem[], query: string, locale: Locale, labels: Record<string, string>): SearchResult[] {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  return items
+    .map((item) => {
+      const moduleLabel = item.deck === 'grammar_expression' ? labels.searchModuleGrammar : labels.searchModuleVocabulary;
+      const primaryFields = [item.original, item.reading, item.meaning_ja, item.paraphrase_ja, itemMeaning(item, locale)];
+      const secondaryFields = [
+        itemMemory(item, locale),
+        itemAnalysis(item, locale),
+        item.jlpt_level,
+        item.part_of_speech,
+        item.type,
+        ...(item.collocations ?? []),
+        ...(item.tags ?? []),
+        ...(item.examples?.flatMap((example) => [example.ja, example.zh]) ?? []),
+        ...(item.comparisons?.flatMap((comparison) => [comparison.target, comparison.difference_zh]) ?? []),
+      ];
+      const fields = [...primaryFields, ...secondaryFields].filter(Boolean) as string[];
+      const matches = fields.filter((field) => normalizeSearchText(field).includes(normalizedQuery));
+      if (!matches.length) {
+        return null;
+      }
+
+      const original = normalizeSearchText(item.original);
+      const reading = normalizeSearchText(item.reading ?? '');
+      const score =
+        original === normalizedQuery || reading === normalizedQuery
+          ? 100
+          : original.startsWith(normalizedQuery) || reading.startsWith(normalizedQuery)
+            ? 80
+            : primaryFields.some((field) => field && normalizeSearchText(field).includes(normalizedQuery))
+              ? 60
+              : 30;
+
+      return {
+        item,
+        title: item.original,
+        subtitle: itemMeaning(item, locale),
+        moduleLabel,
+        matches: unique(matches).slice(0, 3),
+        score,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'ja'))
+    .slice(0, 12) as SearchResult[];
+}
+
+function normalizeSearchText(value: string) {
+  return katakanaToHiragana(value.normalize('NFKC'))
+    .toLocaleLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function katakanaToHiragana(value: string) {
+  return value.replace(/[\u30a1-\u30f6]/g, (char) => String.fromCharCode(char.charCodeAt(0) - 0x60));
+}
+
 function moduleSummaries(items: VocabItem[], labels: Record<string, string>) {
   return [
     {
@@ -1713,6 +1919,85 @@ function NavButton({ active, children, onClick }: { active: boolean; children: R
     >
       {children}
     </button>
+  );
+}
+
+function GlobalSearch({
+  query,
+  results,
+  labels,
+  onQueryChange,
+  onOpenResult,
+}: {
+  query: string;
+  results: SearchResult[];
+  labels: Record<string, string>;
+  onQueryChange: (query: string) => void;
+  onOpenResult: (item: VocabItem) => void;
+}) {
+  const hasQuery = query.trim().length > 0;
+
+  return (
+    <div className="relative min-w-0 lg:w-[22rem]">
+      <div className="flex h-10 min-w-0 items-center rounded-md border border-[#c8d4cd] bg-[#f8faf7] px-3 focus-within:border-[#24473f] focus-within:bg-white">
+        <span aria-hidden="true" className="mr-2 shrink-0 text-[#6b766f]">⌕</span>
+        <input
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              onQueryChange('');
+            }
+          }}
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#26332e] outline-none placeholder:text-[#7f8984]"
+          placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchOpen}
+        />
+        {hasQuery ? (
+          <button
+            type="button"
+            onClick={() => onQueryChange('')}
+            aria-label={labels.searchClear}
+            title={labels.searchClear}
+            className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-lg leading-none text-[#68716c] hover:bg-[#e8f0eb] hover:text-[#173d35]"
+          >
+            ×
+          </button>
+        ) : null}
+      </div>
+
+      {hasQuery ? (
+        <div className="absolute left-0 right-0 top-12 z-30 max-h-[min(70vh,520px)] overflow-y-auto rounded-lg border border-[#cbd6cf] bg-white p-2 shadow-xl">
+          <p className="px-2 py-1 text-xs font-semibold text-[#7d6032]">{labels.searchResults}</p>
+          {results.length ? (
+            <div className="mt-1 grid gap-1">
+              {results.map((result) => (
+                <button
+                  type="button"
+                  key={result.item.id}
+                  onClick={() => onOpenResult(result.item)}
+                  className="min-w-0 rounded-md px-3 py-3 text-left hover:bg-[#f3f7f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24473f]"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-base font-semibold text-[#173d35]">{result.title}</p>
+                      {result.item.reading ? <p className="mt-1 text-xs font-semibold text-[#856033]">{result.item.reading}</p> : null}
+                    </div>
+                    <span className="shrink-0 rounded bg-[#e8f0eb] px-2 py-1 text-xs font-semibold text-[#24473f]">{result.moduleLabel}</span>
+                  </div>
+                  <p className="mt-2 line-clamp-2 break-words text-sm leading-6 text-[#4f5b55]">{result.subtitle}</p>
+                  {result.matches.length ? (
+                    <p className="mt-2 line-clamp-2 break-words text-xs leading-5 text-[#747b76]">{result.matches.join(' / ')}</p>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="px-3 py-5 text-sm text-[#68716c]">{labels.noSearchResults}</p>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1919,10 +2204,11 @@ function PracticePanel({
   activeIndex,
   answeredCount,
   complete,
+  feedbackMode,
   answers,
   items,
   labels,
-  kindLabels,
+  questionTypeLabel,
   settings,
   onAnswer,
   onPrev,
@@ -1934,10 +2220,11 @@ function PracticePanel({
   activeIndex: number;
   answeredCount: number;
   complete: boolean;
+  feedbackMode: FeedbackMode;
   answers: AnswerState;
   items: VocabItem[];
   labels: Record<string, string>;
-  kindLabels: Record<QuestionKind, string>;
+  questionTypeLabel: string;
   settings: DisplaySettings;
   onAnswer: (question: Question, selected: string) => void;
   onPrev: () => void;
@@ -1947,18 +2234,19 @@ function PracticePanel({
   return (
     <section className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2ddd4] pb-4">
-        <p className="text-sm font-semibold text-[#856033]">{activeQuestion ? kindLabels[activeQuestion.kind] : labels.questionType}</p>
-        <div className="flex items-center gap-2">
+        <p className="text-sm font-semibold text-[#856033]">{questionTypeLabel}</p>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {questionsLength > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrev} /> : null}
           <div className="flex min-h-10 min-w-32 flex-col items-center justify-center rounded-md bg-[#e8f0eb] px-3 py-1 text-[#24473f]">
             <span className="text-sm font-semibold">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
             <span className="text-xs">{labels.completed} {answeredCount} / {questionsLength}</span>
           </div>
-          {complete ? (
-            <button type="button" onClick={onRestart} className="h-10 rounded-md bg-[#24473f] px-3 text-sm font-semibold text-white">
+          {answeredCount > 0 ? (
+            <button type="button" onClick={onRestart} className="h-10 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]">
               {labels.restartPractice}
             </button>
-          ) : questionsLength > 1 ? (
+          ) : null}
+          {questionsLength > 1 ? (
             <ArrowButton label={labels.next} direction="right" onClick={onNext} />
           ) : null}
         </div>
@@ -1976,43 +2264,51 @@ function PracticePanel({
 
       {activeQuestion ? (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {activeQuestion.choices.map((choice, choiceIndex) => {
-              const answered = answers[activeQuestion.id];
-              const isSelected = answered?.selected === choice;
-              const isAnswer = choice === activeQuestion.answer;
-              const color = !answered
-                ? 'border-[#ddd4c8] bg-[#fffaf3] hover:bg-[#f5eadf]'
-                : isAnswer
-                  ? 'border-[#3d735f] bg-[#e5f2ea]'
-                  : isSelected
-                    ? 'border-[#b59a66] bg-[#f6f0e2]'
-                    : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70';
-              return (
-                <button
-                  type="button"
-                  key={choice}
-                  disabled={Boolean(answered)}
-                  onClick={() => onAnswer(activeQuestion, choice)}
-                  className={`flex min-h-14 min-w-0 items-start gap-3 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
-                >
-                  <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-current text-xs">
-                    {choiceIndex + 1}
-                  </span>
-                  <span className="min-w-0 pt-0.5">{choice}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <AnswerPanel
-            question={activeQuestion}
-            answer={answers[activeQuestion.id]}
-            items={items}
-            showRuby={settings.showExplanationRuby}
-            labels={labels}
-            locale={normalizeLocale(settings.locale)}
-          />
+          {activeQuestion ? (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {activeQuestion.choices.map((choice, choiceIndex) => {
+                const answered = answers[activeQuestion.id];
+                const isSelected = answered?.selected === choice;
+                const isAnswer = choice === activeQuestion.answer;
+                const shouldReveal = complete || feedbackMode === 'immediate';
+                const color = !answered
+                  ? 'border-[#ddd4c8] bg-[#fffaf3] hover:bg-[#f5eadf]'
+                  : shouldReveal
+                    ? isAnswer
+                      ? 'border-[#3d735f] bg-[#e5f2ea]'
+                      : isSelected
+                        ? 'border-[#b59a66] bg-[#f6f0e2]'
+                        : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70'
+                    : isSelected
+                      ? 'border-[#9ca7a2] bg-[#eef2ef]'
+                      : 'border-[#ddd4c8] bg-[#fffaf3]';
+                return (
+                  <button
+                    type="button"
+                    key={choice}
+                    disabled={Boolean(answered)}
+                    onClick={() => onAnswer(activeQuestion, choice)}
+                    className={`flex min-h-14 min-w-0 items-start gap-3 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
+                  >
+                    <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-current text-xs">
+                      {choiceIndex + 1}
+                    </span>
+                    <span className="min-w-0 pt-0.5">{choice}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {(feedbackMode === 'immediate' || complete) && answers[activeQuestion.id] ? (
+            <AnswerPanel
+              question={activeQuestion}
+              answer={answers[activeQuestion.id]}
+              items={items}
+              showRuby={settings.showExplanationRuby}
+              labels={labels}
+              locale={normalizeLocale(settings.locale)}
+            />
+          ) : null}
         </>
       ) : null}
     </section>
