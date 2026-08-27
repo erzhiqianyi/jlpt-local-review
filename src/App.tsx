@@ -84,6 +84,8 @@ const translations = {
     kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
     reset: '重置本地进度',
+    resetProgressBody: '清除当前浏览器中的答题记录、复习次数和下次复习时间。词库内容和显示设置不会被删除。',
+    resetConfirm: '确定要清除当前浏览器中的全部学习进度吗？此操作无法撤销。',
     items: '词条',
     questions: '题目',
     answered: '已作答',
@@ -199,6 +201,8 @@ const translations = {
     kanjiToKana: '漢字読み',
     mojiGoi: 'JLPT 語彙',
     reset: 'ローカル進捗をリセット',
+    resetProgressBody: 'このブラウザ内の回答履歴、復習回数、次回復習日を削除します。語彙データと表示設定は残ります。',
+    resetConfirm: 'このブラウザ内の学習進捗をすべて削除しますか？この操作は取り消せません。',
     items: '項目',
     questions: '問題',
     answered: '回答済み',
@@ -314,6 +318,8 @@ const translations = {
     kanjiToKana: 'Kanji Reading',
     mojiGoi: 'JLPT Vocabulary',
     reset: 'Reset local progress',
+    resetProgressBody: 'Clear answer history, review counts, and next-review times from this browser. Deck content and display settings are kept.',
+    resetConfirm: 'Clear all study progress from this browser? This action cannot be undone.',
     items: 'Items',
     questions: 'Questions',
     answered: 'Answered',
@@ -644,6 +650,9 @@ export default function App() {
   }
 
   function resetLocalProgress() {
+    if (!window.confirm(labels.resetConfirm)) {
+      return;
+    }
     setAnswers({});
     setProgress({});
     localStorage.removeItem(STORAGE_ANSWERS);
@@ -712,12 +721,6 @@ export default function App() {
               </NavButton>
             ))}
           </nav>
-          <div className="flex flex-wrap gap-2">
-            <LanguageSelect value={settings.locale} onChange={(locale) => updateSettings({ ...settings, locale })} />
-            <button type="button" onClick={resetLocalProgress} className="h-10 rounded-md border border-[#cbd6cf] bg-white px-3 text-sm font-semibold text-[#574f48] hover:bg-[#f2f6f1]">
-              {labels.reset}
-            </button>
-          </div>
         </div>
       </header>
 
@@ -818,6 +821,12 @@ export default function App() {
                     <p className="text-sm leading-6 text-[#5f625b]">{labels.exportStudyRecordBody}</p>
                     <button type="button" onClick={exportStudyRecord} className="mt-4 rounded-md bg-[#173d35] px-4 py-2 text-sm font-semibold text-white">
                       {labels.exportStudyRecordButton}
+                    </button>
+                  </SettingBlock>
+                  <SettingBlock title={labels.reset}>
+                    <p className="text-sm leading-6 text-[#5f625b]">{labels.resetProgressBody}</p>
+                    <button type="button" onClick={resetLocalProgress} className="mt-4 rounded-md border border-[#b65842] bg-white px-4 py-2 text-sm font-semibold text-[#9b412e] hover:bg-[#fae9e2]">
+                      {labels.reset}
                     </button>
                   </SettingBlock>
                 </div>
