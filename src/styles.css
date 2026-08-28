@@ -20,6 +20,32 @@ body {
   overflow-x: hidden;
 }
 
+html[data-font-size='small'] body {
+  font-size: 15px;
+}
+
+html[data-font-size='large'] body {
+  font-size: 18px;
+}
+
+html[data-font-size='small'] .text-xs { font-size: 0.6875rem; }
+html[data-font-size='small'] .text-sm { font-size: 0.8125rem; }
+html[data-font-size='small'] .text-base { font-size: 0.9375rem; }
+html[data-font-size='small'] .text-lg { font-size: 1rem; }
+html[data-font-size='small'] .text-xl { font-size: 1.125rem; }
+html[data-font-size='small'] .text-2xl { font-size: 1.375rem; }
+html[data-font-size='small'] .text-3xl { font-size: 1.6875rem; }
+html[data-font-size='small'] .text-4xl { font-size: 2rem; }
+
+html[data-font-size='large'] .text-xs { font-size: 0.8125rem; }
+html[data-font-size='large'] .text-sm { font-size: 1rem; }
+html[data-font-size='large'] .text-base { font-size: 1.125rem; }
+html[data-font-size='large'] .text-lg { font-size: 1.25rem; }
+html[data-font-size='large'] .text-xl { font-size: 1.375rem; }
+html[data-font-size='large'] .text-2xl { font-size: 1.6875rem; }
+html[data-font-size='large'] .text-3xl { font-size: 2.125rem; }
+html[data-font-size='large'] .text-4xl { font-size: 2.5rem; }
+
 #root {
   max-width: 100%;
   overflow-x: hidden;

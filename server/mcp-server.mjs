@@ -4,12 +4,18 @@ import {
   buildDraftRevisionContext,
   buildStudyRecord,
   createDailyReviewPackDraft,
+  createLearningCapture,
   createReviewPackDraft,
   getReviewPackDraft,
+  getPlanGenerationContext,
+  getStudyPlan,
   listDueReviews,
+  listListeningQuestions,
+  listLearningCaptures,
   listReviewPackDrafts,
   loadReviewData,
   loginUser,
+  saveGeneratedStudyPlan,
   userForToken,
 } from './storage.mjs';
 
@@ -84,8 +90,26 @@ async function callTool(name, args) {
   if (name === 'get_study_record') {
     return buildStudyRecord(user.id);
   }
+  if (name === 'list_learning_captures') {
+    return listLearningCaptures(user.id, args.status);
+  }
+  if (name === 'create_learning_capture') {
+    return createLearningCapture(user.id, { body: args.body, category: args.category, context: args.context });
+  }
+  if (name === 'get_study_plan') {
+    return getStudyPlan(user.id);
+  }
+  if (name === 'get_plan_generation_context') {
+    return getPlanGenerationContext(user.id);
+  }
+  if (name === 'save_generated_study_plan') {
+    return saveGeneratedStudyPlan(user.id, { tasks: args.tasks });
+  }
   if (name === 'list_due_reviews') {
     return listDueReviews(user.id, args.at);
+  }
+  if (name === 'list_listening_questions') {
+    return listListeningQuestions(user.id);
   }
   if (name === 'analyze_weak_points') {
     return analyzeWeakPoints(user.id);
@@ -136,7 +160,40 @@ function toolList() {
     },
     tokenTool('get_review_data', 'Read seed JLPT resource data from JSON through the backend.'),
     tokenTool('get_study_record', 'Read the full personalized study record from SQLite plus JSON resources.'),
+    tokenTool('list_learning_captures', 'Read the learner inputs that still need explanation, organization, or conversion into review material.', { status: { type: 'string', enum: ['inbox', 'processed', 'archived'] } }),
+    tokenTool('create_learning_capture', 'Save a word, sentence, grammar point, listening issue, or other learner question into the local inbox.', {
+      body: { type: 'string' },
+      category: { type: 'string', enum: ['word', 'grammar', 'sentence', 'listening', 'reading', 'unsure'] },
+      context: { type: 'string' },
+    }, ['token', 'body']),
+    tokenTool('get_study_plan', 'Read the learner\'s saved JLPT exam plan, materials, weekly frequency, and available study time.'),
+    tokenTool('get_plan_generation_context', 'Read the learner profile, recent practice, weak points, daily summaries, and instructions needed to generate or revise a daily JLPT plan.'),
+    tokenTool(
+      'save_generated_study_plan',
+      'Save a complete agent-generated daily plan for calendar tracking. Replaces generated tasks while preserving matching completed task IDs.',
+      {
+        tasks: {
+          type: 'array',
+          maxItems: 730,
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              date: { type: 'string', description: 'YYYY-MM-DD within the saved study period.' },
+              title: { type: 'string' },
+              module: { type: 'string', enum: ['grammar', 'reading', 'listening', 'vocabulary', 'other'] },
+              minutes: { type: 'number' },
+              detail: { type: 'string' },
+              materialId: { type: 'string' },
+            },
+            required: ['date', 'title', 'module', 'minutes'],
+          },
+        },
+      },
+      ['token', 'tasks'],
+    ),
     tokenTool('list_due_reviews', 'List items whose nextReviewAt is due or overdue.', { at: { type: 'string' } }),
+    tokenTool('list_listening_questions', 'Read the authenticated user\'s uploaded listening-question metadata. Audio bytes stay in local storage.'),
     tokenTool('analyze_weak_points', 'Analyze wrong answers, learning items, due items, and mastery totals.'),
     tokenTool('generate_daily_review_pack', 'Create a personalized daily review-pack draft that the user can preview and annotate.', { title: { type: 'string' }, minutes: { type: 'number' } }),
     tokenTool('create_review_pack_draft', 'Save generated review-pack content as a draft for in-app preview.', { title: { type: 'string' }, content: { type: 'object' } }, ['token', 'title', 'content']),

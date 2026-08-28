@@ -1,23 +1,35 @@
 import { createServer } from 'node:http';
+import { createReadStream } from 'node:fs';
 import {
   analyzeWeakPoints,
   addDraftAnnotation,
   buildDraftRevisionContext,
   buildStudyRecord,
   createDailyReviewPackDraft,
+  createListeningQuestion,
+  createLearningCapture,
   createReviewPackDraft,
   createUser,
   databasePath,
   deleteSession,
+  deleteListeningQuestion,
   getReviewPackDraft,
   getStudyState,
+  getStudyPlan,
+  saveGeneratedStudyPlan,
   listReviewPackDrafts,
+  listListeningQuestions,
+  listLearningCaptures,
+  listeningAudioForUser,
   loadReviewData,
   loginUser,
   reviewDataPath,
   saveAnswer,
   savePracticeState,
   saveSettings,
+  saveStudyPlanProfile,
+  updateStudyPlanTask,
+  updateLearningCaptureStatus,
   userForToken,
 } from './storage.mjs';
 
@@ -74,6 +86,25 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { settings: saveSettings(user.id, await readJson(req)) });
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/study-plan') {
+      return json(res, 200, { plan: getStudyPlan(user.id) });
+    }
+
+    if (req.method === 'PUT' && (url.pathname === '/api/study-plan' || url.pathname === '/api/study-plan/profile')) {
+      return json(res, 200, { plan: saveStudyPlanProfile(user.id, await readJson(req)) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/study-plan/generated') {
+      return json(res, 200, { plan: saveGeneratedStudyPlan(user.id, await readJson(req)) });
+    }
+
+    const planTaskMatch = /^\/api\/study-plan\/tasks\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'PATCH' && planTaskMatch) {
+      const body = await readJson(req);
+      const plan = updateStudyPlanTask(user.id, planTaskMatch[1], body.status);
+      return plan ? json(res, 200, { plan }) : json(res, 404, { error: 'Plan task not found' });
+    }
+
     if (req.method === 'PUT' && url.pathname === '/api/study-state/practice') {
       savePracticeState(user.id, await readJson(req));
       return json(res, 200, getStudyState(user.id));
@@ -88,8 +119,54 @@ const server = createServer(async (req, res) => {
       return json(res, 200, buildStudyRecord(user.id));
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/captures') {
+      return json(res, 200, { captures: listLearningCaptures(user.id, url.searchParams.get('status')) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/captures') {
+      return json(res, 201, { capture: createLearningCapture(user.id, await readJson(req)) });
+    }
+
+    const captureMatch = /^\/api\/captures\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'PATCH' && captureMatch) {
+      const capture = updateLearningCaptureStatus(user.id, captureMatch[1], (await readJson(req)).status);
+      return capture ? json(res, 200, { capture }) : json(res, 404, { error: 'Capture not found' });
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/analysis/weak-points') {
       return json(res, 200, analyzeWeakPoints(user.id));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/listening-questions') {
+      return json(res, 200, { questions: listListeningQuestions(user.id) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/listening-questions') {
+      const question = createListeningQuestion(user.id, await readJson(req, 36 * 1024 * 1024));
+      return json(res, 201, { question });
+    }
+
+    const listeningAudioMatch = /^\/api\/listening-questions\/([^/]+)\/audio$/.exec(url.pathname);
+    if (req.method === 'GET' && listeningAudioMatch) {
+      const audio = listeningAudioForUser(user.id, listeningAudioMatch[1]);
+      if (!audio) {
+        return json(res, 404, { error: 'Listening audio not found' });
+      }
+      res.writeHead(200, {
+        'content-type': audio.audio_mime,
+        'content-length': audio.audio_size,
+        'cache-control': 'private, no-store',
+        'content-disposition': 'inline',
+      });
+      return createReadStream(audio.audio_path).pipe(res);
+    }
+
+    const listeningQuestionMatch = /^\/api\/listening-questions\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'DELETE' && listeningQuestionMatch) {
+      if (!deleteListeningQuestion(user.id, listeningQuestionMatch[1])) {
+        return json(res, 404, { error: 'Listening question not found' });
+      }
+      return json(res, 200, { ok: true });
     }
 
     if (req.method === 'GET' && url.pathname === '/api/drafts') {
@@ -133,7 +210,7 @@ const server = createServer(async (req, res) => {
 
     return json(res, 404, { error: 'Not found' });
   } catch (error) {
-    const status = /UNIQUE constraint failed/.test(error.message) ? 409 : 400;
+    const status = Number(error.statusCode) || (/UNIQUE constraint failed/.test(error.message) ? 409 : 400);
     return json(res, status, { error: error.message });
   }
 });
@@ -149,9 +226,16 @@ function bearerToken(req) {
   return match?.[1] ?? '';
 }
 
-async function readJson(req) {
+async function readJson(req, maxBytes = 1024 * 1024) {
   const chunks = [];
+  let totalBytes = 0;
   for await (const chunk of req) {
+    totalBytes += chunk.length;
+    if (totalBytes > maxBytes) {
+      const error = new Error('Request body is too large');
+      error.statusCode = 413;
+      throw error;
+    }
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString('utf8');
