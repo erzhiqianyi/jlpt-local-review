@@ -1,848 +1,864 @@
 {
-  "generated_at": "2026-08-27T20:20:00+09:00",
+  "generated_at": "2026-08-28T08:27:33+09:00",
   "archive_month": "2026/08",
   "items": [
     {
-      "id": "n1-vocab-001",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N1",
-      "original": "測定",
-      "reading": "そくてい",
-      "meaning_zh": "测定、测量，用一定方法或器具测出数值。",
-      "core_memory": "按标准、用仪器把客观数据测出来。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "血圧を測定する",
-        "温度を測定する",
-        "測定結果",
-        "測定値",
-        "測定機器"
+      "id": "2026-08-28-001",
+      "date": "2026-08-28",
+      "input_at": "2026-08-28T07:30:42+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N3",
+      "level_confidence": "medium",
+      "original": "たびに",
+      "normalized": "たびに",
+      "source_original_sentence": "あの子は支払うたびに電話がかかる。",
+      "source_normalized_sentence": "あの子は支払うたびに、電話がかかる。",
+      "source_grammar_point": "Vるたびに / Nのたびに",
+      "grammar_point": "たびに",
+      "reading": "たびに",
+      "meaning_ja": "あることが起こると、その時ごとに同じようなことが起こることを表す表現。",
+      "paraphrase_ja": "そのたびごとに",
+      "meaning_zh": "每当……的时候；每次……都……。表示前项每发生一次，后项也反复发生。",
+      "core_memory": "Vる/名詞の + たびに = 每次A，就会B；重点是反复对应，不是普通日常顺序。",
+      "explanation_zh": "「たびに」接在动词辞书形或「名詞＋の」后，表示“每逢前项发生，后项也发生”。教材中的例句「あの子は支払うたびに電話がかかる」表示“每次付款，都会有电话打来”，重点是付款这个事件每发生一次，电话也随之反复发生。注意：它不适合描述理所当然、每天自然会做的固定习惯，例如“每天早上醒来就洗脸”这种普通流程。",
+      "grammar_forms": [
+        {
+          "form": "Vる + たびに",
+          "example": "支払うたびに電話がかかる",
+          "meaning_zh": "每次做某动作时，都会发生后项。"
+        },
+        {
+          "form": "N + の + たびに",
+          "example": "試験のたびに緊張する",
+          "meaning_zh": "每逢某个事件，都会出现后项状态。"
+        }
+      ],
+      "grammar_features": [
+        {
+          "feature": "反复对应",
+          "detail_zh": "前项不是一次性事件，而是反复出现；后项也随着每一次前项反复发生。"
+        },
+        {
+          "feature": "后项常带变化、反应、感情或结果",
+          "detail_zh": "常见后项包括思い出す、緊張する、電話がかかる、上手になる、嫌になる等。"
+        },
+        {
+          "feature": "不用于理所当然的日常顺序",
+          "detail_zh": "如果只是每天固定会做的普通动作，如“起きるたびに顔を洗う”，语感不自然。"
+        },
+        {
+          "feature": "不能接过去形",
+          "detail_zh": "一般说「行くたびに」，不是「行ったたびに」。"
+        }
       ],
       "examples": [
         {
-          "ja": "室内の温度を測定した。",
-          "zh": "测定了室内温度。"
+          "ja": "あの子は支払うたびに電話がかかる。",
+          "zh": "那个孩子每次付款，都会有电话打来。"
         },
         {
-          "ja": "機械の性能を正確に測定する。",
-          "zh": "准确测定机器的性能。"
+          "ja": "この写真を見るたびに、学生時代を思い出す。",
+          "zh": "每次看到这张照片，都会想起学生时代。"
+        },
+        {
+          "ja": "試験のたびに、緊張して眠れなくなる。",
+          "zh": "每逢考试，都会紧张得睡不着。"
+        },
+        {
+          "ja": "彼に会うたびに、日本語が上手になっていると感じる。",
+          "zh": "每次见到他，都觉得他的日语变好了。"
         }
       ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "うちに",
+          "かわりに",
+          "せいで",
+          "たびたび",
+          "につれて"
+        ],
+        "meaning": [
+          "そのたびごとに",
+          "その代わりに",
+          "その間に",
+          "そのせいで"
+        ]
+      },
       "comparisons": [
         {
-          "target": "測る",
-          "difference_zh": "日常说“量一下”；測定する更正式、客观。"
+          "target": "たびたび",
+          "difference_zh": "「たびたび」是副词，意思是“多次、屡次”，不构成「AするたびにB」这种前后项对应结构。"
         },
         {
-          "target": "計測",
-          "difference_zh": "偏技术、工程，强调仪器计量。"
+          "target": "ごとに",
+          "difference_zh": "「ごとに」也可表示“每……”，但更偏规则单位或间隔，如「一時間ごとに」。「たびに」更强调事件每发生一次带来的反应或变化。"
         },
         {
-          "target": "測量",
-          "difference_zh": "主要用于土地、地形、距离、位置。"
-        }
-      ],
-      "analysis": "看到温度、血压、浓度、速度等可数值化对象时，理解为按标准测出数值。",
-      "tags": [
-        "漢語",
-        "正式語",
-        "技术"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "测定、测量，用一定方法或器具测出数值。",
-          "core_memory": "按标准、用仪器把客观数据测出来。",
-          "analysis": "看到温度、血压、浓度、速度等可数值化对象时，理解为按标准测出数值。"
+          "target": "につれて",
+          "difference_zh": "「につれて」表示随着前项连续变化，后项也逐渐变化；「たびに」强调一次一次发生的反复对应。"
         },
-        "en": {
-          "meaning": "Measurement; determining a numeric value with a method or instrument.",
-          "core_memory": "Use a standard or instrument to turn objective data into numbers.",
-          "analysis": "Use it for measurable targets such as temperature, blood pressure, concentration, speed, or machine performance."
+        {
+          "target": "うちに",
+          "difference_zh": "「うちに」表示在某段时间或状态持续期间，不表示每一次发生都对应一次结果。"
         }
+      ],
+      "jlpt_expansion": {
+        "level_focus": "N3 grammar, useful for N2/N1 reading speed as a repeated-event cue.",
+        "test_points": [
+          "判断接续：动词辞书形或名词＋の。",
+          "判断语义：前项每发生一次，后项也发生。",
+          "排除「たびたび」：它只是副词“屡次”，不能接在动词后构成此句型。",
+          "排除「につれて」：它要求连续变化，不是一次一次的重复事件。"
+        ],
+        "common_traps": [
+          "把「たびに」误当成普通时间顺序。",
+          "看到“每次”就滥用在理所当然的日常习惯上。",
+          "误写成「Vた + たびに」。"
+        ]
       },
-      "input_at": "2026-08-27T20:20:00+09:00"
+      "practice_questions": [
+        {
+          "id": "2026-08-28-001-practice-01",
+          "kind": "grammar",
+          "instruction": "文法として最も自然なものを選びなさい。",
+          "prompt": "あの子は支払う（　　）、電話がかかる。",
+          "choices": [
+            "たびに",
+            "うちに",
+            "かわりに",
+            "せいで"
+          ],
+          "answer": "たびに",
+          "explanation_zh": "付款这个动作每发生一次，电话也发生一次，所以用「たびに」。"
+        },
+        {
+          "id": "2026-08-28-001-practice-02",
+          "kind": "grammar",
+          "instruction": "文法として最も自然なものを選びなさい。",
+          "prompt": "この写真を見る（　　）、学生時代を思い出す。",
+          "choices": [
+            "たびに",
+            "につれて",
+            "かわりに",
+            "までに"
+          ],
+          "answer": "たびに",
+          "explanation_zh": "“每次看这张照片，都会想起学生时代”，是反复事件对应反复反应。"
+        },
+        {
+          "id": "2026-08-28-001-practice-03",
+          "kind": "grammar",
+          "instruction": "文法として最も自然なものを選びなさい。",
+          "prompt": "試験（　　）、緊張して眠れなくなる。",
+          "choices": [
+            "のたびに",
+            "に対して",
+            "を通して",
+            "に比べて"
+          ],
+          "answer": "のたびに",
+          "explanation_zh": "名词接续是「Nのたびに」。这里表示每逢考试都会紧张。"
+        },
+        {
+          "id": "2026-08-28-001-practice-04",
+          "kind": "meaning",
+          "instruction": "下線部に最も近い意味を選びなさい。",
+          "prompt": "彼に会うたびに、日本語が上手になっていると感じる。",
+          "target": "たびに",
+          "choices": [
+            "会うたびごとに",
+            "会う代わりに",
+            "会っている間に",
+            "会ったせいで"
+          ],
+          "answer": "会うたびごとに",
+          "explanation_zh": "「たびに」接在「会う」后，表示每一次见面的时候都产生同样判断。"
+        },
+        {
+          "id": "2026-08-28-001-practice-05",
+          "kind": "error_detection",
+          "instruction": "次の文が不自然な理由として最も適切なものを選びなさい。",
+          "prompt": "朝起きるたびに、顔を洗う。",
+          "choices": [
+            "理所当然的日常习惯，不适合强调反复对应",
+            "动词不能接「たびに」",
+            "「たびに」只能用于过去的事情",
+            "后项必须是否定句"
+          ],
+          "answer": "理所当然的日常习惯，不适合强调反复对应",
+          "explanation_zh": "教材中的限制点：普通日常流程不适合用「たびに」。若有特殊含义，如“每次醒来都发现脸很肿”，才自然。"
+        }
+      ],
+      "notes": [
+        "接续：Vる＋たびに、Nの＋たびに。",
+        "后项常是反复发生的变化、反应、结果或意外情况。",
+        "不适合描述纯粹日常当然会发生的固定流程。",
+        "「電話がかかる」= 有电话打来；「電話をかける」= 主语打电话给别人。"
+      ],
+      "ruby_terms": [
+        {
+          "text": "支払う",
+          "reading": "しはらう"
+        },
+        {
+          "text": "電話",
+          "reading": "でんわ"
+        },
+        {
+          "text": "写真",
+          "reading": "しゃしん"
+        },
+        {
+          "text": "見る",
+          "reading": "みる"
+        },
+        {
+          "text": "学生時代",
+          "reading": "がくせいじだい"
+        },
+        {
+          "text": "思い出す",
+          "reading": "おもいだす"
+        },
+        {
+          "text": "試験",
+          "reading": "しけん"
+        },
+        {
+          "text": "緊張",
+          "reading": "きんちょう"
+        },
+        {
+          "text": "彼",
+          "reading": "かれ"
+        },
+        {
+          "text": "会う",
+          "reading": "あう"
+        },
+        {
+          "text": "日本語",
+          "reading": "にほんご"
+        },
+        {
+          "text": "上手",
+          "reading": "じょうず"
+        },
+        {
+          "text": "感じる",
+          "reading": "かんじる"
+        },
+        {
+          "text": "朝",
+          "reading": "あさ"
+        },
+        {
+          "text": "起きる",
+          "reading": "おきる"
+        },
+        {
+          "text": "顔",
+          "reading": "かお"
+        },
+        {
+          "text": "洗う",
+          "reading": "あらう"
+        }
+      ],
+      "question": "文法として最も自然なものを選びなさい。\nあの子は支払う（　　）、電話がかかる。",
+      "choices": [
+        "たびに",
+        "うちに",
+        "かわりに",
+        "せいで"
+      ],
+      "correct_answer": "たびに",
+      "distractor_notes": {
+        "うちに": "「Aしている間に／Aの状態が続く間に」という意味で、反復する対応関係を表しにくい。",
+        "かわりに": "代替や交換を表すため、「支払うごとに電話が来る」という意味にならない。",
+        "せいで": "原因を悪く評価する表現で、この文の反復条件には合わない。",
+        "たびたび": "副词“屡次”，不能放在「支払う」后面形成接续。",
+        "につれて": "表示随着连续变化而变化，不是每次事件发生时都出现同样结果。"
+      },
+      "source_chat_summary": "用户给出「あの子は支払うたびに電話がかかる」并附上教材图片，要求整理成原始语法点「Vるたびに / Nのたびに」，再按语法特点扩展 JLPT 练习。",
+      "review_status": "new"
     },
     {
-      "id": "n1-vocab-002",
+      "id": "n1-養成",
       "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N1",
-      "original": "認定",
-      "reading": "にんてい",
-      "meaning_zh": "认定，根据标准正式判断其资格、事实或状态。",
-      "core_memory": "按标准正式盖章认可。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "安全基準を満たすと認定される",
-        "専門家として認定される",
-        "労災と認定される"
-      ],
-      "examples": [
-        {
-          "ja": "この製品は安全基準を満たしていると認定された。",
-          "zh": "这个产品被认定为符合安全标准。"
-        },
-        {
-          "ja": "彼は専門家として認定された。",
-          "zh": "他被认定为专业人士。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "認める",
-          "difference_zh": "范围更广，表示认可、承认。"
-        },
-        {
-          "target": "認証",
-          "difference_zh": "证明真实性、身份或合法性。"
-        },
-        {
-          "target": "承認",
-          "difference_zh": "批准、同意。"
-        }
-      ],
-      "analysis": "重点是“基準”和“正式判断”，不是单纯觉得可以。",
-      "tags": [
-        "漢語",
-        "制度",
-        "正式語"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "认定，根据标准正式判断其资格、事实或状态。",
-          "core_memory": "按标准正式盖章认可。",
-          "analysis": "重点是“基準”和“正式判断”，不是单纯觉得可以。"
-        },
-        "en": {
-          "meaning": "Official recognition or certification based on a standard, fact, status, or qualification.",
-          "core_memory": "A formal stamp of recognition after checking against criteria.",
-          "analysis": "The key ideas are a standard and a formal judgment. It is stronger than simply thinking something is acceptable."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-003",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N2",
-      "original": "年々",
-      "reading": "ねんねん",
-      "meaning_zh": "逐年，一年比一年，强调随年份推进发生变化。",
-      "core_memory": "每过一年，趋势更明显。",
-      "part_of_speech": "副词",
-      "collocations": [
-        "年々増える",
-        "年々減少する",
-        "年々上昇する",
-        "年々深刻になる"
-      ],
-      "examples": [
-        {
-          "ja": "物価は年々上昇している。",
-          "zh": "物价逐年上涨。"
-        },
-        {
-          "ja": "この町の人口は年々減少している。",
-          "zh": "这个城市的人口逐年减少。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "毎年",
-          "difference_zh": "强调每年重复发生，不一定有趋势变化。"
-        },
-        {
-          "target": "徐々に",
-          "difference_zh": "慢慢变化，不限定以年为单位。"
-        }
-      ],
-      "analysis": "后面常接增加、减少、上升、下降、严重化等趋势表达。",
-      "tags": [
-        "副词",
-        "趋势"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "逐年，一年比一年，强调随年份推进发生变化。",
-          "core_memory": "每过一年，趋势更明显。",
-          "analysis": "后面常接增加、减少、上升、下降、严重化等趋势表达。"
-        },
-        "en": {
-          "meaning": "Year by year; with each passing year, usually showing a trend.",
-          "core_memory": "Every year, the trend becomes more visible.",
-          "analysis": "Often pairs with increase, decrease, rise, decline, worsening, or other trend expressions."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-004",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N2",
-      "original": "経過",
-      "reading": "けいか",
-      "meaning_zh": "时间经过；事情发展过程或后续情况。",
-      "core_memory": "时间过去，事情一路发展到现在。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "時間が経過する",
-        "経過を見る",
-        "経過を観察する",
-        "経過を報告する",
-        "経過が順調だ"
-      ],
-      "examples": [
-        {
-          "ja": "三時間が経過した。",
-          "zh": "过了三个小时。"
-        },
-        {
-          "ja": "手術後の経過を観察する。",
-          "zh": "观察手术后的恢复过程。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "過程",
-          "difference_zh": "强调中间经过哪些阶段。"
-        },
-        {
-          "target": "経緯",
-          "difference_zh": "强调前因后果，为什么变成这样。"
-        }
-      ],
-      "analysis": "既可以表示时间流逝，也可以表示治疗、事件等的发展状态。",
-      "tags": [
-        "漢語",
-        "时间",
-        "过程"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "时间经过；事情发展过程或后续情况。",
-          "core_memory": "时间过去，事情一路发展到现在。",
-          "analysis": "既可以表示时间流逝，也可以表示治疗、事件等的发展状态。"
-        },
-        "en": {
-          "meaning": "The passage of time; the process or subsequent development of an event or condition.",
-          "core_memory": "Time passes, and the situation develops up to the present.",
-          "analysis": "It can describe elapsed time, or the progress of treatment, an incident, a project, or another ongoing state."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-005",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N1",
-      "original": "概観",
-      "reading": "がいかん",
-      "meaning_zh": "概观、概览，从整体上大致把握全貌。",
-      "core_memory": "站远一点看整体。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "全体を概観する",
-        "歴史を概観する",
-        "動向を概観する",
-        "状況を概観する"
-      ],
-      "examples": [
-        {
-          "ja": "日本経済の歴史を概観する。",
-          "zh": "概览日本经济的历史。"
-        },
-        {
-          "ja": "本章では近代文学の流れを概観する。",
-          "zh": "本章将概览近代文学的发展脉络。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "概要",
-          "difference_zh": "提炼出来的主要内容。"
-        },
-        {
-          "target": "概略",
-          "difference_zh": "省略细节后的大致内容。"
-        },
-        {
-          "target": "概況",
-          "difference_zh": "整体情况、概况。"
-        }
-      ],
-      "analysis": "常见于论文、报告、章节开头，表示先总览整体情况。",
-      "tags": [
-        "文章語",
-        "总览"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "概观、概览，从整体上大致把握全貌。",
-          "core_memory": "站远一点看整体。",
-          "analysis": "常见于论文、报告、章节开头，表示先总览整体情况。"
-        },
-        "en": {
-          "meaning": "Overview; looking over something as a whole to grasp the general picture.",
-          "core_memory": "Step back and look at the whole structure.",
-          "analysis": "Common in essays, reports, and chapter openings when first surveying the overall situation or history."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-006",
-      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659040",
       "deck": "n1_vocab",
       "type": "word",
       "jlpt_level": "N1",
       "original": "養成",
       "reading": "ようせい",
-      "meaning_zh": "培养、养成，通过教育训练把能力、习惯或人才培养出来。",
-      "core_memory": "经过训练，让能力或人才成形。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "人材を養成する",
-        "専門家を養成する",
-        "能力を養成する",
-        "習慣を養成する",
-        "養成講座"
+      "meaning_ja": "能力・習慣・人材などを、時間をかけて育てること。",
+      "paraphrase_ja": "能力・習慣・人材などを、時間をかけて育てること。",
+      "meaning_zh": "能力・習慣・人材などを、時間をかけて育てること。",
+      "core_memory": "有意识地、经过一段时间，把能力、习惯、人才培养出来。",
+      "question_kinds": [
+        "meaning"
       ],
+      "ruby_terms": [
+        {
+          "text": "養成",
+          "reading": "ようせい"
+        }
+      ],
+      "analysis": "養成。养成读书习惯。。培养专业人才。",
       "examples": [
         {
           "ja": "読書の習慣を養成する。",
-          "zh": "养成读书习惯。"
+          "zh": ""
         },
         {
           "ja": "専門的な人材を養成する。",
-          "zh": "培养专业人才。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "育成",
-          "difference_zh": "让人或事物整体成长、发展。"
+          "zh": ""
         },
         {
-          "target": "養う",
-          "difference_zh": "更自然、更广，可表示培养或滋养。"
+          "ja": "判断力を養成する。",
+          "zh": ""
         }
-      ],
-      "analysis": "常和人材、専門家、能力、習慣等搭配，偏正式、制度化。",
-      "tags": [
-        "教育",
-        "训练",
-        "正式語"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "培养、养成，通过教育训练把能力、习惯或人才培养出来。",
-          "core_memory": "经过训练，让能力或人才成形。",
-          "analysis": "常和人材、専門家、能力、習慣等搭配，偏正式、制度化。"
-        },
-        "en": {
-          "meaning": "Training or cultivation; developing people, abilities, or habits through education and practice.",
-          "core_memory": "Through training, a skill, habit, or professional is formed.",
-          "analysis": "Often used with personnel, specialists, abilities, habits, and courses. It has a formal, institutional feel."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
+      ]
     },
     {
-      "id": "n1-vocab-007",
+      "id": "n1-遥",
       "date": "2026-08-27",
-      "deck": "grammar_expression",
-      "type": "verb_form",
-      "jlpt_level": "N2",
-      "original": "踏んで",
-      "reading": "ふんで",
-      "meaning_zh": "「踏む」的て形；踩；也表示经过步骤、程序。",
-      "core_memory": "一步一步踩过去，引申为按步骤推进。",
-      "part_of_speech": "动词て形",
-      "collocations": [
-        "ブレーキを踏む",
-        "手続きを踏む",
-        "手順を踏む",
-        "段階を踏む",
-        "結果を踏まえて"
-      ],
-      "examples": [
-        {
-          "ja": "必要な手続きを踏んで申請する。",
-          "zh": "经过必要手续后提出申请。"
-        },
-        {
-          "ja": "調査結果を踏まえて、今後の方針を決める。",
-          "zh": "根据调查结果决定今后的方针。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "踏まえて",
-          "difference_zh": "表示以某事为依据、考虑到某事。"
-        }
-      ],
-      "analysis": "足、地面、刹车是本义；手順、手続き、段階是引申义。",
-      "tags": [
-        "动词",
-        "引申义",
-        "表达"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "「踏む」的て形；踩；也表示经过步骤、程序。",
-          "core_memory": "一步一步踩过去，引申为按步骤推进。",
-          "analysis": "足、地面、刹车是本义；手順、手続き、段階是引申义。"
-        },
-        "en": {
-          "meaning": "The te-form of 踏む; to step on, or figuratively to go through a procedure or stage.",
-          "core_memory": "Step through something one stage at a time.",
-          "analysis": "Feet, ground, and brakes are literal uses. Procedures, steps, and stages are figurative uses."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-008",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
-      "jlpt_level": "N2",
-      "original": "豊富",
-      "reading": "ほうふ",
-      "meaning_zh": "丰富、充足，数量或种类多而且内容充实。",
-      "core_memory": "不仅多，而且够充实、选择多。",
-      "part_of_speech": "ナ形容词・名词",
-      "collocations": [
-        "経験が豊富だ",
-        "知識が豊富だ",
-        "資源が豊富だ",
-        "種類が豊富だ",
-        "栄養が豊富だ"
-      ],
-      "examples": [
-        {
-          "ja": "彼は海外経験が豊富です。",
-          "zh": "他有丰富的海外经验。"
-        },
-        {
-          "ja": "この店はメニューが豊富だ。",
-          "zh": "这家店菜单种类丰富。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "多い",
-          "difference_zh": "单纯数量多。"
-        },
-        {
-          "target": "豊か",
-          "difference_zh": "充裕、富足、富有内涵。"
-        }
-      ],
-      "analysis": "经验、知识、资源、种类、营养等常用豊富，强调数量和内容都充实。",
-      "tags": [
-        "形容词",
-        "数量"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "丰富、充足，数量或种类多而且内容充实。",
-          "core_memory": "不仅多，而且够充实、选择多。",
-          "analysis": "经验、知识、资源、种类、营养等常用豊富，强调数量和内容都充实。"
-        },
-        "en": {
-          "meaning": "Abundant or rich; large in amount or variety, with substantial content.",
-          "core_memory": "Not just many, but plentiful and substantial.",
-          "analysis": "Common with experience, knowledge, resources, varieties, nutrients, and menus. It stresses both quantity and richness."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-001",
-      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659677",
       "deck": "name_reading",
       "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "服部",
-      "reading": "はっとり",
-      "meaning_zh": "常见日本姓氏。",
-      "core_memory": "整体记作 はっとり，不能按 服=ふく、部=ぶ 推。",
-      "collocations": [
-        "服部さん",
-        "服部教授",
-        "服部半蔵"
-      ],
-      "examples": [],
-      "comparisons": [],
-      "analysis": "看到さん、氏、教授、先生等称呼时，多半是姓氏读法。",
-      "tags": [
-        "人名",
-        "姓氏",
-        "特殊读音"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "常见日本姓氏。",
-          "core_memory": "整体记作 はっとり，不能按 服=ふく、部=ぶ 推。",
-          "analysis": "看到さん、氏、教授、先生等称呼时，多半是姓氏读法。"
-        },
-        "en": {
-          "meaning": "A common Japanese surname.",
-          "core_memory": "Remember it as はっとり; do not derive it mechanically from 服=ふく and 部=ぶ.",
-          "analysis": "When followed by さん, 氏, 教授, or 先生, it is usually being used as a surname."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-002",
-      "date": "2026-08-27",
-      "deck": "name_reading",
-      "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "智里",
-      "reading": "ちさと",
-      "meaning_zh": "常见人名读法。",
-      "core_memory": "作为名字时常读 ちさと。",
-      "collocations": [
-        "服部智里"
-      ],
-      "examples": [],
-      "comparisons": [],
-      "analysis": "人名可能有特殊读法，具体人物以教材或本人标注为准。",
-      "tags": [
-        "人名",
-        "名字"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "常见人名读法。",
-          "core_memory": "作为名字时常读 ちさと。",
-          "analysis": "人名可能有特殊读法，具体人物以教材或本人标注为准。"
-        },
-        "en": {
-          "meaning": "A common reading for a Japanese given name.",
-          "core_memory": "As a personal name, 智里 is often read ちさと.",
-          "analysis": "Japanese personal names can have special readings. For a real person, follow the textbook, audio, or the person’s own notation."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-003",
-      "date": "2026-08-27",
-      "deck": "name_reading",
-      "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "佐野",
-      "reading": "さの",
-      "meaning_zh": "常见日本姓氏，也可作地名。",
-      "core_memory": "整体记作 さの。",
-      "collocations": [
-        "佐野さん",
-        "佐野先生",
-        "佐野市"
-      ],
-      "examples": [],
-      "comparisons": [],
-      "analysis": "さん、先生多为姓氏；市、駅多为地名。",
-      "tags": [
-        "人名",
-        "地名",
-        "姓氏"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "常见日本姓氏，也可作地名。",
-          "core_memory": "整体记作 さの。",
-          "analysis": "さん、先生多为姓氏；市、駅多为地名。"
-        },
-        "en": {
-          "meaning": "A common Japanese surname, also used as a place name.",
-          "core_memory": "Remember the whole form as さの.",
-          "analysis": "With さん or 先生 it is likely a surname; with 市 or 駅 it is likely a place name."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-004",
-      "date": "2026-08-27",
-      "deck": "name_reading",
-      "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "智子",
-      "reading": "ともこ",
-      "meaning_zh": "常见日本女性名字。",
-      "core_memory": "智 可读 とも，子 读 こ。",
-      "collocations": [
-        "佐野智子"
-      ],
-      "examples": [],
-      "comparisons": [],
-      "analysis": "具体人物姓名读音仍以本人标注为准。",
-      "tags": [
-        "人名",
-        "名字"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "常见日本女性名字。",
-          "core_memory": "智 可读 とも，子 读 こ。",
-          "analysis": "具体人物姓名读音仍以本人标注为准。"
-        },
-        "en": {
-          "meaning": "A common Japanese female given name.",
-          "core_memory": "智 can be read とも, and 子 is read こ.",
-          "analysis": "The exact reading of a real person’s name should still follow that person’s own notation."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-005",
-      "date": "2026-08-27",
-      "deck": "name_reading",
-      "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "新谷",
-      "reading": "しんたに",
-      "meaning_zh": "常见日本姓氏读法。",
-      "core_memory": "默认候选 しんたに，但人名可有其他特殊读法。",
-      "collocations": [
-        "新谷さん",
-        "新谷先生"
-      ],
-      "examples": [],
-      "comparisons": [
-        {
-          "target": "其他读法",
-          "difference_zh": "也可能读 しんや、あらたに、あらや、にいや。"
-        }
-      ],
-      "analysis": "无其他提示时优先猜 しんたに，但不能强行唯一化。",
-      "tags": [
-        "人名",
-        "姓氏",
-        "多读音"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "常见日本姓氏读法。",
-          "core_memory": "默认候选 しんたに，但人名可有其他特殊读法。",
-          "analysis": "无其他提示时优先猜 しんたに，但不能强行唯一化。"
-        },
-        "en": {
-          "meaning": "A common reading for the Japanese surname 新谷.",
-          "core_memory": "しんたに is the default candidate, but names may have other special readings.",
-          "analysis": "Without more context, しんたに is a reasonable first guess, but it should not be treated as the only possible reading."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "name-006",
-      "date": "2026-08-27",
-      "deck": "name_reading",
-      "type": "proper_name",
-      "jlpt_level": "unknown",
-      "original": "新谷遥",
-      "reading": "しんたに はるか",
-      "meaning_zh": "普通日本姓名的自然读法候选。",
-      "core_memory": "新谷=しんたに，遥=はるか。",
-      "collocations": [
-        "新谷 遥"
-      ],
-      "examples": [],
-      "comparisons": [],
-      "analysis": "具体人物以本人标注或教材音频为准。",
-      "tags": [
-        "人名",
-        "姓名"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "普通日本姓名的自然读法候选。",
-          "core_memory": "新谷=しんたに，遥=はるか。",
-          "analysis": "具体人物以本人标注或教材音频为准。"
-        },
-        "en": {
-          "meaning": "A natural reading candidate for an ordinary Japanese full name.",
-          "core_memory": "新谷 = しんたに, 遥 = はるか.",
-          "analysis": "For a specific person, confirm with their own notation, textbook marking, or audio."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
-    },
-    {
-      "id": "n1-vocab-009",
-      "date": "2026-08-27",
-      "deck": "n1_vocab",
-      "type": "word",
       "jlpt_level": "N1",
       "original": "遥",
       "reading": "はるか",
-      "meaning_zh": "作为名字常读 はるか；普通词「遥か」表示遥远、远远地。",
-      "core_memory": "距离、时间、程度上相隔很远。",
-      "collocations": [
-        "遥か遠く",
-        "遥か昔",
-        "予想を遥かに上回る"
-      ],
-      "examples": [
+      "meaning_ja": "作为人名时常读「はるか」；作为普通词汇时常见形式是「遥か（はるか）」，表示“遥远、远远地”。",
+      "paraphrase_ja": "作为人名时常读「はるか」；作为普通词汇时常见形式是「遥か（はるか）」，表示“遥远、远远地”。",
+      "meaning_zh": "作为人名时常读「はるか」；作为普通词汇时常见形式是「遥か（はるか）」，表示“遥远、远远地”。",
+      "core_memory": "作为人名时常读「はるか」；作为普通词汇时常见形式是「遥か（はるか）」，表示“遥远、远远地”。",
+      "ruby_terms": [
         {
-          "ja": "予想を遥かに上回る。",
-          "zh": "远远超过预期。"
-        },
-        {
-          "ja": "遥か昔の出来事だ。",
-          "zh": "那是很久以前的事情。"
+          "text": "遥",
+          "reading": "はるか"
         }
       ],
-      "comparisons": [],
-      "analysis": "单独出现在人名中多读 はるか；「遥かに＋比较」表示远远地、大大地。",
-      "tags": [
-        "人名",
-        "副词",
-        "程度"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "作为名字常读 はるか；普通词「遥か」表示遥远、远远地。",
-          "core_memory": "距离、时间、程度上相隔很远。",
-          "analysis": "单独出现在人名中多读 はるか；「遥かに＋比较」表示远远地、大大地。"
-        },
-        "en": {
-          "meaning": "As a name, commonly read はるか; as 遥か, it means far away, long ago, or far beyond.",
-          "core_memory": "A large distance in space, time, or degree.",
-          "analysis": "Alone in a name it is often read はるか. In 遥かに + comparison, it means far or greatly beyond."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
+      "analysis": "遥。这里的「遥」是名字。。表示距离、时间、程度上相隔很远。"
     },
     {
-      "id": "n1-vocab-010",
+      "id": "n1-辛抱",
       "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659772",
       "deck": "n1_vocab",
       "type": "word",
       "jlpt_level": "N1",
       "original": "辛抱",
       "reading": "しんぼう",
-      "meaning_zh": "忍耐、忍住，面对痛苦或不便咬牙撑过去。",
-      "core_memory": "不是单纯忍一下，而是困难时期熬住。",
-      "part_of_speech": "名词・サ变动词",
-      "collocations": [
-        "辛抱する",
-        "辛抱強い",
-        "辛抱強く待つ",
-        "辛抱が必要だ",
-        "辛抱の時"
+      "meaning_ja": "苦しさ・つらさ・不便などを我慢して耐えること。",
+      "paraphrase_ja": "苦しさ・つらさ・不便などを我慢して耐えること。",
+      "meaning_zh": "苦しさ・つらさ・不便などを我慢して耐えること。",
+      "core_memory": "忍住眼前的痛苦、不便、不满，咬牙撑过去。",
+      "question_kinds": [
+        "meaning"
       ],
+      "ruby_terms": [
+        {
+          "text": "辛抱",
+          "reading": "しんぼう"
+        }
+      ],
+      "analysis": "辛抱。请再忍耐一下。。忍过了艰难时期。",
+      "part_of_speech": "名词・サ变动词",
       "examples": [
         {
           "ja": "もう少し辛抱してください。",
-          "zh": "请再忍耐一下。"
+          "zh": ""
         },
         {
           "ja": "苦しい時期を辛抱して乗り越えた。",
-          "zh": "忍过了艰难时期。"
-        }
-      ],
-      "comparisons": [
-        {
-          "target": "我慢",
-          "difference_zh": "日常范围广，忍住欲望、疼痛、情绪等。"
+          "zh": ""
         },
         {
-          "target": "忍耐",
-          "difference_zh": "更书面，强调耐受力。"
+          "ja": "今は辛抱の時だ。",
+          "zh": ""
         }
-      ],
-      "analysis": "困难时期坚持熬过去时用辛抱更贴切；一般忍住欲望或情绪时我慢更自然。",
-      "tags": [
-        "忍耐",
-        "情绪"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "忍耐、忍住，面对痛苦或不便咬牙撑过去。",
-          "core_memory": "不是单纯忍一下，而是困难时期熬住。",
-          "analysis": "困难时期坚持熬过去时用辛抱更贴切；一般忍住欲望或情绪时我慢更自然。"
-        },
-        "en": {
-          "meaning": "Patience or endurance; holding out through pain, hardship, or inconvenience.",
-          "core_memory": "Not just holding back once, but enduring through a hard period.",
-          "analysis": "辛抱 fits when enduring a difficult period. 我慢 is more general for holding back desires, pain, or emotions."
-        }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
+      ]
     },
     {
-      "id": "n1-vocab-011",
+      "id": "n1-踏んで",
       "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659150",
+      "deck": "grammar_expression",
+      "type": "verb_form",
+      "jlpt_level": "N1",
+      "original": "踏んで",
+      "reading": "ふんで",
+      "meaning_ja": "「踏んで」是「踏む」的て形。基本义是“踩”，N1里还常表示按照步骤、程序进行。",
+      "paraphrase_ja": "「踏んで」是「踏む」的て形。基本义是“踩”，N1里还常表示按照步骤、程序进行。",
+      "meaning_zh": "「踏んで」是「踏む」的て形。基本义是“踩”，N1里还常表示按照步骤、程序进行。",
+      "core_memory": "「踏んで」是「踏む」的て形。基本义是“踩”，N1里还常表示按照步骤、程序进行。",
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "基づいて",
+          "通して",
+          "沿って"
+        ],
+        "meaning": [
+          "手順を実際に経て進めること。",
+          "基準を根拠にして判断すること。",
+          "ある手段を通じて行うこと。"
+        ]
+      },
+      "ruby_terms": [
+        {
+          "text": "踏んで",
+          "reading": "ふんで"
+        },
+        {
+          "text": "正式",
+          "reading": "せいしき"
+        },
+        {
+          "text": "手続き",
+          "reading": "てつづき"
+        },
+        {
+          "text": "申請",
+          "reading": "しんせい"
+        },
+        {
+          "text": "段階",
+          "reading": "だんかい"
+        },
+        {
+          "text": "計画",
+          "reading": "けいかく"
+        },
+        {
+          "text": "進める",
+          "reading": "すすめる"
+        },
+        {
+          "text": "十分",
+          "reading": "じゅうぶん"
+        },
+        {
+          "text": "議論",
+          "reading": "ぎろん"
+        },
+        {
+          "text": "方針",
+          "reading": "ほうしん"
+        },
+        {
+          "text": "決定",
+          "reading": "けってい"
+        }
+      ],
+      "analysis": "踏んで。N1では「手順・段階・手続き」などと結びつき、必要な過程を一つずつ実際に経るという意味で使われる。",
+      "examples": [
+        {
+          "ja": "正式な手続きを踏んで申請してください。",
+          "zh": "请按照正式手续申请。"
+        },
+        {
+          "ja": "必要な段階を踏んで計画を進める。",
+          "zh": "经过必要阶段推进计划。"
+        },
+        {
+          "ja": "十分な議論を踏んで方針を決定した。",
+          "zh": "经过充分讨论后决定了方针。"
+        }
+      ]
+    },
+    {
+      "id": "n1-豊富",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659250",
       "deck": "n1_vocab",
       "type": "word",
-      "jlpt_level": "N2",
-      "original": "目次",
-      "reading": "もくじ",
-      "meaning_zh": "目录，书、报告、论文前按章节或项目排列的内容列表。",
-      "core_memory": "按章节看整本书结构。",
-      "part_of_speech": "名词",
+      "jlpt_level": "N1",
+      "original": "豊富",
+      "reading": "ほうふ",
+      "meaning_ja": "数量や種類が多く、十分にあること。",
+      "paraphrase_ja": "数量や種類が多く、十分にあること。",
+      "meaning_zh": "数量や種類が多く、十分にあること。",
+      "core_memory": "数量多，而且内容充实、种类也多。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "豊富",
+          "reading": "ほうふ"
+        }
+      ],
+      "analysis": "豊富。这个地区自然资源丰富。。他有丰富的海外经验。",
+      "part_of_speech": "ナ形容詞・名詞",
       "collocations": [
-        "目次を見る",
-        "目次を開く",
-        "目次から探す",
-        "目次に載っている",
-        "目次を作る"
+        "バリエーションが豊富だ"
       ],
       "examples": [
         {
+          "ja": "この地域は自然が豊富だ。",
+          "zh": ""
+        },
+        {
+          "ja": "彼は海外経験が豊富です。",
+          "zh": ""
+        },
+        {
+          "ja": "この店はメニューが豊富だ。",
+          "zh": ""
+        }
+      ]
+    },
+    {
+      "id": "n1-認定",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.658324",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "認定",
+      "reading": "にんてい",
+      "meaning_ja": "一定の基準に基づいて、資格・事実・状態などを正式に認めること。",
+      "paraphrase_ja": "一定の基準に基づいて、資格・事実・状態などを正式に認めること。",
+      "meaning_zh": "一定の基準に基づいて、資格・事実・状態などを正式に認めること。",
+      "core_memory": "经过判断、审查后，正式认定“它符合某个标准 / 属于某种资格”。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "認定",
+          "reading": "にんてい"
+        }
+      ],
+      "analysis": "認定。比单纯的「認める」更正式，往往带有机关、组织、制度上的判断。。这个产品被认定为符合安全标准。",
+      "examples": [
+        {
+          "ja": "この製品は安全基準を満たしていると認定された。",
+          "zh": ""
+        },
+        {
+          "ja": "彼は専門家として認定された。",
+          "zh": ""
+        },
+        {
+          "ja": "労災と認定される。",
+          "zh": ""
+        }
+      ]
+    },
+    {
+      "id": "n1-経過",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.658842",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "経過",
+      "reading": "けいか",
+      "meaning_ja": "时间“经过” + 事情“发展到某个阶段”。",
+      "paraphrase_ja": "时间“经过” + 事情“发展到某个阶段”。",
+      "meaning_zh": "时间“经过” + 事情“发展到某个阶段”。",
+      "core_memory": "时间“经过” + 事情“发展到某个阶段”。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "経過",
+          "reading": "けいか"
+        }
+      ],
+      "analysis": "経過。1. 时间经过。2. 事情的发展过程、后续情况",
+      "collocations": [
+        "その後の経過"
+      ]
+    },
+    {
+      "id": "n1-目次",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659984",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "目次",
+      "reading": "もくじ",
+      "meaning_ja": "本や文書の内容を、項目ごとに順番に並べたもの。",
+      "paraphrase_ja": "本や文書の内容を、項目ごとに順番に並べたもの。",
+      "meaning_zh": "本や文書の内容を、項目ごとに順番に並べたもの。",
+      "core_memory": "书、报告、论文前面的“目录”。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "目次",
+          "reading": "もくじ"
+        }
+      ],
+      "analysis": "目次。看目录。。从目录中找想读的章节。",
+      "examples": [
+        {
+          "ja": "目次を見る。",
+          "zh": ""
+        },
+        {
           "ja": "目次から読みたい章を探す。",
-          "zh": "从目录中找想读的章节。"
+          "zh": ""
         },
         {
           "ja": "詳しい内容は目次をご覧ください。",
-          "zh": "详细内容请查看目录。"
+          "zh": ""
+        }
+      ]
+    },
+    {
+      "id": "n1-測定",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.658200",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "測定",
+      "reading": "そくてい",
+      "meaning_ja": "一定の方法や器具を使って、長さ・温度・速度などの値を調べること。",
+      "paraphrase_ja": "一定の方法や器具を使って、長さ・温度・速度などの値を調べること。",
+      "meaning_zh": "一定の方法や器具を使って、長さ・温度・速度などの値を調べること。",
+      "core_memory": "把某个数值“测出来、确定下来”。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "測定",
+          "reading": "そくてい"
         }
       ],
-      "comparisons": [
+      "analysis": "測定。常用于长度、温度、血压、速度、浓度、性能等可以用数值表示的东西。。测量血压。",
+      "part_of_speech": "名词・サ变动词",
+      "examples": [
         {
-          "target": "索引",
-          "difference_zh": "按关键词、人名等查具体页码。"
+          "ja": "血圧を測定する。",
+          "zh": ""
         },
         {
-          "target": "項目",
-          "difference_zh": "目录中的一个项目，不是整张目录。"
-        }
-      ],
-      "analysis": "书、论文、报告前面列章节是目次；查关键词所在页码是索引。",
-      "tags": [
-        "书籍",
-        "文档"
-      ],
-      "localizations": {
-        "zh-CN": {
-          "meaning": "目录，书、报告、论文前按章节或项目排列的内容列表。",
-          "core_memory": "按章节看整本书结构。",
-          "analysis": "书、论文、报告前面列章节是目次；查关键词所在页码是索引。"
+          "ja": "室内の温度を測定した。",
+          "zh": ""
         },
-        "en": {
-          "meaning": "Table of contents; a list of chapters or sections at the front of a book, report, or paper.",
-          "core_memory": "Use it to see the structure of the whole book by chapter.",
-          "analysis": "目次 is the chapter list at the front. 索引 is an index used to find pages by keywords or names."
+        {
+          "ja": "機械の性能を正確に測定する。",
+          "zh": ""
         }
-      },
-      "input_at": "2026-08-27T20:20:00+09:00"
+      ]
+    },
+    {
+      "id": "n1-概観",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.658940",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "概観",
+      "reading": "がいかん",
+      "meaning_ja": "物事の全体を、大まかに見渡すこと。",
+      "paraphrase_ja": "物事の全体を、大まかに見渡すこと。",
+      "meaning_zh": "物事の全体を、大まかに見渡すこと。",
+      "core_memory": "从整体上“俯瞰”一个事物，把握全貌。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "概観",
+          "reading": "がいかん"
+        }
+      ],
+      "analysis": "概観。概览日本经济的历史。。本章将概览近代文学的发展脉络。",
+      "examples": [
+        {
+          "ja": "日本経済の歴史を概観する。",
+          "zh": ""
+        },
+        {
+          "ja": "本章では近代文学の流れを概観する。",
+          "zh": ""
+        }
+      ]
+    },
+    {
+      "id": "n1-服部",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659316",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "服部",
+      "reading": "はっとり",
+      "meaning_ja": "最常见是日本姓氏「服部（はっとり）」。",
+      "paraphrase_ja": "最常见是日本姓氏「服部（はっとり）」。",
+      "meaning_zh": "最常见是日本姓氏「服部（はっとり）」。",
+      "core_memory": "最常见是日本姓氏「服部（はっとり）」。",
+      "ruby_terms": [
+        {
+          "text": "服部",
+          "reading": "はっとり"
+        }
+      ],
+      "analysis": "服部。服部 → はっとり。推成「ふくぶ」。"
+    },
+    {
+      "id": "n1-智里",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659368",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "智里",
+      "reading": "ちさと",
+      "meaning_ja": "作为人名时，常见读法是「ちさと」。",
+      "paraphrase_ja": "作为人名时，常见读法是「ちさと」。",
+      "meaning_zh": "作为人名时，常见读法是「ちさと」。",
+      "core_memory": "作为人名时，常见读法是「ちさと」。",
+      "ruby_terms": [
+        {
+          "text": "智里",
+          "reading": "ちさと"
+        }
+      ],
+      "analysis": "智里。人名可能存在其他特殊读法，因此具体人物以本人标注为准。"
+    },
+    {
+      "id": "n1-智子",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659478",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "智子",
+      "reading": "ともこ",
+      "meaning_ja": "作为日本女性名字时，最常见读法是「ともこ」。",
+      "paraphrase_ja": "作为日本女性名字时，最常见读法是「ともこ」。",
+      "meaning_zh": "作为日本女性名字时，最常见读法是「ともこ」。",
+      "core_memory": "作为日本女性名字时，最常见读法是「ともこ」。",
+      "ruby_terms": [
+        {
+          "text": "智子",
+          "reading": "ともこ"
+        }
+      ],
+      "analysis": "智子。人名中的「智」常可读作「とも」，「子」读「こ」。。具体人物姓名仍应以本人标注为准。"
+    },
+    {
+      "id": "n1-新谷遥",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659583",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "新谷 遥",
+      "reading": "しんたに はるか",
+      "meaning_ja": "作为普通日本人名来读，自然的候选是「しんたに はるか」。",
+      "paraphrase_ja": "作为普通日本人名来读，自然的候选是「しんたに はるか」。",
+      "meaning_zh": "作为普通日本人名来读，自然的候选是「しんたに はるか」。",
+      "core_memory": "作为普通日本人名来读，自然的候选是「しんたに はるか」。",
+      "ruby_terms": [
+        {
+          "text": "新谷 遥",
+          "reading": "しんたに はるか"
+        }
+      ],
+      "analysis": "新谷遥。「遥」作为名字时，「はるか」是非常典型的读法。。具体人物的人名读音仍以本人标注或教材音频为准。"
+    },
+    {
+      "id": "n1-新谷",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659537",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "新谷",
+      "reading": "しんたに",
+      "meaning_ja": "作为日本姓氏时，常见读法是「しんたに」。",
+      "paraphrase_ja": "作为日本姓氏时，常见读法是「しんたに」。",
+      "meaning_zh": "作为日本姓氏时，常见读法是「しんたに」。",
+      "core_memory": "作为日本姓氏时，常见读法是「しんたに」。",
+      "ruby_terms": [
+        {
+          "text": "新谷",
+          "reading": "しんたに"
+        }
+      ],
+      "analysis": "新谷。因此如果指某个具体人物，应以教材、音频或本人标注为准。。没有其他提示时，可以优先猜「しんたに」，但人名要注意特殊读音。"
+    },
+    {
+      "id": "n1-年々",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.658722",
+      "deck": "n1_vocab",
+      "type": "word",
+      "jlpt_level": "N1",
+      "original": "年々",
+      "reading": "ねんねん",
+      "meaning_ja": "年を追うごとに。毎年少しずつ変化していく様子。",
+      "paraphrase_ja": "年を追うごとに。毎年少しずつ変化していく様子。",
+      "meaning_zh": "年を追うごとに。毎年少しずつ変化していく様子。",
+      "core_memory": "一年比一年……，强调随着年份推进而逐年变化。",
+      "question_kinds": [
+        "meaning"
+      ],
+      "ruby_terms": [
+        {
+          "text": "年々",
+          "reading": "ねんねん"
+        }
+      ],
+      "analysis": "年々。物价逐年上涨。。这个城市的人口逐年减少。",
+      "examples": [
+        {
+          "ja": "物価は年々上昇している。",
+          "zh": ""
+        },
+        {
+          "ja": "この町の人口は年々減少している。",
+          "zh": ""
+        },
+        {
+          "ja": "技術は年々進歩している。",
+          "zh": ""
+        }
+      ]
+    },
+    {
+      "id": "n1-佐野",
+      "date": "2026-08-27",
+      "input_at": "2026-08-27T23:13:11.659420",
+      "deck": "name_reading",
+      "type": "proper_name",
+      "jlpt_level": "N1",
+      "original": "佐野",
+      "reading": "さの",
+      "meaning_ja": "最常见读法是「さの」，既可作日本姓氏，也可作地名。",
+      "paraphrase_ja": "最常见读法是「さの」，既可作日本姓氏，也可作地名。",
+      "meaning_zh": "最常见读法是「さの」，既可作日本姓氏，也可作地名。",
+      "core_memory": "最常见读法是「さの」，既可作日本姓氏，也可作地名。",
+      "ruby_terms": [
+        {
+          "text": "佐野",
+          "reading": "さの"
+        }
+      ],
+      "analysis": "佐野。佐野＝さの，整体记忆即可。"
     }
-  ]
+  ],
+  "daily_packs": []
 }

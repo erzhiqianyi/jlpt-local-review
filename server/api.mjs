@@ -16,6 +16,7 @@ import {
   loginUser,
   reviewDataPath,
   saveAnswer,
+  savePracticeState,
   saveSettings,
   userForToken,
 } from './storage.mjs';
@@ -71,6 +72,11 @@ const server = createServer(async (req, res) => {
 
     if (req.method === 'PUT' && url.pathname === '/api/study-state/settings') {
       return json(res, 200, { settings: saveSettings(user.id, await readJson(req)) });
+    }
+
+    if (req.method === 'PUT' && url.pathname === '/api/study-state/practice') {
+      savePracticeState(user.id, await readJson(req));
+      return json(res, 200, getStudyState(user.id));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/answers') {

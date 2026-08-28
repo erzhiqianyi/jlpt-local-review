@@ -16,6 +16,7 @@ const defaultSettings = {
   showReviewRuby: true,
   showExplanationRuby: true,
   locale: 'zh-CN',
+  feedbackMode: 'immediate',
 };
 
 let db;
@@ -72,6 +73,13 @@ export function getDb() {
         progress_json TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         PRIMARY KEY (user_id, item_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS practice_state (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        attempt_history_json TEXT NOT NULL,
+        active_attempt_json TEXT,
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS review_pack_drafts (
@@ -195,12 +203,15 @@ export function deleteSession(token) {
 export function getStudyState(userId) {
   ensureSettings(userId);
   const settingsRow = getDb().prepare('SELECT settings_json FROM user_settings WHERE user_id = ?').get(userId);
-  const answerRows = getDb().prepare('SELECT question_id, selected, correct FROM answers WHERE user_id = ?').all(userId);
+  const answerRows = getDb().prepare('SELECT question_id, selected, correct, answered_at FROM answers WHERE user_id = ?').all(userId);
   const progressRows = getDb().prepare('SELECT item_id, progress_json FROM progress WHERE user_id = ?').all(userId);
+  const practice = getPracticeState(userId);
   return {
     settings: normalizeSettings(JSON.parse(settingsRow.settings_json)),
-    answers: Object.fromEntries(answerRows.map((row) => [row.question_id, { selected: row.selected, correct: Boolean(row.correct) }])),
+    answers: Object.fromEntries(answerRows.map((row) => [row.question_id, { selected: row.selected, correct: Boolean(row.correct), answeredAt: row.answered_at }])),
     progress: Object.fromEntries(progressRows.map((row) => [row.item_id, JSON.parse(row.progress_json)])),
+    attemptHistory: practice.attemptHistory,
+    activeAttempt: practice.activeAttempt,
   };
 }
 
@@ -212,7 +223,7 @@ export function saveSettings(userId, settings) {
   return normalized;
 }
 
-export function saveAnswer(userId, { questionId, itemId, selected, correct, progressEntry }) {
+export function saveAnswer(userId, { questionId, itemId, selected, correct, progressEntry, attemptHistory, activeAttempt }) {
   if (!questionId || !itemId || typeof selected !== 'string' || typeof correct !== 'boolean' || !progressEntry) {
     throw new Error('Invalid answer payload');
   }
@@ -239,6 +250,33 @@ export function saveAnswer(userId, { questionId, itemId, selected, correct, prog
           updated_at = excluded.updated_at
       `)
       .run(userId, itemId, JSON.stringify(progressEntry), now);
+    database.exec('COMMIT');
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
+  if (Array.isArray(attemptHistory) || activeAttempt !== undefined) {
+    savePracticeState(userId, { attemptHistory, activeAttempt });
+  }
+}
+
+export function savePracticeState(userId, { answers, attemptHistory, activeAttempt }) {
+  const database = getDb();
+  const now = new Date().toISOString();
+  database.exec('BEGIN');
+  try {
+    if (answers && typeof answers === 'object') {
+      database.prepare('DELETE FROM answers WHERE user_id = ?').run(userId);
+      const insert = database.prepare(`
+        INSERT INTO answers (user_id, question_id, item_id, selected, correct, answered_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const [questionId, answer] of Object.entries(answers)) {
+        const itemId = String(questionId).replace(/-(grammar|moji-goi|meaning|kana-to-kanji|kanji-to-kana|name-reading).*$/, '');
+        insert.run(userId, questionId, itemId, String(answer.selected ?? ''), answer.correct ? 1 : 0, answer.answeredAt ?? now);
+      }
+    }
+    upsertPracticeState(userId, attemptHistory, activeAttempt, now);
     database.exec('COMMIT');
   } catch (error) {
     database.exec('ROLLBACK');
@@ -276,6 +314,8 @@ export function buildStudyRecord(userId) {
     })),
     answers: state.answers,
     progress: state.progress,
+    attempt_history: state.attemptHistory,
+    active_attempt: state.activeAttempt,
     settings: state.settings,
     ai_prompt: [
       '请分析这份 JLPT 学习记录。',
@@ -467,6 +507,12 @@ function ensureSettings(userId) {
       .prepare('INSERT INTO user_settings (user_id, settings_json, updated_at) VALUES (?, ?, ?)')
       .run(userId, JSON.stringify(defaultSettings), new Date().toISOString());
   }
+  const practiceRow = getDb().prepare('SELECT user_id FROM practice_state WHERE user_id = ?').get(userId);
+  if (!practiceRow) {
+    getDb()
+      .prepare('INSERT INTO practice_state (user_id, attempt_history_json, active_attempt_json, updated_at) VALUES (?, ?, ?, ?)')
+      .run(userId, '[]', null, new Date().toISOString());
+  }
 }
 
 function normalizeUsername(username) {
@@ -495,9 +541,46 @@ function verifyPassword(password, salt, expectedHash) {
 
 function normalizeSettings(value) {
   const locale = value?.locale === 'ja' || value?.locale === 'en' || value?.locale === 'zh-CN' ? value.locale : defaultSettings.locale;
+  const feedbackMode = value?.feedbackMode === 'batch' ? 'batch' : defaultSettings.feedbackMode;
   return {
     showReviewRuby: typeof value?.showReviewRuby === 'boolean' ? value.showReviewRuby : defaultSettings.showReviewRuby,
     showExplanationRuby: typeof value?.showExplanationRuby === 'boolean' ? value.showExplanationRuby : defaultSettings.showExplanationRuby,
     locale,
+    feedbackMode,
   };
+}
+
+function getPracticeState(userId) {
+  ensureSettings(userId);
+  const row = getDb()
+    .prepare('SELECT attempt_history_json, active_attempt_json FROM practice_state WHERE user_id = ?')
+    .get(userId);
+  return {
+    attemptHistory: parseJson(row?.attempt_history_json, []),
+    activeAttempt: row?.active_attempt_json ? parseJson(row.active_attempt_json, null) : null,
+  };
+}
+
+function upsertPracticeState(userId, attemptHistory, activeAttempt, now = new Date().toISOString()) {
+  const current = getPracticeState(userId);
+  const history = Array.isArray(attemptHistory) ? attemptHistory.slice(0, 50) : current.attemptHistory;
+  const active = activeAttempt === undefined ? current.activeAttempt : activeAttempt;
+  getDb()
+    .prepare(`
+      INSERT INTO practice_state (user_id, attempt_history_json, active_attempt_json, updated_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        attempt_history_json = excluded.attempt_history_json,
+        active_attempt_json = excluded.active_attempt_json,
+        updated_at = excluded.updated_at
+    `)
+    .run(userId, JSON.stringify(history), active ? JSON.stringify(active) : null, now);
+}
+
+function parseJson(value, fallback) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
 }
