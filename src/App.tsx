@@ -69,6 +69,13 @@ type LocalizedText = {
   core_memory?: string;
   analysis?: string;
 };
+type PracticeQuestionSeed = {
+  id?: string;
+  kind?: string;
+  prompt?: string;
+  choices?: string[];
+  answer?: string;
+};
 
 type VocabItem = {
   id: string;
@@ -96,6 +103,11 @@ type VocabItem = {
   level_confidence?: 'low' | 'medium' | 'high';
   question_kinds?: QuestionKind[];
   question_distractors?: Partial<Record<QuestionKind, string[]>>;
+  source_original_sentence?: string;
+  source_grammar_point?: string;
+  grammar_forms?: unknown[];
+  grammar_features?: unknown[];
+  practice_questions?: PracticeQuestionSeed[];
 };
 
 type ReviewData = {
@@ -223,6 +235,24 @@ const translations = {
     reviewRuby: '复习显示假名',
     explanationRuby: '解析显示假名',
     furigana: '假名',
+    entryTableTitle: '词条列表',
+    entryTableBody: '按输入时间、题目覆盖和本地复习状态快速扫描。',
+    entryColumnItem: '词条',
+    entryColumnCreated: '时间',
+    entryColumnLevel: '级别',
+    entryColumnQuestions: '题目',
+    entryColumnPractice: '扩展',
+    entryColumnProgress: '进度',
+    entryColumnStatus: '状态',
+    entryNoProgress: '未开始',
+    entryAnswered: '已答',
+    entryGenerated: '自动',
+    entrySeeded: '扩展',
+    entryOpen: '打开',
+    statusNew: '未开始',
+    statusLearning: '学习中',
+    statusReview: '复习中',
+    statusMastered: '已掌握',
     japaneseMeaning: '日语解释',
     localizedMeaning: '中文解释',
     examQuickNote: '考场快速记录',
@@ -370,6 +400,24 @@ const translations = {
     reviewRuby: '復習にふりがな',
     explanationRuby: '解説にふりがな',
     furigana: 'ふりがな',
+    entryTableTitle: '項目一覧',
+    entryTableBody: '入力時刻、問題数、ローカル復習状況を一覧できます。',
+    entryColumnItem: '項目',
+    entryColumnCreated: '時刻',
+    entryColumnLevel: '級',
+    entryColumnQuestions: '問題',
+    entryColumnPractice: '拡張',
+    entryColumnProgress: '進捗',
+    entryColumnStatus: '状態',
+    entryNoProgress: '未開始',
+    entryAnswered: '回答済み',
+    entryGenerated: '自動',
+    entrySeeded: '拡張',
+    entryOpen: '開く',
+    statusNew: '未開始',
+    statusLearning: '学習中',
+    statusReview: '復習中',
+    statusMastered: '習得済み',
     japaneseMeaning: '日本語の説明',
     localizedMeaning: '意味',
     examQuickNote: '試験直前メモ',
@@ -517,6 +565,24 @@ const translations = {
     reviewRuby: 'Show furigana in review',
     explanationRuby: 'Show furigana in explanations',
     furigana: 'Furigana',
+    entryTableTitle: 'Entry List',
+    entryTableBody: 'Scan created time, question coverage, and local review status.',
+    entryColumnItem: 'Entry',
+    entryColumnCreated: 'Time',
+    entryColumnLevel: 'Level',
+    entryColumnQuestions: 'Questions',
+    entryColumnPractice: 'Extra',
+    entryColumnProgress: 'Progress',
+    entryColumnStatus: 'Status',
+    entryNoProgress: 'Not started',
+    entryAnswered: 'Answered',
+    entryGenerated: 'Auto',
+    entrySeeded: 'Extra',
+    entryOpen: 'Open',
+    statusNew: 'Not started',
+    statusLearning: 'Learning',
+    statusReview: 'Reviewing',
+    statusMastered: 'Mastered',
     japaneseMeaning: 'Japanese definition',
     localizedMeaning: 'English definition',
     examQuickNote: 'Exam quick note',
@@ -1192,15 +1258,23 @@ export default function App() {
                 />
               ) : studyPage === 'words' ? (
                 <WordDetailPanel
+                  items={items}
                   item={activeWord}
                   index={wordIndex}
                   total={items.length}
+                  questions={questions}
+                  answers={answers}
+                  progress={progress}
                   showRuby={settings.showReviewRuby}
                   labels={labels}
                   locale={locale}
                   onShowRubyChange={(checked) => updateSettings({ ...settings, showReviewRuby: checked })}
                   onPrevious={() => setWordIndex((index) => previousIndex(index, items.length))}
                   onNext={() => setWordIndex((index) => nextIndex(index, items.length))}
+                  onSelect={(item, nextIndex) => {
+                    setWordIndex(nextIndex);
+                    window.location.hash = routeHash(activeView, 'words', item.id);
+                  }}
                 />
               ) : (
                 <PracticeReviewPanel
@@ -2848,25 +2922,35 @@ function ExplanationSection({ label, children }: { label: string; children: Reac
 }
 
 function WordDetailPanel({
+  items,
   item,
   index,
   total,
+  questions,
+  answers,
+  progress,
   showRuby,
   labels,
   locale,
   onShowRubyChange,
   onPrevious,
   onNext,
+  onSelect,
 }: {
+  items: VocabItem[];
   item?: VocabItem;
   index: number;
   total: number;
+  questions: Question[];
+  answers: AnswerState;
+  progress: ProgressState;
   showRuby: boolean;
   labels: Record<string, string>;
   locale: Locale;
   onShowRubyChange: (checked: boolean) => void;
   onPrevious: () => void;
   onNext: () => void;
+  onSelect: (item: VocabItem, index: number) => void;
 }) {
   const [touchStart, setTouchStart] = useState<number | null>(null);
 
@@ -2907,6 +2991,16 @@ function WordDetailPanel({
           {total > 1 ? <ArrowButton label={labels.next} direction="right" onClick={onNext} /> : null}
         </div>
       </div>
+      <EntryTable
+        items={items}
+        activeItemId={item.id}
+        questions={questions}
+        answers={answers}
+        progress={progress}
+        labels={labels}
+        locale={locale}
+        onSelect={onSelect}
+      />
       <VocabCard
         item={item}
         showRuby={showRuby}
@@ -2915,6 +3009,139 @@ function WordDetailPanel({
       />
     </section>
   );
+}
+
+function EntryTable({
+  items,
+  activeItemId,
+  questions,
+  answers,
+  progress,
+  labels,
+  locale,
+  onSelect,
+}: {
+  items: VocabItem[];
+  activeItemId?: string;
+  questions: Question[];
+  answers: AnswerState;
+  progress: ProgressState;
+  labels: Record<string, string>;
+  locale: Locale;
+  onSelect: (item: VocabItem, index: number) => void;
+}) {
+  const questionsByItem = questions.reduce<Record<string, Question[]>>((groups, question) => {
+    groups[question.itemId] = [...(groups[question.itemId] ?? []), question];
+    return groups;
+  }, {});
+
+  return (
+    <section className="mb-4 min-w-0 overflow-hidden rounded-lg border border-[#d8cdbc] bg-white shadow-sm">
+      <div className="border-b border-[#e5ddd1] px-4 py-3 md:px-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-[#1f2522]">{labels.entryTableTitle}</h2>
+            <p className="mt-1 text-sm leading-6 text-[#66716b]">{labels.entryTableBody}</p>
+          </div>
+          <span className="rounded-md bg-[#e8f0eb] px-3 py-1 text-sm font-semibold text-[#24473f]">{items.length} {labels.items}</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+          <thead className="bg-[#f3f6f1] text-xs font-semibold text-[#5b665f]">
+            <tr>
+              <th className="w-[34%] px-4 py-3">{labels.entryColumnItem}</th>
+              <th className="px-3 py-3">{labels.entryColumnCreated}</th>
+              <th className="px-3 py-3">{labels.entryColumnLevel}</th>
+              <th className="px-3 py-3">{labels.entryColumnQuestions}</th>
+              <th className="px-3 py-3">{labels.entryColumnPractice}</th>
+              <th className="w-28 whitespace-nowrap px-3 py-3">{labels.entryColumnProgress}</th>
+              <th className="w-24 px-3 py-3">{labels.entryColumnStatus}</th>
+              <th className="w-24 px-4 py-3 text-right">{labels.entryOpen}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#ece4d8]">
+            {items.map((candidate, candidateIndex) => {
+              const itemQuestions = questionsByItem[candidate.id] ?? [];
+              const itemAnswers = itemQuestions.filter((question) => answers[question.id]);
+              const itemProgress = progress[candidate.id];
+              const active = candidate.id === activeItemId;
+              return (
+                <tr key={candidate.id} className={active ? 'bg-[#edf4ef]' : 'bg-white hover:bg-[#fbf8f2]'}>
+                  <td className="px-4 py-3 align-top">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(candidate, candidateIndex)}
+                      className="block min-w-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24473f]"
+                    >
+                      <span className="block break-words text-base font-semibold text-[#173d35]">{candidate.original}</span>
+                      {candidate.reading ? <span className="mt-1 block text-xs font-semibold text-[#856033]">{candidate.reading}</span> : null}
+                      <span className="mt-2 line-clamp-2 block break-words text-xs leading-5 text-[#59645e]">{itemMeaning(candidate, locale)}</span>
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-[#4d5751]">{formatDateTime(candidate.input_at ?? candidate.date, locale)}</td>
+                  <td className="px-3 py-3 align-top">
+                    <span className="rounded bg-[#f1eee8] px-2 py-1 text-xs font-semibold text-[#584f43]">{candidate.jlpt_level ?? '-'}</span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-[#3f4b45]">
+                    <MetricInline value={itemQuestions.length} label={labels.entryGenerated} />
+                  </td>
+                  <td className="px-3 py-3 align-top text-[#3f4b45]">
+                    <MetricInline value={candidate.practice_questions?.length ?? 0} label={labels.entrySeeded} />
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-[#3f4b45]">
+                    {itemQuestions.length ? `${labels.entryAnswered} ${itemAnswers.length}/${itemQuestions.length}` : labels.entryNoProgress}
+                    {itemProgress?.nextReviewAt ? (
+                      <span className="mt-1 block text-xs text-[#6c746f]">{labels.nextReview}: {formatDateTime(itemProgress.nextReviewAt, locale)}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-3 align-top">
+                    <StatusPill status={itemProgress?.status ?? 'new'} labels={labels} />
+                  </td>
+                  <td className="px-4 py-3 text-right align-top">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(candidate, candidateIndex)}
+                      className="h-9 whitespace-nowrap rounded-md border border-[#b9c9c1] bg-white px-4 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]"
+                    >
+                      {labels.entryOpen}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MetricInline({ value, label }: { value: number; label: string }) {
+  return (
+    <span className="inline-flex min-w-16 items-center justify-between gap-2 rounded-md border border-[#dfe5dc] bg-[#f8faf7] px-2 py-1 text-xs font-semibold text-[#34443c]">
+      <span>{value}</span>
+      <span className="text-[#68756d]">{label}</span>
+    </span>
+  );
+}
+
+function StatusPill({ status, labels }: { status: ReviewStatus; labels: Record<string, string> }) {
+  const text = status === 'mastered'
+    ? labels.statusMastered
+    : status === 'review'
+      ? labels.statusReview
+      : status === 'learning'
+        ? labels.statusLearning
+        : labels.statusNew;
+  const color = status === 'mastered'
+    ? 'bg-[#d5eadc] text-[#285d47]'
+    : status === 'review'
+      ? 'bg-[#e8f0eb] text-[#24473f]'
+      : status === 'learning'
+        ? 'bg-[#f8ead6] text-[#73532b]'
+        : 'bg-[#f1eee8] text-[#665f55]';
+  return <span className={`whitespace-nowrap rounded px-2 py-1 text-xs font-semibold ${color}`}>{text}</span>;
 }
 
 function CompactToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
