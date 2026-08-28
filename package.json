@@ -6,15 +6,19 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5180 --strictPort",
+    "dev": "node server/dev.mjs",
+    "dev:app": "vite --host 0.0.0.0 --port 5191 --strictPort",
+    "backend": "node server/api.mjs",
+    "mcp": "node server/mcp-server.mjs",
     "build": "vite build",
-    "start": "vite preview --host 0.0.0.0 --port 5180 --strictPort",
+    "start": "vite preview --host 0.0.0.0 --port 5191 --strictPort",
     "tunnel": "cloudflared tunnel --config ~/.cloudflared/config.yml run satori-local",
     "dev:tunnel": "bash scripts/dev-with-tunnel.sh",
     "data:blank": "node scripts/create-blank-data.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
+    "lucide-react": "^0.468.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

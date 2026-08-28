@@ -6,6 +6,9 @@ export default defineConfig({
   css: { postcss: { plugins: [tailwindcss()] } },
   server: {
     allowedHosts: ['jlpt-local.erzhiqian.cc'],
+    proxy: {
+      '/api': 'http://localhost:8791',
+    },
   },
   plugins: [react()],
 });

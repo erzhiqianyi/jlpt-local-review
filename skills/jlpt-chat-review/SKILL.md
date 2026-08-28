@@ -5,14 +5,14 @@ description: Turn JLPT study content discussed in an AI coding chat into structu
 
 # JLPT Chat Review
 
-Use this skill when the user gives Japanese-learning material in chat and wants it organized for this review website. The website is a viewer and practice tool, not the capture UI: the user chats with an AI assistant, the assistant extracts structured records, and the website reads `public/data/review-data.json`.
+Use this skill when the user gives Japanese-learning material in chat and wants it organized for this review website. The website is a viewer and practice tool, not the capture UI: the user chats with an AI assistant, the assistant extracts structured records, and the website reads monthly archives under `public/data/review-data/YYYY/MM.json`.
 
 ## Workflow
 
 1. Read `references/review-schema.md`.
 2. Ask or infer which output languages the user wants when the request is ambiguous.
 3. Extract learnable items from the user's chat or notes.
-4. Update `public/data/review-data.json`.
+4. Update the matching monthly archive under `public/data/review-data/YYYY/MM.json`.
 5. Keep raw private chat transcripts out of the website data.
 6. Run the project build after editing data.
 
@@ -70,17 +70,17 @@ When the user provides an exported study record JSON from the website settings p
 2. Identify weak modules, weak question types, overdue items, and high-confusion items.
 3. Generate a short study diagnosis in the user's requested language.
 4. Create a 7-day review plan based on due items and Anki-style spacing.
-5. Generate new practice material for weak points and update `public/data/review-data.json` only when the user asks to write the new content into the site.
+5. Generate new practice material for weak points and update the matching monthly archive only when the user asks to write the new content into the site.
 
-Do not treat exported browser progress as public seed data. It is private learner state used for analysis and planning.
+Do not treat exported SQLite progress as public seed data. It is private learner state used for analysis and planning.
 
 ## Boundaries
 
 - Do not include private raw chat logs in public data.
 - Do not call external dictionary or translation APIs unless the user explicitly asks.
 - Do not invent official JLPT levels for uncertain items.
-- Keep user progress out of the seed data; progress belongs in browser local storage.
-- Keep review counts, ease factors, intervals, and `nextReviewAt` in browser progress only. Seed data should describe content, not a specific learner's schedule.
+- Keep user progress out of the seed data; progress belongs in local SQLite.
+- Keep review counts, ease factors, intervals, and `nextReviewAt` in SQLite progress only. Seed data should describe content, not a specific learner's schedule.
 
 ## Language Output
 

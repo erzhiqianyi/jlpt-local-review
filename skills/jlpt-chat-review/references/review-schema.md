@@ -1,9 +1,9 @@
 # Review Data Schema
 
-The website reads this file:
+The website reads monthly archive files:
 
 ```text
-public/data/review-data.json
+public/data/review-data/YYYY/MM.json
 ```
 
 Top-level shape:
@@ -11,6 +11,7 @@ Top-level shape:
 ```json
 {
   "generated_at": "2026-08-27T20:20:00+09:00",
+  "archive_month": "2026/08",
   "items": []
 }
 ```
@@ -205,7 +206,7 @@ Keep Japanese source fields stable. Translate learner-facing fields only.
 
 Do not store learner-specific scheduling state in seed data. Store only the content timestamp `input_at` in each item.
 
-Browser progress may contain:
+SQLite progress may contain:
 
 ```json
 {
@@ -236,4 +237,4 @@ Do not apply this marker to content extracted from the learner's own notes. AI-g
 
 ## Privacy Rule
 
-Do not copy raw chat transcripts into this file. Store only structured learning content and short explanations needed for review.
+Do not copy raw chat transcripts into monthly archive files. Store only structured learning content and short explanations needed for review.

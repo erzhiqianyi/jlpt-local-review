@@ -135,12 +135,12 @@ type ReviewState = {
 
 第一版使用浏览器本地数据即可：
 
-- 内容数据：`public/data/review-data.json` 作为默认种子数据。
-- 用户进度：`localStorage` 或 `IndexedDB`。
+- 内容数据：`public/data/review-data/YYYY/MM.json` 作为按月份归档的默认种子数据。
+- 用户进度：本地 SQLite。
 - 手动导入：用户可以导入新的 JSON 数据文件。
 - 手动导出：定期导出学习进度 JSON，避免换浏览器后丢失。
 
-数据量小于几千条时 `localStorage` 足够。若后续加入大量题目、音频、图片或错题历史，再切到 `IndexedDB`。
+用户、会话、答题、复习调度、草稿和批注写入本地 SQLite。浏览器只保留登录 token。
 
 ## 当前资料的实现优先级
 
