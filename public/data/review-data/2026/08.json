@@ -1,7 +1,1380 @@
 {
-  "generated_at": "2026-08-28T08:27:33+09:00",
+  "generated_at": "2026-08-30T18:31:00+09:00",
   "archive_month": "2026/08",
   "items": [
+    {
+      "id": "2026-08-30-bun-kumitate-ni-tomonau-001",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N2-N1",
+      "level_confidence": "high",
+      "original": "に伴う",
+      "normalized": "N に伴う N / N に伴い",
+      "source_original_sentence": "線路の点検に伴う発車の時刻の変更はございません。",
+      "source_grammar_point": "N に伴う N / N に伴い",
+      "grammar_point": "N に伴う N / N に伴い",
+      "reading": "に伴う",
+      "meaning_ja": "ある変化や出来事に合わせて別のことが起こることを表す表現。",
+      "paraphrase_ja": "ある変化や出来事に合わせて別のことが起こることを表す表現。",
+      "meaning_zh": "伴随……的……；由于……而产生……。",
+      "core_memory": "に伴う + 名词；に伴い + 句子。",
+      "explanation_zh": "伴随……的……；由于……而产生……。\n接续：名詞 + に伴う + 名詞 / 名詞 + に伴い + 文\n用法：「に伴う」后面修饰名词；「に伴い」后面连接句子。排序时注意后面到底需要名词还是完整谓语。",
+      "grammar_forms": [
+        {
+          "form": "名詞 + に伴う + 名詞 / 名詞 + に伴い + 文",
+          "example": "線路の点検に伴う発車の時刻の変更はございません。",
+          "meaning_zh": "伴随……的……；由于……而产生……。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "線路の点検に伴う発車の時刻の変更はございません。",
+          "zh": "没有因线路检查而产生的发车时间变更。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "source-bun-kumitate-2413-star-reference",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "明日の（　）（　）（★）（　）はございません。",
+          "choices": [
+            "発車の時刻の",
+            "線路の点検",
+            "変更",
+            "に伴う"
+          ],
+          "answer": "1",
+          "explanation_zh": "完整排序是 2 → 4 → 1 → 3：明日の線路の点検に伴う / 発車の時刻の / 変更はございません。★ 在第 3 个空格，第 3 个空格里是选项 1「発車の時刻の」，所以最终答案是 1。这里同样是复盘用假设星号位。",
+          "full_order": "2 → 4 → 1 → 3",
+          "target_blank_index": 3,
+          "tested_expression": "N に伴う N"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "JLPT 文法第二种题型：文の組み立て。重点：先排完整顺序，再回答 ★ 位置对应的选项编号。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-bun-kumitate-zehi-001",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N2-N1",
+      "level_confidence": "high",
+      "original": "ぜひ",
+      "normalized": "ぜひ + Vたい / Vてください",
+      "source_original_sentence": "ぜひ力になりたいと思います。",
+      "source_grammar_point": "ぜひ + Vたい / Vてください",
+      "grammar_point": "ぜひ + Vたい / Vてください",
+      "reading": "ぜひ",
+      "meaning_ja": "強い希望、意志、依頼を表し、後ろの表現を強める副詞。",
+      "paraphrase_ja": "強い希望、意志、依頼を表し、後ろの表現を強める副詞。",
+      "meaning_zh": "一定、务必。常直接修饰后面的愿望、意志或请求表达。",
+      "core_memory": "ぜひ 靠近意志、希望、请求表达。",
+      "explanation_zh": "一定、务必。常直接修饰后面的愿望、意志或请求表达。\n接续：副詞 + 意志・希望・依頼表現\n用法：「ぜひ」通常贴近「力になりたい」「参加したい」「来てください」等表达，不要插进名词短语。",
+      "grammar_forms": [
+        {
+          "form": "副詞 + 意志・希望・依頼表現",
+          "example": "ぜひ力になりたいと思います。",
+          "meaning_zh": "一定、务必。常直接修饰后面的愿望、意志或请求表达。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "ぜひ力になりたいと思います。",
+          "zh": "我一定想帮忙。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "practice-bun-kumitate-star-001",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "先生の（　）（　）（★）（　）参加することにしました。",
+          "choices": [
+            "お願い",
+            "ぜひ",
+            "とあれば",
+            "手伝いに"
+          ],
+          "answer": "2",
+          "explanation_zh": "完整排序是 1 → 3 → 2 → 4：先生のお願いとあれば、ぜひ手伝いに参加することにしました。★ 在第 3 格，第 3 格是选项 2「ぜひ」，所以最终答案是 2。",
+          "full_order": "1 → 3 → 2 → 4",
+          "target_blank_index": 3,
+          "tested_expression": "N とあれば / ぜひ + V"
+        },
+        {
+          "id": "practice-bun-kumitate-star-002",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "台風の（　）（★）（　）（　）中止になりました。",
+          "choices": [
+            "接近",
+            "に伴い",
+            "予定されていた",
+            "イベントは"
+          ],
+          "answer": "2",
+          "explanation_zh": "完整排序是 1 → 2 → 3 → 4：台風の接近に伴い、予定されていたイベントは中止になりました。★ 在第 2 格，第 2 格是选项 2「に伴い」，所以最终答案是 2。",
+          "full_order": "1 → 2 → 3 → 4",
+          "target_blank_index": 2,
+          "tested_expression": "N に伴い + 文"
+        },
+        {
+          "id": "practice-bun-kumitate-star-003",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "駅の改修工事（★）（　）（　）（　）変更されます。",
+          "choices": [
+            "発車時刻が",
+            "に伴い",
+            "来週から",
+            "一部"
+          ],
+          "answer": "2",
+          "explanation_zh": "完整排序是 2 → 3 → 1 → 4：駅の改修工事に伴い、来週から発車時刻が一部変更されます。★ 在第 1 格，第 1 格是选项 2「に伴い」，所以最终答案是 2。",
+          "full_order": "2 → 3 → 1 → 4",
+          "target_blank_index": 1,
+          "tested_expression": "N に伴い + 文"
+        },
+        {
+          "id": "source-bun-kumitate-2414-star",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "困ったときに（　）（　）（★）（　）力になりたいと思います。",
+          "choices": [
+            "あなたの頼み",
+            "ぜひ",
+            "とあれば",
+            "助けてくれた"
+          ],
+          "answer": "3",
+          "explanation_zh": "完整排序是 4 → 1 → 3 → 2：困ったときに助けてくれた / あなたの頼み / とあれば / ぜひ / 力になりたいと思います。★ 在第 3 个空格，第 3 个空格里是选项 3「とあれば」，所以最终答案是 3。这里的 ★ 位置是复盘用假设；如果原题 ★ 在别的位置，最终答案要按实际 ★ 位置重新取。",
+          "full_order": "4 → 1 → 3 → 2",
+          "target_blank_index": 3,
+          "tested_expression": "N とあれば / ぜひ + Vたい"
+        },
+        {
+          "id": "source-bun-kumitate-2413-star-reference",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "明日の（　）（　）（★）（　）はございません。",
+          "choices": [
+            "発車の時刻の",
+            "線路の点検",
+            "変更",
+            "に伴う"
+          ],
+          "answer": "1",
+          "explanation_zh": "完整排序是 2 → 4 → 1 → 3：明日の線路の点検に伴う / 発車の時刻の / 変更はございません。★ 在第 3 个空格，第 3 个空格里是选项 1「発車の時刻の」，所以最终答案是 1。这里同样是复盘用假设星号位。",
+          "full_order": "2 → 4 → 1 → 3",
+          "target_blank_index": 3,
+          "tested_expression": "N に伴う N"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "JLPT 文法第二种题型：文の組み立て。重点：先排完整顺序，再回答 ★ 位置对应的选项编号。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-bun-kumitate-to-areba-001",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N2-N1",
+      "level_confidence": "high",
+      "original": "とあれば",
+      "normalized": "N とあれば",
+      "source_original_sentence": "あなたの頼みとあれば、ぜひ力になりたいと思います。",
+      "source_grammar_point": "N とあれば",
+      "grammar_point": "N とあれば",
+      "reading": "とあれば",
+      "meaning_ja": "それが特別な条件ならば、当然そうするという判断を表す表現。",
+      "paraphrase_ja": "それが特別な条件ならば、当然そうするという判断を表す表現。",
+      "meaning_zh": "如果是……的话；既然是……的话。常用于表示在某个特别条件成立时，说话人愿意采取行动或认为结果理所当然。",
+      "core_memory": "看到「とあれば」先找它前面的完整 N。",
+      "explanation_zh": "如果是……的话；既然是……的话。常用于表示在某个特别条件成立时，说话人愿意采取行动或认为结果理所当然。\n接续：名詞 + とあれば\n用法：前面接完整名词短语，后面常接说话人的判断、意志、请求或行动。排序时先把「N とあれば」锁住。",
+      "grammar_forms": [
+        {
+          "form": "名詞 + とあれば",
+          "example": "あなたの頼みとあれば、ぜひ力になりたいと思います。",
+          "meaning_zh": "如果是……的话；既然是……的话。常用于表示在某个特别条件成立时，说话人愿意采取行动或认为结果理所当然。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "あなたの頼みとあれば、ぜひ力になりたいと思います。",
+          "zh": "既然是你的请求，我一定想帮忙。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "practice-bun-kumitate-star-001",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "先生の（　）（　）（★）（　）参加することにしました。",
+          "choices": [
+            "お願い",
+            "ぜひ",
+            "とあれば",
+            "手伝いに"
+          ],
+          "answer": "2",
+          "explanation_zh": "完整排序是 1 → 3 → 2 → 4：先生のお願いとあれば、ぜひ手伝いに参加することにしました。★ 在第 3 格，第 3 格是选项 2「ぜひ」，所以最终答案是 2。",
+          "full_order": "1 → 3 → 2 → 4",
+          "target_blank_index": 3,
+          "tested_expression": "N とあれば / ぜひ + V"
+        },
+        {
+          "id": "source-bun-kumitate-2414-star",
+          "kind": "文の組み立て",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "困ったときに（　）（　）（★）（　）力になりたいと思います。",
+          "choices": [
+            "あなたの頼み",
+            "ぜひ",
+            "とあれば",
+            "助けてくれた"
+          ],
+          "answer": "3",
+          "explanation_zh": "完整排序是 4 → 1 → 3 → 2：困ったときに助けてくれた / あなたの頼み / とあれば / ぜひ / 力になりたいと思います。★ 在第 3 个空格，第 3 个空格里是选项 3「とあれば」，所以最终答案是 3。这里的 ★ 位置是复盘用假设；如果原题 ★ 在别的位置，最终答案要按实际 ★ 位置重新取。",
+          "full_order": "4 → 1 → 3 → 2",
+          "target_blank_index": 3,
+          "tested_expression": "N とあれば / ぜひ + Vたい"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "JLPT 文法第二种题型：文の組み立て。重点：先排完整顺序，再回答 ★ 位置对应的选项编号。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-language-types-a-wo-b-to-kangaeru",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "AをBと考える",
+      "normalized": "AをBと考える／AをBとする",
+      "source_original_sentence": "これを僕は、第二の言葉と考えます。",
+      "source_grammar_point": "AをBと考える／AをBとする",
+      "grammar_point": "AをBと考える／AをBとする",
+      "reading": "AをBと考える",
+      "meaning_ja": "AをBであると判断する、または位置づけることを表す表現。",
+      "paraphrase_ja": "AをBであると判断する、または位置づけることを表す表現。",
+      "meaning_zh": "把A认为是B；将A定义为B。",
+      "core_memory": "注意「と」不能换成「で」，「これを」不能写成「これはを」。",
+      "explanation_zh": "把A认为是B；将A定义为B。\n接续：AをBと考える／AをBとする\n用法：注意「と」不能换成「で」，「これを」不能写成「これはを」。",
+      "grammar_forms": [
+        {
+          "form": "AをBと考える／AをBとする",
+          "example": "これを僕は、第二の言葉と考えます。",
+          "meaning_zh": "把A认为是B；将A定义为B。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "これを僕は、第二の言葉と考えます。",
+          "zh": "我把这认为是第二种语言。"
+        }
+      ],
+      "question_kinds": [
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。"
+        ]
+      },
+      "practice_questions": [],
+      "notes": [
+        "第5题四个选项原样都有语法问题，需要回看原题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "needs_review",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new",
+      "analysis": "原题第5空的选项疑似转写错误；本条只保存自然句型和复盘结论，不声称原选项无误。"
+    },
+    {
+      "id": "2026-08-30-language-types-tsumari",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "つまり",
+      "normalized": "つまり",
+      "source_original_sentence": "つまり、他者とコミュニケートするためではない。",
+      "source_grammar_point": "つまり",
+      "grammar_point": "つまり",
+      "reading": "つまり",
+      "meaning_ja": "前の内容を言い換えたり、要点をまとめたりする接続表現。",
+      "paraphrase_ja": "前の内容を言い換えたり、要点をまとめたりする接続表現。",
+      "meaning_zh": "也就是说；换言之。",
+      "core_memory": "后文若是在重说/解释前一句，常用「つまり」。",
+      "explanation_zh": "也就是说；换言之。\n接续：つまり\n用法：后文若是在重说/解释前一句，常用「つまり」。",
+      "grammar_forms": [
+        {
+          "form": "つまり",
+          "example": "つまり、他者とコミュニケートするためではない。",
+          "meaning_zh": "也就是说；换言之。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "つまり、他者とコミュニケートするためではない。",
+          "zh": "也就是说，并不是为了和他人交流。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "AをBと考える",
+          "とあれば"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "AをBであると判断する、または位置づけることを表す表現。",
+          "それが特別な条件ならば、当然そうするという判断を表す表現。"
+        ]
+      },
+      "practice_questions": [],
+      "notes": [
+        "用户原文中「他人には何か」更自然为「他人に何か」。",
+        "「思わす」应为「思わず」。",
+        "「とsる」应为「とする」。",
+        "第2题选项中「言ったことします」疑似应为「言ったとします」。",
+        "第5题四个选项原样都有语法问题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-language-types-soreni-taishite",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "それに対して",
+      "normalized": "それに対して",
+      "source_original_sentence": "それに対して、胃が痛んで「痛い」と言う場合は……",
+      "source_grammar_point": "それに対して",
+      "grammar_point": "それに対して",
+      "reading": "それに対して",
+      "meaning_ja": "前に述べた内容と比べて、対照的な内容を示す接続表現。",
+      "paraphrase_ja": "前に述べた内容と比べて、対照的な内容を示す接続表現。",
+      "meaning_zh": "与此相对。",
+      "core_memory": "用于并列分类、观点比较，语气比「反して」中性。",
+      "explanation_zh": "与此相对。\n接续：それに対して\n用法：用于并列分类、观点比较，语气比「反して」中性。",
+      "grammar_forms": [
+        {
+          "form": "それに対して",
+          "example": "それに対して、胃が痛んで「痛い」と言う場合は……",
+          "meaning_zh": "与此相对。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "それに対して、胃が痛んで「痛い」と言う場合は……",
+          "zh": "与此相对，胃痛时说“痛”的情况……"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "AをBと考える",
+          "とあれば"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "AをBであると判断する、または位置づけることを表す表現。",
+          "それが特別な条件ならば、当然そうするという判断を表す表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "2026-08-30-language-types--1-practice",
+          "kind": "reading_logic",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "第一种语言讲完后，开始说明第二种语言，最自然的接续词是？",
+          "choices": [
+            "それに対して",
+            "さらに",
+            "とはいえ",
+            "もしくは"
+          ],
+          "answer": "それに対して",
+          "explanation_zh": "这是分类对比，不是追加、让步或选择。"
+        }
+      ],
+      "notes": [
+        "用户原文中「他人には何か」更自然为「他人に何か」。",
+        "「思わす」应为「思わず」。",
+        "「とsる」应为「とする」。",
+        "第2题选项中「言ったことします」疑似应为「言ったとします」。",
+        "第5题四个选项原样都有语法问题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-language-types-nino-tsugi",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "二の次",
+      "normalized": "二の次",
+      "source_original_sentence": "伝達ということは二の次です。",
+      "source_grammar_point": "二の次",
+      "grammar_point": "二の次",
+      "reading": "二の次",
+      "meaning_ja": "重要さや優先順位が第一ではなく、後回しであること。",
+      "paraphrase_ja": "重要さや優先順位が第一ではなく、後回しであること。",
+      "meaning_zh": "次要；放在第二位。",
+      "core_memory": "说明某事不是主要目的，后面常接真正重点。",
+      "explanation_zh": "次要；放在第二位。\n接续：二の次\n用法：说明某事不是主要目的，后面常接真正重点。",
+      "grammar_forms": [
+        {
+          "form": "二の次",
+          "example": "伝達ということは二の次です。",
+          "meaning_zh": "次要；放在第二位。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "伝達ということは二の次です。",
+          "zh": "传达这件事是次要的。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "AをBと考える",
+          "とあれば"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "AをBであると判断する、または位置づけることを表す表現。",
+          "それが特別な条件ならば、当然そうするという判断を表す表現。"
+        ]
+      },
+      "practice_questions": [],
+      "notes": [
+        "用户原文中「他人には何か」更自然为「他人に何か」。",
+        "「思わす」应为「思わず」。",
+        "「とsる」应为「とする」。",
+        "第2题选项中「言ったことします」疑似应为「言ったとします」。",
+        "第5题四个选项原样都有语法问题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-language-types-to-shimasu-to-suru",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "とします",
+      "normalized": "〜とします／〜とする",
+      "source_original_sentence": "「綺麗だね」と誰かに言ったとします。",
+      "source_grammar_point": "〜とします／〜とする",
+      "grammar_point": "〜とします／〜とする",
+      "reading": "とします",
+      "meaning_ja": "ある場面や条件を仮定として設定する表現。",
+      "paraphrase_ja": "ある場面や条件を仮定として設定する表現。",
+      "meaning_zh": "假设……；设定为……。",
+      "core_memory": "用于说明文举例时，常把一个场景先设定出来。",
+      "explanation_zh": "假设……；设定为……。\n接续：〜とします／〜とする\n用法：用于说明文举例时，常把一个场景先设定出来。",
+      "grammar_forms": [
+        {
+          "form": "〜とします／〜とする",
+          "example": "「綺麗だね」と誰かに言ったとします。",
+          "meaning_zh": "假设……；设定为……。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "「綺麗だね」と誰かに言ったとします。",
+          "zh": "假设对某人说了“真漂亮啊”。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "AをBと考える",
+          "とあれば"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "AをBであると判断する、または位置づけることを表す表現。",
+          "それが特別な条件ならば、当然そうするという判断を表す表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "2026-08-30-language-types--1-practice",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "「綺麗だね」と誰かに（　）。",
+          "choices": [
+            "言ったものです",
+            "言ったとします",
+            "言ったことです",
+            "言ったわけです"
+          ],
+          "answer": "言ったとします",
+          "explanation_zh": "这里是在举例并设定假设场景。"
+        }
+      ],
+      "notes": [
+        "用户原文中「他人には何か」更自然为「他人に何か」。",
+        "「思わす」应为「思わず」。",
+        "「とsる」应为「とする」。",
+        "第2题选项中「言ったことします」疑似应为「言ったとします」。",
+        "第5题四个选项原样都有语法问题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-language-types-ba-ii",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "unknown",
+      "level_confidence": "low",
+      "original": "ばいい",
+      "normalized": "〜ばいい",
+      "source_original_sentence": "自分だけに通じればいい言葉です。",
+      "source_grammar_point": "〜ばいい",
+      "grammar_point": "〜ばいい",
+      "reading": "ばいい",
+      "meaning_ja": "条件を満たせば十分だという意味を表す表現。",
+      "paraphrase_ja": "条件を満たせば十分だという意味を表す表現。",
+      "meaning_zh": "只要……就可以；满足最低条件即可。",
+      "core_memory": "看到「だけ」「最低条件」「十分条件」时，优先考虑「〜ばいい」。",
+      "explanation_zh": "只要……就可以；满足最低条件即可。\n接续：〜ばいい\n用法：看到「だけ」「最低条件」「十分条件」时，优先考虑「〜ばいい」。",
+      "grammar_forms": [
+        {
+          "form": "〜ばいい",
+          "example": "自分だけに通じればいい言葉です。",
+          "meaning_zh": "只要……就可以；满足最低条件即可。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "自分だけに通じればいい言葉です。",
+          "zh": "只要自己能懂就可以的语言。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "AをBと考える",
+          "とあれば"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "AをBであると判断する、または位置づけることを表す表現。",
+          "それが特別な条件ならば、当然そうするという判断を表す表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "2026-08-30-language-types--1-practice",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "自分だけに（　）言葉です。",
+          "choices": [
+            "通じればいい",
+            "通じてもいい",
+            "通じてほしい",
+            "通じたがる"
+          ],
+          "answer": "通じればいい",
+          "explanation_zh": "「自分だけに」和「二の次」提示最低条件：只要自己懂即可。"
+        }
+      ],
+      "notes": [
+        "用户原文中「他人には何か」更自然为「他人に何か」。",
+        "「思わす」应为「思わず」。",
+        "「とsる」应为「とする」。",
+        "第2题选项中「言ったことします」疑似应为「言ったとします」。",
+        "第5题四个选项原样都有语法问题。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户对一篇关于「言葉には二種類ある」的文法空所补充题不理解，希望获得全文翻译、JLPT语法点和解题技巧总结。",
+      "review_status": "new"
+    },
+    {
+      "id": "2026-08-30-te-kara-to-iu-mono",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N1",
+      "level_confidence": "high",
+      "original": "てからというもの",
+      "normalized": "〜てからというもの",
+      "source_original_sentence": "会社に入ってからというもの、ゆっくり釣りに行く時間もない。",
+      "source_grammar_point": "〜てからというもの",
+      "grammar_point": "〜てからというもの",
+      "reading": "てからというもの",
+      "meaning_ja": "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+      "paraphrase_ja": "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+      "meaning_zh": "自从……以后，就一直……。",
+      "core_memory": "てからというもの = 从那以后一直如此，后项要能持续。",
+      "explanation_zh": "自从……以后，就一直……。\n接续：动词て形 + からというもの\n用法：强调从某个时间点之后，状态变化并持续到现在。后项多为持续状态，常是不太好的变化。",
+      "grammar_forms": [
+        {
+          "form": "动词て形 + からというもの",
+          "example": "会社に入ってからというもの、ゆっくり釣りに行く時間もない。",
+          "meaning_zh": "自从……以后，就一直……。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "会社に入ってからというもの、ゆっくり釣りに行く時間もない。",
+          "zh": "自从进公司以来，连悠闲去钓鱼的时间都没有。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "ばいい",
+          "とします",
+          "二の次",
+          "それに対して"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。",
+          "前に述べた内容と比べて、対照的な内容を示す接続表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "grammar-practice-20260830-005",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "子どもが生まれて（　）、夜ゆっくり眠ることもできなくなった。",
+          "choices": [
+            "からというもの",
+            "が早いか",
+            "とたんに",
+            "ものなら"
+          ],
+          "answer": "からというもの",
+          "explanation_zh": "表示从孩子出生以后，无法好好睡觉的状态一直持续，所以用「生まれてからというもの」。",
+          "tested_expression": "〜てからというもの"
+        },
+        {
+          "id": "source-te-kara-to-iu-mono",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを選びなさい。",
+          "prompt": "会社に入ってからというもの、（　）。",
+          "choices": [
+            "ゆっくり釣りに行く時間もない",
+            "ゆっくり釣りに行く時間が欲しい",
+            "一度課長と釣りに行こうと思っている",
+            "一度課長と釣りに行ったことがある"
+          ],
+          "answer": "ゆっくり釣りに行く時間もない",
+          "explanation_zh": "「〜てからというもの」要求后项是从那以后持续到现在的状态；「時間もない」符合，愿望、计划、一次经历都不合适。"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户要求把「たが最後／が早いか／ものなら／とたんに／てからというもの」及选择题辨析纳入题库；批注修正为「今度の選挙」。",
+      "review_status": "new",
+      "comparisons": [
+        {
+          "target": "たが最後",
+          "difference_zh": "与「てからというもの」相比，「たが最後」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "が早いか",
+          "difference_zh": "与「てからというもの」相比，「が早いか」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "ものなら",
+          "difference_zh": "与「てからというもの」相比，「ものなら」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "とたんに",
+          "difference_zh": "与「てからというもの」相比，「とたんに」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        }
+      ]
+    },
+    {
+      "id": "2026-08-30-ta-totan-ni",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N1",
+      "level_confidence": "high",
+      "original": "とたんに",
+      "normalized": "〜たとたんに",
+      "source_original_sentence": "窓を開けたとたんに、強い風が入ってきた。",
+      "source_grammar_point": "〜たとたんに",
+      "grammar_point": "〜たとたんに",
+      "reading": "とたんに",
+      "meaning_ja": "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+      "paraphrase_ja": "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+      "meaning_zh": "刚一……就突然……。",
+      "core_memory": "たとたんに = 刚做完，意外事件马上发生。",
+      "explanation_zh": "刚一……就突然……。\n接续：动词た形 + とたんに\n用法：后项多为立刻发生的、意外的、非意志性事件。不适合长期结果或单纯推量。",
+      "grammar_forms": [
+        {
+          "form": "动词た形 + とたんに",
+          "example": "窓を開けたとたんに、強い風が入ってきた。",
+          "meaning_zh": "刚一……就突然……。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "窓を開けたとたんに、強い風が入ってきた。",
+          "zh": "刚一打开窗，强风就吹了进来。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "ものなら",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次",
+          "それに対して"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。",
+          "前に述べた内容と比べて、対照的な内容を示す接続表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "grammar-practice-20260830-004",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "部屋に入った（　）、急に電気が消えた。",
+          "choices": [
+            "とたんに",
+            "が最後",
+            "ものなら",
+            "からというもの"
+          ],
+          "answer": "とたんに",
+          "explanation_zh": "后项「急に電気が消えた」是刚进房间后立即发生的意外事件，所以用「入ったとたんに」。",
+          "tested_expression": "〜たとたんに"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户要求把「たが最後／が早いか／ものなら／とたんに／てからというもの」及选择题辨析纳入题库；批注修正为「今度の選挙」。",
+      "review_status": "new",
+      "comparisons": [
+        {
+          "target": "たが最後",
+          "difference_zh": "与「とたんに」相比，「たが最後」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "が早いか",
+          "difference_zh": "与「とたんに」相比，「が早いか」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "ものなら",
+          "difference_zh": "与「とたんに」相比，「ものなら」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "てからというもの",
+          "difference_zh": "与「とたんに」相比，「てからというもの」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        }
+      ]
+    },
+    {
+      "id": "2026-08-30-mono-nara",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N1",
+      "level_confidence": "high",
+      "original": "ものなら",
+      "normalized": "〜ものなら",
+      "source_original_sentence": "そんなことを言おうものなら、彼は怒るだろう。",
+      "source_grammar_point": "〜ものなら",
+      "grammar_point": "〜ものなら",
+      "reading": "ものなら",
+      "meaning_ja": "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+      "paraphrase_ja": "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+      "meaning_zh": "如果能……的话；要是……的话可就……。",
+      "core_memory": "可能形=如果能；意向形=要是做了可就糟。",
+      "explanation_zh": "如果能……的话；要是……的话可就……。\n接续：可能形 + ものなら / 意向形 + ものなら\n用法：可能形表示很难实现的愿望；意向形表示一旦做了某事就会有不好的后果。不能直接用「た形 + ものなら」表达本题语义。",
+      "grammar_forms": [
+        {
+          "form": "可能形 + ものなら / 意向形 + ものなら",
+          "example": "そんなことを言おうものなら、彼は怒るだろう。",
+          "meaning_zh": "如果能……的话；要是……的话可就……。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "そんなことを言おうものなら、彼は怒るだろう。",
+          "zh": "要是说那种话，他会生气吧。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "が早いか",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次",
+          "それに対して"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。",
+          "前に述べた内容と比べて、対照的な内容を示す接続表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "grammar-practice-20260830-003",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "そんな失礼なことを言おう（　）、取引はすぐに中止になる。",
+          "choices": [
+            "ものなら",
+            "が早いか",
+            "とたんに",
+            "が最後"
+          ],
+          "answer": "ものなら",
+          "explanation_zh": "「言おう」は意向形，和「ものなら」搭配，表示“要是说了这种话，可就会……”。",
+          "tested_expression": "〜ようものなら"
+        },
+        {
+          "id": "grammar-practice-20260830-006",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "海外に行ける（　）、どんなに忙しくても準備するつもりだ。",
+          "choices": [
+            "ものなら",
+            "が最後",
+            "が早いか",
+            "とたんに"
+          ],
+          "answer": "ものなら",
+          "explanation_zh": "「行ける」は可能形，「行けるものなら」表示“如果能去的话”。这里不是瞬间动作，也不是不可逆坏结果。",
+          "tested_expression": "可能形 + ものなら"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户要求把「たが最後／が早いか／ものなら／とたんに／てからというもの」及选择题辨析纳入题库；批注修正为「今度の選挙」。",
+      "review_status": "new",
+      "comparisons": [
+        {
+          "target": "たが最後",
+          "difference_zh": "与「ものなら」相比，「たが最後」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "が早いか",
+          "difference_zh": "与「ものなら」相比，「が早いか」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "とたんに",
+          "difference_zh": "与「ものなら」相比，「とたんに」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "てからというもの",
+          "difference_zh": "与「ものなら」相比，「てからというもの」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        }
+      ]
+    },
+    {
+      "id": "2026-08-30-ga-hayai-ka",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N1",
+      "level_confidence": "high",
+      "original": "が早いか",
+      "normalized": "〜が早いか",
+      "source_original_sentence": "ベルが鳴るが早いか、学生たちは教室を飛び出した。",
+      "source_grammar_point": "〜が早いか",
+      "grammar_point": "〜が早いか",
+      "reading": "が早いか",
+      "meaning_ja": "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+      "paraphrase_ja": "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+      "meaning_zh": "刚一……就……；强调前后动作几乎同时发生。",
+      "core_memory": "が早いか = 动作瞬间接动作，后项多为过去事实。",
+      "explanation_zh": "刚一……就……；强调前后动作几乎同时发生。\n接续：动词辞书形/た形 + が早いか\n用法：后项通常是已经发生的动作，不适合接意志、命令、请求、推量。",
+      "grammar_forms": [
+        {
+          "form": "动词辞书形/た形 + が早いか",
+          "example": "ベルが鳴るが早いか、学生たちは教室を飛び出した。",
+          "meaning_zh": "刚一……就……；强调前后动作几乎同时发生。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "ベルが鳴るが早いか、学生たちは教室を飛び出した。",
+          "zh": "铃声刚响，学生们就冲出了教室。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "たが最後",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次",
+          "それに対して"
+        ],
+        "meaning": [
+          "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。",
+          "前に述べた内容と比べて、対照的な内容を示す接続表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "grammar-practice-20260830-002",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "駅に着く（　）、彼は改札口へ走っていった。",
+          "choices": [
+            "が早いか",
+            "が最後",
+            "ものなら",
+            "からというもの"
+          ],
+          "answer": "が早いか",
+          "explanation_zh": "前后动作几乎同时发生，后项是已经发生的动作「走っていった」，所以用「着くが早いか」。",
+          "tested_expression": "〜が早いか"
+        }
+      ],
+      "notes": [],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户要求把「たが最後／が早いか／ものなら／とたんに／てからというもの」及选择题辨析纳入题库；批注修正为「今度の選挙」。",
+      "review_status": "new",
+      "comparisons": [
+        {
+          "target": "たが最後",
+          "difference_zh": "与「が早いか」相比，「たが最後」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "ものなら",
+          "difference_zh": "与「が早いか」相比，「ものなら」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "とたんに",
+          "difference_zh": "与「が早いか」相比，「とたんに」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "てからというもの",
+          "difference_zh": "与「が早いか」相比，「てからというもの」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        }
+      ]
+    },
+    {
+      "id": "2026-08-30-ta-ga-saigo",
+      "date": "2026-08-30",
+      "input_at": "2026-08-30T18:31:00+09:00",
+      "deck": "grammar_expression",
+      "type": "expression",
+      "jlpt_level": "N1",
+      "level_confidence": "high",
+      "original": "たが最後",
+      "normalized": "〜たが最後",
+      "source_original_sentence": "今度の選挙に落選したが最後、二度と政界に戻れないだろう。",
+      "source_grammar_point": "〜たが最後",
+      "grammar_point": "〜たが最後",
+      "reading": "たが最後",
+      "meaning_ja": "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+      "paraphrase_ja": "一度そのことが起こると、悪い結果を避けられないことを表す表現。",
+      "meaning_zh": "一旦……就完了；一旦发生某事，之后会出现难以挽回的负面结果。",
+      "core_memory": "た形 + が最後 = 一旦发生就很难回头，后项通常是坏结果。",
+      "explanation_zh": "一旦……就完了；一旦发生某事，之后会出现难以挽回的负面结果。\n接续：动词た形 + が最後\n用法：后项多为严重、不可逆、难以恢复的结果。常和「二度と」「もう」等搭配。",
+      "grammar_forms": [
+        {
+          "form": "动词た形 + が最後",
+          "example": "今度の選挙に落選したが最後、二度と政界に戻れないだろう。",
+          "meaning_zh": "一旦……就完了；一旦发生某事，之后会出现难以挽回的负面结果。"
+        }
+      ],
+      "examples": [
+        {
+          "ja": "今度の選挙に落選したが最後、二度と政界に戻れないだろう。",
+          "zh": "一旦在这次选举中落败，恐怕就再也回不了政界。"
+        }
+      ],
+      "question_kinds": [
+        "grammar",
+        "meaning"
+      ],
+      "question_distractors": {
+        "grammar": [
+          "が早いか",
+          "ものなら",
+          "とたんに",
+          "てからというもの",
+          "ばいい",
+          "とします",
+          "二の次",
+          "それに対して"
+        ],
+        "meaning": [
+          "ある動作が起こるとほとんど同時に次の動作が起こることを表す表現。",
+          "実現が難しい仮定、またはすると悪い結果になる仮定を表す表現。",
+          "ある動作の直後に、予想外の出来事がすぐ起こることを表す表現。",
+          "ある出来事をきっかけに、その後ずっと同じ状態が続くことを表す表現。",
+          "条件を満たせば十分だという意味を表す表現。",
+          "ある場面や条件を仮定として設定する表現。",
+          "重要さや優先順位が第一ではなく、後回しであること。",
+          "前に述べた内容と比べて、対照的な内容を示す接続表現。"
+        ]
+      },
+      "practice_questions": [
+        {
+          "id": "grammar-practice-20260830-001",
+          "kind": "grammar",
+          "instruction": "次の文の（　）に入れるのに最もよいものを、１・２・３・４から一つ選びなさい。",
+          "prompt": "彼にこの秘密を話した（　）、すぐに社内中に広まってしまうだろう。",
+          "choices": [
+            "が最後",
+            "が早いか",
+            "ものなら",
+            "とたんに"
+          ],
+          "answer": "が最後",
+          "explanation_zh": "「話した」はた形で、后项是难以挽回的坏结果。「話したが最後」表示一旦说出口就完了。",
+          "tested_expression": "〜たが最後"
+        }
+      ],
+      "notes": [
+        "用户批注：题干应为「今度の選挙」，不是「今週の選挙」。"
+      ],
+      "tags": [
+        "mcp-draft",
+        "codex-chat-review"
+      ],
+      "content_origin": "ai_generated",
+      "verification_status": "verified",
+      "source_chat_summary": "用户要求把「たが最後／が早いか／ものなら／とたんに／てからというもの」及选择题辨析纳入题库；批注修正为「今度の選挙」。",
+      "review_status": "new",
+      "comparisons": [
+        {
+          "target": "が早いか",
+          "difference_zh": "与「たが最後」相比，「が早いか」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "ものなら",
+          "difference_zh": "与「たが最後」相比，「ものなら」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "とたんに",
+          "difference_zh": "与「たが最後」相比，「とたんに」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        },
+        {
+          "target": "てからというもの",
+          "difference_zh": "与「たが最後」相比，「てからというもの」的接续和后项语义限制不同，做题时先看前接形态和后项性质。"
+        }
+      ]
+    },
     {
       "id": "2026-08-28-001",
       "date": "2026-08-28",

@@ -1,14 +1,14 @@
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, Lightbulb, Plus, RotateCcw, ScrollText, Target } from 'lucide-react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { defaultRubyTerms } from '../../data/rubyTerms';
 import { localized } from '../../domain/items';
-import type { AnswerState, DisplaySettings, FeedbackMode, Locale, PracticeAttempt, ProgressState, Question, QuestionKind, ReviewStatus, VocabItem } from '../../types';
+import type { AnswerState, DisplaySettings, FeedbackMode, LearningCaptureCategory, Locale, PracticeAttempt, ProgressState, Question, QuestionKind, ReviewStatus, VocabItem } from '../../types';
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-lg border border-[#d7ccb9] bg-white px-4 py-3">
-      <p className="text-xs font-semibold text-[#6b6a64]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+    <div className="min-w-0 rounded-2xl border border-[#f0d4dd] bg-white/85 px-4 py-3 shadow-sm">
+      <p className="text-xs font-bold text-[#8f6f7b]">{label}</p>
+      <p className="journal-number mt-1 text-2xl font-black text-[#3d3036]">{value}</p>
     </div>
   );
 }
@@ -52,8 +52,39 @@ function wordDetailHref(item: VocabItem) {
   return `#/${view}/words/${encodeURIComponent(item.id)}`;
 }
 
+const WORD_INDEX_PAGE_SIZE = 8;
+const QUESTION_KIND_LABEL_KEYS: Record<QuestionKind, string> = {
+  grammar: 'grammar',
+  meaning: 'meaning',
+  moji_goi: 'mojiGoi',
+  kana_to_kanji: 'kanaToKanji',
+  kanji_to_kana: 'kanjiToKana',
+};
+
 function safeIndex(index: number, total: number) {
   return total ? ((index % total) + total) % total : 0;
+}
+
+function isTextEntryTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+}
+
+function entryTags(item: VocabItem, labels: Record<string, string>) {
+  const tags = new Set<string>();
+  item.practice_questions?.forEach((question) => {
+    if (question.kind) tags.add(question.kind);
+  });
+  item.question_kinds?.forEach((kind) => {
+    tags.add(labels[QUESTION_KIND_LABEL_KEYS[kind]] ?? kind);
+  });
+  item.tags?.forEach((tag) => {
+    if (tag === 'mcp-draft') tags.add(labels.entryTagDraft);
+    if (tag === 'codex-chat-review') tags.add(labels.entryTagChatReview);
+  });
+  if (item.content_origin === 'ai_generated') tags.add(labels.entryGenerated);
+  return [...tags].filter(Boolean).slice(0, 3);
 }
 
 export function PracticeReviewPanel({
@@ -105,15 +136,15 @@ export function PracticeReviewPanel({
 
   return (
     <>
-      <section className="min-w-0 bg-white px-4 pb-6 pt-5 lg:hidden">
+      <section className="cute-practice-card min-w-0 border px-4 pb-6 pt-5 lg:hidden">
         {mobileQuestion && mobileAnswer ? (
           <>
-            <button type="button" onClick={() => setMobileAnswerId(null)} className="flex min-h-10 items-center gap-1 text-sm font-semibold text-[#31564c]">
+            <button type="button" onClick={() => setMobileAnswerId(null)} className="flex min-h-10 items-center gap-1 text-sm font-bold text-[#a84269]">
               <ChevronLeft size={18} /> {labels.reviewSummaryTitle}
             </button>
-            <div className="mt-3 border-b border-[#dfe5df] pb-5">
-              <p className="text-xs font-semibold text-[#856033]">{mobileQuestion.title}</p>
-              <h2 className="mt-2 text-xl font-semibold leading-8 text-[#27312c]"><QuestionPrompt text={mobileQuestion.prompt} target={mobileQuestion.promptTarget} /></h2>
+            <div className="mt-3 border-b border-[#f0d4dd] pb-5">
+              <p className="text-xs font-bold text-[#a84269]">{mobileQuestion.title}</p>
+              <h2 className="mt-2 text-xl font-black leading-8 text-[#3d3036]"><QuestionPrompt text={mobileQuestion.prompt} target={mobileQuestion.promptTarget} /></h2>
             </div>
             <AnswerPanel
               question={mobileQuestion}
@@ -126,42 +157,42 @@ export function PracticeReviewPanel({
           </>
         ) : (
           <>
-            <header className="border-b border-[#dfe5df] pb-5">
-              <p className="text-xs font-semibold text-[#856033]">{labels.latestAttempt}</p>
-              <h2 className="mt-1 text-2xl font-semibold text-[#27312c]">{labels.reviewSummaryTitle}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#68716c]">{labels.reviewSummaryBody}</p>
+            <header className="border-b border-[#f0d4dd] pb-5">
+              <p className="text-xs font-bold text-[#a84269]">{labels.latestAttempt}</p>
+              <h2 className="mt-1 text-2xl font-black text-[#3d3036]">{labels.reviewSummaryTitle}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#74646b]">{labels.reviewSummaryBody}</p>
               <div className="mt-4 flex gap-2">
-                <button type="button" onClick={onBackToPractice} className="h-10 flex-1 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f]">{labels.backToPractice}</button>
-                <button type="button" onClick={onRestart} className="h-10 flex-1 rounded-md bg-[#31564c] px-3 text-sm font-semibold text-white">{labels.restartPractice}</button>
+                <button type="button" onClick={onBackToPractice} className="cute-button-secondary h-10 flex-1 rounded-full border px-3 text-sm font-bold">{labels.backToPractice}</button>
+                <button type="button" onClick={onRestart} className="cute-button-primary h-10 flex-1 rounded-full px-3 text-sm font-bold text-white">{labels.restartPractice}</button>
               </div>
             </header>
 
-            <div className="grid grid-cols-2 border-b border-[#dfe5df] py-4">
-              <div className="border-r border-[#dfe5df] pr-4">
-                <p className="text-xs text-[#707a74]">{labels.correct}</p>
-                <p className="mt-1 text-xl font-semibold text-[#27312c]">{summary.correct} / {summary.total}</p>
+            <div className="grid grid-cols-2 border-b border-[#f0d4dd] py-4">
+              <div className="border-r border-[#f0d4dd] pr-4">
+                <p className="text-xs text-[#8f6f7b]">{labels.correct}</p>
+                <p className="mt-1 text-xl font-black text-[#3d3036]">{summary.correct} / {summary.total}</p>
               </div>
               <div className="pl-4">
-                <p className="text-xs text-[#707a74]">{labels.accuracy}</p>
-                <p className="mt-1 text-xl font-semibold text-[#27312c]">{Math.round(summary.accuracy * 100)}%</p>
+                <p className="text-xs text-[#8f6f7b]">{labels.accuracy}</p>
+                <p className="mt-1 text-xl font-black text-[#3d3036]">{Math.round(summary.accuracy * 100)}%</p>
               </div>
             </div>
 
             <div className="pt-4">
-              <h3 className="text-sm font-semibold text-[#27312c]">{labels.reviewPage}</h3>
+              <h3 className="text-sm font-bold text-[#3d3036]">{labels.reviewPage}</h3>
               {reviewAnswers.length ? (
-                <div className="mt-2 divide-y divide-[#dfe5df] border-y border-[#dfe5df]">
+                <div className="mt-2 divide-y divide-[#f0d4dd] border-y border-[#f0d4dd]">
                   {reviewAnswers.map((answer, index) => {
                     const question = questionMap.get(answer.questionId);
                     return question ? (
                       <button key={answer.questionId} type="button" onClick={() => setMobileAnswerId(answer.questionId)} className="flex min-h-16 w-full items-center gap-3 py-3 text-left">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-[#edf2ed] text-sm font-semibold text-[#31564c]">{index + 1}</span>
+                        <span className="journal-number flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff0f5] text-sm font-bold text-[#a84269]">{index + 1}</span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold text-[#34413b]">{question.title}</span>
-                          <span className="mt-1 block truncate text-xs text-[#707a74]">{question.prompt}</span>
+                          <span className="block truncate text-sm font-bold text-[#4b3b42]">{question.title}</span>
+                          <span className="mt-1 block truncate text-xs text-[#7a6a70]">{question.prompt}</span>
                         </span>
                         <span className={`shrink-0 text-xs font-semibold ${answer.correct ? 'text-[#356146]' : 'text-[#8a493c]'}`}>{answer.correct ? labels.correct : labels.wrong}</span>
-                        <ChevronRight size={17} className="shrink-0 text-[#758079]" />
+                        <ChevronRight size={17} className="shrink-0 text-[#b98598]" />
                       </button>
                     ) : null;
                   })}
@@ -173,18 +204,18 @@ export function PracticeReviewPanel({
       </section>
 
       <section className="hidden min-w-0 space-y-5 lg:block">
-      <div className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+      <div className="cute-practice-card border p-4 md:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-[#856033]">{labels.latestAttempt}</p>
-            <h2 className="mt-2 text-2xl font-semibold">{labels.reviewSummaryTitle}</h2>
-            <p className="mt-2 text-sm leading-6 text-[#5f625b]">{labels.reviewSummaryBody}</p>
+            <p className="text-sm font-bold text-[#a84269]">{labels.latestAttempt}</p>
+            <h2 className="mt-2 text-2xl font-black text-[#3d3036]">{labels.reviewSummaryTitle}</h2>
+            <p className="mt-2 text-sm leading-6 text-[#74646b]">{labels.reviewSummaryBody}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={onBackToPractice} className="h-10 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]">
+            <button type="button" onClick={onBackToPractice} className="cute-button-secondary h-10 rounded-full border px-3 text-sm font-bold">
               {labels.backToPractice}
             </button>
-            <button type="button" onClick={onRestart} className="h-10 rounded-md bg-[#173d35] px-3 text-sm font-semibold text-white">
+            <button type="button" onClick={onRestart} className="cute-button-primary h-10 rounded-full px-3 text-sm font-bold text-white">
               {labels.restartPractice}
             </button>
           </div>
@@ -198,44 +229,44 @@ export function PracticeReviewPanel({
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-md border border-[#e1d7c9] bg-[#fffaf4] p-3">
-            <p className="text-sm font-semibold text-[#313934]">{labels.historyTitle}</p>
-            <p className="mt-2 text-sm leading-6 text-[#5f625b]">
+          <div className="rounded-2xl border border-[#f0dfaa] bg-[#fff9df] p-3">
+            <p className="text-sm font-bold text-[#3d3036]">{labels.historyTitle}</p>
+            <p className="mt-2 text-sm leading-6 text-[#74646b]">
               {labels.startedAt}: {formatDateTime(attempt?.startedAt, locale)}
               <br />
               {labels.completedAt}: {formatDateTime(attempt?.completedAt, locale)}
             </p>
           </div>
-          <div className="rounded-md border border-[#cbd6cf] bg-[#f3f7f2] p-3">
-            <p className="text-sm font-semibold text-[#313934]">{labels.suggestionLabel}</p>
+          <div className="rounded-2xl border border-[#ccebd8] bg-[#f3fff7] p-3">
+            <p className="text-sm font-bold text-[#3d3036]">{labels.suggestionLabel}</p>
             <p className="mt-2 text-sm leading-6 text-[#4f5b55]">{attemptSuggestion(attempt, labels)}</p>
           </div>
         </div>
 
         {attempt ? (
-          <details className="mt-4 rounded-md border border-[#d9d0c3] bg-[#fffdfa] p-3">
-            <summary className="cursor-pointer text-sm font-semibold text-[#24473f]">{labels.aiSuggestionPromptLabel}</summary>
+          <details className="mt-4 rounded-2xl border border-[#f0d4dd] bg-white/75 p-3">
+            <summary className="cursor-pointer text-sm font-bold text-[#a84269]">{labels.aiSuggestionPromptLabel}</summary>
             <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-[#f5f7f3] p-3 text-xs leading-5 text-[#313934]">{aiPromptSeed(attempt, questions)}</pre>
           </details>
         ) : null}
       </div>
 
       {!reviewAnswers.length ? (
-        <div className="rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
+        <div className="cute-practice-card border border-dashed p-6">
           <p className="text-sm leading-6 text-[#5f625b]">{labels.noAttemptHistory}</p>
         </div>
       ) : null}
 
       {wrongAnswers.length ? (
-        <div className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
-          <h3 className="text-lg font-semibold">{labels.wrongQuestions}</h3>
+        <div className="cute-practice-card border p-4 md:p-5">
+          <h3 className="text-lg font-black text-[#3d3036]">{labels.wrongQuestions}</h3>
           <div className="mt-3 space-y-4">
             {wrongAnswers.map((answer) => {
               const question = questionMap.get(answer.questionId);
               return question ? (
-                <div key={answer.questionId} className="rounded-md border border-[#e1d7c9] bg-[#fffaf4] p-3">
-                  <p className="text-sm font-semibold text-[#856033]">{question.title}</p>
-                  <p className="mt-2 text-base leading-7 text-[#353b37]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
+                <div key={answer.questionId} className="rounded-2xl border border-[#f0dfaa] bg-[#fff9df] p-3">
+                  <p className="text-sm font-bold text-[#a84269]">{question.title}</p>
+                  <p className="mt-2 text-base leading-7 text-[#3d3036]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
                   <AnswerPanel
                     question={question}
                     answer={answer}
@@ -255,13 +286,13 @@ export function PracticeReviewPanel({
         {reviewAnswers.map((answer) => {
           const question = questionMap.get(answer.questionId);
           return question ? (
-            <div key={answer.questionId} className="rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-5">
+            <div key={answer.questionId} className="cute-practice-card border p-4 md:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-[#856033]">{question.title}</p>
-                  <p className="mt-2 text-base leading-7 text-[#353b37]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
+                  <p className="text-sm font-bold text-[#a84269]">{question.title}</p>
+                  <p className="mt-2 text-base leading-7 text-[#3d3036]"><QuestionPrompt text={question.prompt} target={question.promptTarget} /></p>
                 </div>
-                <span className={`rounded px-2 py-1 text-sm font-semibold ${answer.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-[#faf0df] text-[#665d4b]'}`}>
+                <span className={`rounded-full px-3 py-1 text-sm font-bold ${answer.correct ? 'bg-[#d5eadc] text-[#285d47]' : 'bg-[#fff8df] text-[#775516]'}`}>
                   {answer.correct ? labels.correct : labels.wrong}
                 </span>
               </div>
@@ -317,34 +348,67 @@ export function PracticePanel({
   onRestart: () => void;
   onReview: () => void;
 }) {
+  useEffect(() => {
+    if (!activeQuestion) return;
+    const currentQuestion = activeQuestion;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (isTextEntryTarget(event.target)) return;
+
+      if (event.key === 'ArrowLeft' && questionsLength > 1) {
+        event.preventDefault();
+        onPrev();
+        return;
+      }
+
+      if (event.key === 'ArrowRight' && questionsLength > 1) {
+        event.preventDefault();
+        onNext();
+        return;
+      }
+
+      if (/^[1-4]$/.test(event.key)) {
+        const choice = currentQuestion.choices[Number(event.key) - 1];
+        const alreadyAnswered = Boolean(answers[currentQuestion.id]);
+        if (!choice || (feedbackMode === 'immediate' && alreadyAnswered)) return;
+        event.preventDefault();
+        onAnswer(currentQuestion, choice);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeQuestion, answers, feedbackMode, onAnswer, onNext, onPrev, questionsLength]);
+
   return (
-    <section className="min-w-0 border-y border-[#d8cdbc] bg-white px-4 pb-6 pt-4 md:rounded-lg md:border md:p-5 md:shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e2ddd4] pb-4">
-        <p className="text-sm font-semibold text-[#856033]">{questionTypeLabel}</p>
+    <section className="cute-practice-card min-w-0 border px-4 pb-6 pt-4 md:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0d4dd] pb-4">
+        <p className="text-sm font-bold text-[#a84269]">{questionTypeLabel}</p>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-          {questionsLength > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrev} /> : null}
-          <div className="flex min-h-10 min-w-24 flex-col items-center justify-center rounded-md bg-[#e8f0eb] px-2 py-1 text-[#24473f] sm:min-w-32 sm:px-3">
-            <span className="text-sm font-semibold">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
+          {questionsLength > 1 ? <ArrowButton label={labels.prev} direction="left" shortcut="ArrowLeft" onClick={onPrev} /> : null}
+          <div className="flex min-h-10 min-w-24 flex-col items-center justify-center rounded-2xl bg-[#fff0f5] px-2 py-1 text-[#a84269] sm:min-w-32 sm:px-3">
+            <span className="journal-number text-sm font-black">{questionsLength ? `${activeIndex + 1} / ${questionsLength}` : '0 / 0'}</span>
             <span className="text-xs">{labels.completed} {answeredCount} / {questionsLength}</span>
           </div>
           {answeredCount > 0 ? (
-            <button type="button" onClick={onRestart} aria-label={labels.restartPractice} title={labels.restartPractice} className="flex h-10 w-10 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1] sm:w-auto sm:px-3">
+            <button type="button" onClick={onRestart} aria-label={labels.restartPractice} title={labels.restartPractice} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0c9d4] bg-white text-[#a84269] hover:bg-[#fff0f5] sm:w-auto sm:px-3">
               <RotateCcw size={17} />
               <span className="ml-2 hidden text-sm font-semibold sm:inline">{labels.restartPractice}</span>
             </button>
           ) : null}
           {questionsLength > 1 ? (
-            <ArrowButton label={labels.next} direction="right" onClick={onNext} />
+            <ArrowButton label={labels.next} direction="right" shortcut="ArrowRight" onClick={onNext} />
           ) : null}
         </div>
       </div>
 
       <div className="mt-4">
-        <h2 className="text-2xl font-semibold">{activeQuestion?.title ?? labels.noQuestion}</h2>
+        <h2 className="text-2xl font-black text-[#3d3036]">{activeQuestion?.title ?? labels.noQuestion}</h2>
         {activeQuestion?.instruction ? (
-          <p className="mt-3 text-sm leading-6 text-[#68716c]">{activeQuestion.instruction}</p>
+          <p className="mt-3 text-sm leading-6 text-[#74646b]">{activeQuestion.instruction}</p>
         ) : null}
-        <p className={`${activeQuestion?.instruction ? 'mt-4' : 'mt-3'} break-words text-lg leading-8 text-[#353b37]`}>
+        <p className={`${activeQuestion?.instruction ? 'mt-4' : 'mt-3'} break-words text-lg leading-8 text-[#3d3036]`}>
           {activeQuestion ? <QuestionPrompt text={activeQuestion.prompt} target={activeQuestion.promptTarget} /> : labels.noQuestionBody}
         </p>
       </div>
@@ -357,27 +421,28 @@ export function PracticePanel({
                 const answered = answers[activeQuestion.id];
                 const isSelected = answered?.selected === choice;
                 const isAnswer = choice === activeQuestion.answer;
-                const shouldReveal = complete || feedbackMode === 'immediate';
+                const shouldReveal = feedbackMode === 'immediate';
                 const color = !answered
-                  ? 'border-[#ddd4c8] bg-[#fffaf3] hover:bg-[#f5eadf]'
+                  ? 'border-[#f0d4dd] bg-white hover:bg-[#fff7fb]'
                   : shouldReveal
                     ? isAnswer
-                      ? 'border-[#3d735f] bg-[#e5f2ea]'
+                      ? 'border-[#65a37c] bg-[#f0fff5]'
                       : isSelected
-                        ? 'border-[#b59a66] bg-[#f6f0e2]'
-                        : 'border-[#ddd4c8] bg-[#f8f3eb] opacity-70'
+                        ? 'border-[#d95f8a] bg-[#fff0f5]'
+                        : 'border-[#f0d4dd] bg-[#fffafc] opacity-70'
                     : isSelected
-                      ? 'border-[#9ca7a2] bg-[#eef2ef]'
-                      : 'border-[#ddd4c8] bg-[#fffaf3]';
+                      ? 'border-[#d95f8a] bg-[#fff0f5]'
+                      : 'border-[#f0d4dd] bg-white';
                 return (
                   <button
                     type="button"
                     key={choice}
-                    disabled={Boolean(answered)}
+                    disabled={feedbackMode === 'immediate' && Boolean(answered)}
+                    aria-keyshortcuts={String(choiceIndex + 1)}
                     onClick={() => onAnswer(activeQuestion, choice)}
-                    className={`flex min-h-14 min-w-0 items-start gap-3 rounded-md border px-4 py-3 text-left text-base font-semibold break-words disabled:cursor-default ${color}`}
+                    className={`cute-choice flex min-h-14 min-w-0 items-start gap-3 border px-4 py-3 text-left text-base font-bold break-words disabled:cursor-default ${color}`}
                   >
-                    <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-current text-xs">
+                    <span aria-hidden="true" className="journal-number flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-xs">
                       {choiceIndex + 1}
                     </span>
                     <span className="min-w-0 pt-0.5">{choice}</span>
@@ -386,13 +451,20 @@ export function PracticePanel({
               })}
             </div>
           ) : null}
-          {(feedbackMode === 'immediate' || complete) && answers[activeQuestion.id] ? (
+          {feedbackMode === 'batch' && complete ? (
+            <div className="mt-5 flex items-center justify-end gap-3 border-t border-[#f0d4dd] pt-4">
+              <button type="button" onClick={onReview} className="cute-button-primary h-10 rounded-full px-4 text-sm font-bold text-white">
+                {labels.reviewPage}
+              </button>
+            </div>
+          ) : null}
+          {feedbackMode === 'immediate' && answers[activeQuestion.id] ? (
             <>
-              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#dfe5df] pt-4 lg:hidden">
-                <p role="status" className={`text-sm font-semibold ${answers[activeQuestion.id].correct ? 'text-[#356146]' : 'text-[#8a493c]'}`}>
+              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#f0d4dd] pt-4 lg:hidden">
+                <p role="status" className={`text-sm font-bold ${answers[activeQuestion.id].correct ? 'text-[#356146]' : 'text-[#a84269]'}`}>
                   {answers[activeQuestion.id].correct ? labels.correct : labels.wrong}
                 </p>
-                <button type="button" onClick={onReview} className="h-10 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white">
+                <button type="button" onClick={onReview} className="cute-button-primary h-10 rounded-full px-4 text-sm font-bold text-white">
                   {labels.reviewPage}
                 </button>
               </div>
@@ -436,13 +508,13 @@ function AnswerPanel({
   const sourceItem = items.find((item) => item.id === question.itemId);
   const needsHumanReview = sourceItem?.content_origin === 'ai_generated' && sourceItem.verification_status !== 'verified';
   const statusStyle = answer.correct
-    ? 'border-[#8eb3a1] bg-[#f1f7f3] text-[#285d47]'
-    : 'border-[#cdbd98] bg-[#faf7ef] text-[#665d4b]';
+    ? 'border-[#9bd8b0] bg-[#f2fff6] text-[#285d47]'
+    : 'border-[#f0c9d4] bg-[#fff7fb] text-[#8f365b]';
 
   return (
-    <div className={`mt-5 rounded-lg border p-4 ${statusStyle}`}>
+    <div className={`cute-answer-note mt-5 border p-4 ${statusStyle}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="rounded bg-white/70 px-2 py-1 text-sm font-semibold">{answer.correct ? labels.correct : labels.wrong}</p>
+        <p className="rounded-full bg-white/75 px-3 py-1 text-sm font-bold">{answer.correct ? labels.correct : labels.wrong}</p>
         {sourceItem ? (
           <EntryLink item={sourceItem} label={`${labels.viewEntry}: ${sourceItem.original}`} />
         ) : null}
@@ -486,7 +558,7 @@ function AnswerPanel({
         </ExplanationSection>
       </div>
       {needsHumanReview ? (
-        <p className="mt-3 rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-sm leading-6 text-[#6f4a16]">
+        <p className="mt-3 rounded-2xl border border-[#f0cf80] bg-[#fff8df] p-3 text-sm leading-6 text-[#775516]">
           {labels.unverifiedContentNotice}
         </p>
       ) : null}
@@ -522,83 +594,169 @@ function ExplanationSection({ label, children }: { label: string; children: Reac
   );
 }
 
-export function WordIndexPanel({ items, questions, answers, progress, labels, locale, onOpen }: {
+export function WordIndexPanel({ items, questions, answers, progress, labels, locale, captureCategory, pendingCaptureCount = 0, onOpen, onPractice, onTips, onReview, onSaveCapture }: {
   items: VocabItem[];
   questions: Question[];
   answers: AnswerState;
   progress: ProgressState;
   labels: Record<string, string>;
   locale: Locale;
+  captureCategory?: LearningCaptureCategory;
+  pendingCaptureCount?: number;
   onOpen: (id: string) => void;
+  onPractice?: () => void;
+  onTips?: () => void;
+  onReview?: () => void;
+  onSaveCapture?: (input: { body: string; category: LearningCaptureCategory; context?: string }) => Promise<void>;
 }) {
+  const [pageIndex, setPageIndex] = useState(0);
+  const [showCaptureForm, setShowCaptureForm] = useState(false);
+  const [captureBody, setCaptureBody] = useState('');
+  const [captureContext, setCaptureContext] = useState('');
+  const [captureSaving, setCaptureSaving] = useState(false);
+  const [captureSaved, setCaptureSaved] = useState(false);
   const questionsByItem = questions.reduce<Record<string, Question[]>>((groups, question) => {
     groups[question.itemId] = [...(groups[question.itemId] ?? []), question];
     return groups;
   }, {});
+  const pageCount = Math.max(1, Math.ceil(items.length / WORD_INDEX_PAGE_SIZE));
+  const currentPage = Math.min(pageIndex, pageCount - 1);
+  const pageStart = currentPage * WORD_INDEX_PAGE_SIZE;
+  const pageItems = items.slice(pageStart, pageStart + WORD_INDEX_PAGE_SIZE);
+  const pageEnd = pageStart + pageItems.length;
+
+  useEffect(() => {
+    setPageIndex((index) => Math.min(index, pageCount - 1));
+  }, [pageCount]);
+
+  async function saveCapture(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!captureBody.trim() || !captureCategory || !onSaveCapture || captureSaving) return;
+    setCaptureSaving(true);
+    setCaptureSaved(false);
+    try {
+      await onSaveCapture({
+        body: captureBody.trim(),
+        category: captureCategory,
+        context: captureContext.trim() || labels.entryCaptureContextDefault,
+      });
+      setCaptureBody('');
+      setCaptureContext('');
+      setCaptureSaved(true);
+    } finally {
+      setCaptureSaving(false);
+    }
+  }
 
   return (
     <section className="min-w-0 overflow-hidden bg-white md:rounded-lg md:border md:border-[#d8cdbc] md:shadow-sm">
       <div className="border-b border-[#e5ddd1] px-4 py-4 md:px-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-semibold text-[#27312c]">{labels.entryListTitle}</h2>
-            <p className="mt-2 text-sm leading-6 text-[#68716b]">{labels.entryListBody}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {captureCategory && onSaveCapture ? (
+              <ModuleAction label={captureCategory === 'grammar' ? labels.entryAddGrammar : labels.entryAddWord} onClick={() => { setShowCaptureForm((value) => !value); setCaptureSaved(false); }}>
+                <Plus size={16} />
+              </ModuleAction>
+            ) : null}
+            {onPractice ? <ModuleAction label={labels.questionPage} onClick={onPractice}><Target size={16} /></ModuleAction> : null}
+            {onTips ? <ModuleAction label={labels.navQuestionTypes} onClick={onTips}><Lightbulb size={16} /></ModuleAction> : null}
+            {onReview ? <ModuleAction label={labels.reviewPage} onClick={onReview}><ScrollText size={16} /></ModuleAction> : null}
           </div>
-          <span className="rounded-md bg-[#e8f0eb] px-3 py-1 text-sm font-semibold text-[#24473f]">{items.length} {labels.items}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {captureCategory && pendingCaptureCount ? <span className="rounded-md bg-[#fff8df] px-3 py-1 text-sm font-semibold text-[#775516]">{labels.entryPendingCapture}: {pendingCaptureCount}</span> : null}
+            <span className="rounded-md bg-[#e8f0eb] px-3 py-1 text-sm font-semibold text-[#24473f]">{items.length} {labels.items}</span>
+          </div>
         </div>
       </div>
+      {showCaptureForm && captureCategory && onSaveCapture ? (
+        <form onSubmit={saveCapture} className="grid gap-3 border-b border-[#e5ddd1] bg-[#fffafc] px-4 py-4 md:px-5">
+          <label className="block text-sm font-semibold text-[#4b3b42]">
+            {captureCategory === 'grammar' ? labels.entryAddGrammarInput : labels.entryAddWordInput}
+            <textarea
+              value={captureBody}
+              onChange={(event) => { setCaptureBody(event.target.value); setCaptureSaved(false); }}
+              maxLength={5000}
+              autoFocus
+              placeholder={captureCategory === 'grammar' ? labels.entryAddGrammarPlaceholder : labels.entryAddWordPlaceholder}
+              className="mt-2 min-h-28 w-full resize-y rounded-md border border-[#e2c8d3] bg-white p-3 text-base leading-7 text-[#27312c] outline-none focus:border-[#d95f8a]"
+            />
+          </label>
+          <label className="block text-sm font-semibold text-[#4b3b42]">
+            {labels.entryAddContext}
+            <input
+              value={captureContext}
+              onChange={(event) => setCaptureContext(event.target.value)}
+              maxLength={2000}
+              placeholder={labels.entryAddContextPlaceholder}
+              className="mt-2 h-10 w-full rounded-md border border-[#e2c8d3] bg-white px-3 text-sm text-[#27312c] outline-none focus:border-[#d95f8a]"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" disabled={!captureBody.trim() || captureSaving} className="h-10 rounded-md bg-[#d95f8a] px-4 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-50">
+              {captureSaving ? labels.captureSaving : labels.entryAddSave}
+            </button>
+            {captureSaved ? <p role="status" className="text-sm font-semibold text-[#356146]">{labels.entryAddSaved}</p> : null}
+          </div>
+        </form>
+      ) : null}
       {items.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-collapse text-left text-sm">
-            <thead className="bg-[#f3f6f1] text-xs font-semibold text-[#5b665f]">
-              <tr>
-                <th className="w-[34%] px-4 py-3">{labels.entryColumnItem}</th>
-                <th className="whitespace-nowrap px-3 py-3">{labels.entryColumnCreated}</th>
-                <th className="px-3 py-3">{labels.entryColumnLevel}</th>
-                <th className="px-3 py-3">{labels.entryColumnQuestions}</th>
-                <th className="px-3 py-3">{labels.entryColumnPractice}</th>
-                <th className="w-28 whitespace-nowrap px-3 py-3">{labels.entryColumnProgress}</th>
-                <th className="w-24 px-3 py-3">{labels.entryColumnStatus}</th>
-                <th className="w-24 px-4 py-3 text-right">{labels.entryOpen}</th>
-              </tr>
+        <>
+        <div className="overflow-x-auto md:overflow-x-visible">
+	          <table className="w-full min-w-[680px] table-fixed border-collapse text-left text-sm md:min-w-0">
+	            <thead className="bg-[#f3f6f1] text-xs font-semibold text-[#5b665f]">
+	              <tr>
+	                <th className="w-[26%] px-4 py-3">{labels.entryColumnItem}</th>
+	                <th className="w-[17%] px-3 py-3">{labels.entryColumnCreated}</th>
+	                <th className="w-[8%] px-3 py-3">{labels.entryColumnLevel}</th>
+	                <th className="w-[17%] px-3 py-3">{labels.entryColumnTags}</th>
+	                <th className="w-[8%] px-3 py-3">{labels.entryColumnQuestions}</th>
+	                <th className="w-[16%] px-3 py-3">{labels.entryColumnProgress}</th>
+	                <th className="w-[8%] px-3 py-3 text-right">
+	                  <span className="sr-only">{labels.entryOpen}</span>
+	                </th>
+	              </tr>
             </thead>
             <tbody className="divide-y divide-[#ece4d8]">
-              {items.map((item) => {
-                const itemQuestions = questionsByItem[item.id] ?? [];
-                const itemAnswers = itemQuestions.filter((question) => answers[question.id]);
-                const itemProgress = progress[item.id];
-                return (
-                  <tr key={item.id} className="bg-white hover:bg-[#fbf8f2]">
+	              {pageItems.map((item) => {
+	                const itemQuestions = questionsByItem[item.id] ?? [];
+	                const itemAnswers = itemQuestions.filter((question) => answers[question.id]);
+	                const itemProgress = progress[item.id];
+	                const tags = entryTags(item, labels);
+	                return (
+	                  <tr key={item.id} className="bg-white hover:bg-[#fbf8f2]">
                     <td className="px-4 py-3 align-top">
                       <button type="button" onClick={() => onOpen(item.id)} className="block min-w-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#24473f]">
                         <span className="block break-words text-base font-semibold text-[#173d35]">{item.original}</span>
                         {item.reading ? <span className="mt-1 block text-xs font-semibold text-[#856033]">{item.reading}</span> : null}
-                        <span className="mt-2 line-clamp-2 block break-words text-xs leading-5 text-[#59645e]">{localized(item, locale, 'meaning') ?? item.meaning_zh}</span>
                       </button>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3 align-top text-[#4d5751]">{formatDateTime(item.input_at ?? item.date, locale)}</td>
-                    <td className="px-3 py-3 align-top">
-                      <span className="rounded bg-[#f1eee8] px-2 py-1 text-xs font-semibold text-[#584f43]">{item.jlpt_level ?? '-'}</span>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 align-top text-[#3f4b45]">
-                      <MetricInline value={itemQuestions.length} label={labels.entryGenerated} />
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 align-top text-[#3f4b45]">
-                      <MetricInline value={item.practice_questions?.length ?? 0} label={labels.entrySeeded} />
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3 align-top text-[#3f4b45]">
-                      {itemQuestions.length ? `${labels.entryAnswered} ${itemAnswers.length}/${itemQuestions.length}` : labels.entryNoProgress}
+                    <td className="px-3 py-3 align-top text-[#4d5751]">{formatDateTime(item.input_at ?? item.date, locale)}</td>
+	                    <td className="px-3 py-3 align-top">
+	                      <span className="rounded bg-[#f1eee8] px-2 py-1 text-xs font-semibold text-[#584f43]">{item.jlpt_level ?? '-'}</span>
+	                    </td>
+	                    <td className="px-3 py-3 align-top">
+	                      <div className="flex min-w-0 flex-wrap gap-1.5">
+	                        {tags.length ? tags.map((tag) => (
+	                          <span key={tag} className="max-w-full truncate rounded bg-[#e8f0eb] px-2 py-1 text-xs font-semibold text-[#31564c]" title={tag}>{tag}</span>
+	                        )) : <span className="text-xs font-semibold text-[#8a8175]">-</span>}
+	                      </div>
+	                    </td>
+	                    <td className="px-3 py-3 align-top font-semibold text-[#3f4b45]">
+	                      {itemQuestions.length}
+	                    </td>
+                    <td className="px-3 py-3 align-top text-[#3f4b45]">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="font-semibold">{itemQuestions.length ? `${itemAnswers.length}/${itemQuestions.length}` : labels.entryNoProgress}</span>
+                        <StatusPill status={itemProgress?.status ?? 'new'} labels={labels} />
+                      </div>
                       {itemProgress?.nextReviewAt ? (
-                        <span className="mt-1 block text-xs text-[#6c746f]">{labels.nextReview}: {formatDateTime(itemProgress.nextReviewAt, locale)}</span>
+                        <span className="mt-1 block break-words text-xs text-[#6c746f]">{labels.nextReview}: {formatDateTime(itemProgress.nextReviewAt, locale)}</span>
                       ) : null}
                     </td>
                     <td className="px-3 py-3 align-top">
-                      <StatusPill status={itemProgress?.status ?? 'new'} labels={labels} />
-                    </td>
-                    <td className="px-4 py-3 text-right align-top">
-                      <button type="button" onClick={() => onOpen(item.id)} className="h-9 whitespace-nowrap rounded-md border border-[#b9c9c1] bg-white px-4 text-sm font-semibold text-[#24473f] hover:bg-[#f2f6f1]">
-                        {labels.entryOpen}
-                      </button>
+                      <div className="flex justify-end gap-1">
+                        <IconAction label={`${labels.entryOpen}: ${item.original}`} title={labels.entryOpen} onClick={() => onOpen(item.id)}><ExternalLink size={16} /></IconAction>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -606,17 +764,54 @@ export function WordIndexPanel({ items, questions, answers, progress, labels, lo
             </tbody>
           </table>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e5ddd1] px-4 py-3 text-sm text-[#59645e] md:px-5">
+          <span className="font-semibold">
+            {pageStart + 1}-{pageEnd} / {items.length} {labels.items}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label={labels.entryPagePrev}
+              title={labels.entryPagePrev}
+              disabled={currentPage === 0}
+              onClick={() => setPageIndex((index) => Math.max(0, index - 1))}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="min-w-14 text-center font-semibold text-[#34443c]">{currentPage + 1} / {pageCount}</span>
+            <button
+              type="button"
+              aria-label={labels.entryPageNext}
+              title={labels.entryPageNext}
+              disabled={currentPage >= pageCount - 1}
+              onClick={() => setPageIndex((index) => Math.min(pageCount - 1, index + 1))}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+        </>
       ) : <EmptyModule labels={labels} />}
     </section>
   );
 }
 
-function MetricInline({ value, label }: { value: number; label: string }) {
+function ModuleAction({ label, children, onClick }: { label: string; children: ReactNode; onClick: () => void }) {
   return (
-    <span className="inline-flex min-w-16 items-center justify-between gap-2 rounded-md border border-[#dfe5dc] bg-[#f8faf7] px-2 py-1 text-xs font-semibold text-[#34443c]">
-      <span>{value}</span>
-      <span className="text-[#68756d]">{label}</span>
-    </span>
+    <button type="button" aria-label={label} title={label} onClick={onClick} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#ead1dc] bg-white px-3 text-sm font-bold text-[#a84269] hover:bg-[#fff0f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d95f8a]">
+      {children}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function IconAction({ label, title, children, onClick }: { label: string; title: string; children: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" aria-label={label} title={title} onClick={onClick} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#ead1dc] bg-white text-[#a84269] hover:bg-[#fff0f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d95f8a]">
+      {children}
+    </button>
   );
 }
 
@@ -689,15 +884,15 @@ export function WordDetailPanel({
       onTouchStart={(event) => setTouchStart(event.changedTouches[0]?.clientX ?? null)}
       onTouchEnd={(event) => handleTouchEnd(event.changedTouches[0]?.clientX ?? 0)}
     >
-      <button type="button" onClick={onBack} className="mb-4 inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-[#31564c] hover:underline">
+      <button type="button" onClick={onBack} className="mb-4 inline-flex min-h-10 items-center gap-1 text-sm font-bold text-[#a84269] hover:underline">
         <ChevronLeft size={18} /> {labels.backToEntryList}
       </button>
-      <div className="mb-3 border-b border-[#dfe5df] pb-3">
-        <p className="text-sm font-semibold text-[#856033]">{labels.wordDetail}</p>
+      <div className="mb-3 border-b border-[#f0d4dd] pb-3">
+        <p className="text-sm font-bold text-[#a84269]">{labels.wordDetail}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <CompactToggle checked={showRuby} label={labels.furigana} onChange={onShowRubyChange} />
           {total > 1 ? <ArrowButton label={labels.prev} direction="left" onClick={onPrevious} /> : null}
-          <span className="min-w-20 rounded-md bg-[#e8f0eb] px-3 py-2 text-center text-sm font-semibold text-[#24473f]">
+          <span className="journal-number min-w-20 rounded-full bg-[#fff0f5] px-3 py-2 text-center text-sm font-bold text-[#a84269]">
             {total ? `${safeIndex(index, total) + 1} / ${total}` : '0 / 0'}
           </span>
           {total > 1 ? <ArrowButton label={labels.next} direction="right" onClick={onNext} /> : null}
@@ -715,35 +910,36 @@ export function WordDetailPanel({
 
 function EmptyModule({ labels }: { labels: Record<string, string> }) {
   return (
-    <section className="min-w-0 rounded-lg border border-dashed border-[#bac8c0] bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-semibold">{labels.moduleEmptyTitle}</h2>
-      <p className="mt-3 text-sm leading-7 text-[#5f625b]">{labels.moduleEmptyBody}</p>
+    <section className="cute-practice-card min-w-0 border border-dashed p-6">
+      <h2 className="text-2xl font-black text-[#3d3036]">{labels.moduleEmptyTitle}</h2>
+      <p className="mt-3 text-sm leading-7 text-[#74646b]">{labels.moduleEmptyBody}</p>
     </section>
   );
 }
 
 function CompactToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-[#c8bcae] bg-white px-3 text-sm font-semibold text-[#24473f]">
+    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-full border border-[#f0c9d4] bg-white px-3 text-sm font-bold text-[#a84269]">
       <input
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 accent-[#24473f]"
+        className="h-4 w-4 accent-[#d95f8a]"
       />
       <span>{label}</span>
     </label>
   );
 }
 
-function ArrowButton({ label, direction, onClick }: { label: string; direction: 'left' | 'right'; onClick: () => void }) {
+function ArrowButton({ label, direction, shortcut, onClick }: { label: string; direction: 'left' | 'right'; shortcut?: string; onClick: () => void }) {
   return (
     <button
       type="button"
       aria-label={label}
       title={label}
+      aria-keyshortcuts={shortcut}
       onClick={onClick}
-      className="flex h-10 w-10 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1]"
+      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0c9d4] bg-white text-[#a84269] hover:bg-[#fff0f5]"
     >
       {direction === 'left' ? <ChevronLeft size={19} /> : <ChevronRight size={19} />}
     </button>
@@ -765,34 +961,34 @@ function VocabCard({
   const coreMemory = localized(item, locale, 'core_memory') ?? item.core_memory;
   const analysis = localized(item, locale, 'analysis') ?? item.analysis;
   return (
-    <article className="min-w-0 rounded-lg border border-[#d8cdbc] bg-white p-4 shadow-sm md:p-6">
-      <h3 className="text-3xl font-semibold">
+    <article className="cute-practice-card min-w-0 border p-4 md:p-6">
+      <h3 className="text-3xl font-black text-[#3d3036]">
         <RubyText text={item.original} items={[item]} enabled={showRuby} />
       </h3>
-      <div className="mt-5 space-y-5 border-t border-[#e5ddd1] pt-5">
+      <div className="mt-5 space-y-5 border-t border-[#f0d4dd] pt-5">
         <section>
-          <h4 className="text-xs font-semibold text-[#856033]">{labels.japaneseMeaning}</h4>
-          <p className="mt-2 text-sm leading-7 text-[#313934]">
+          <h4 className="text-xs font-bold text-[#a84269]">{labels.japaneseMeaning}</h4>
+          <p className="mt-2 text-sm leading-7 text-[#3d3036]">
             <RubyText text={item.meaning_ja ?? '-'} items={[item]} enabled={showRuby} />
           </p>
         </section>
         {locale !== 'ja' ? (
-          <section className="border-t border-[#e5ddd1] pt-5">
-            <h4 className="text-xs font-semibold text-[#856033]">{labels.localizedMeaning}</h4>
-            <p className="mt-2 text-sm leading-7 text-[#313934]">{meaning}</p>
+          <section className="border-t border-[#f0d4dd] pt-5">
+            <h4 className="text-xs font-bold text-[#a84269]">{labels.localizedMeaning}</h4>
+            <p className="mt-2 text-sm leading-7 text-[#3d3036]">{meaning}</p>
           </section>
         ) : null}
       </div>
-      <section className="mt-5 border-t border-[#e5ddd1] pt-5">
-        <h4 className="text-xs font-semibold text-[#856033]">{labels.examQuickNote}</h4>
-        <p className="mt-2 text-sm leading-7 text-[#313934]">{coreMemory}</p>
+      <section className="mt-5 border-t border-[#f0d4dd] pt-5">
+        <h4 className="text-xs font-bold text-[#a84269]">{labels.examQuickNote}</h4>
+        <p className="mt-2 text-sm leading-7 text-[#3d3036]">{coreMemory}</p>
       </section>
       {item.collocations?.length ? (
-        <section className="mt-5 border-t border-[#e5ddd1] pt-5">
-          <h4 className="text-xs font-semibold text-[#856033]">{labels.collocationsLabel}</h4>
+        <section className="mt-5 border-t border-[#f0d4dd] pt-5">
+          <h4 className="text-xs font-bold text-[#a84269]">{labels.collocationsLabel}</h4>
           <div className="mt-3 flex flex-wrap gap-2">
             {item.collocations.slice(0, 4).map((collocation) => (
-              <span key={collocation} className="rounded-md bg-[#f4eee6] px-2 py-1 text-xs text-[#554f48]">
+              <span key={collocation} className="rounded-full bg-[#fff0f5] px-3 py-1 text-xs font-semibold text-[#8f365b]">
                 <RubyText text={collocation} items={[item]} enabled={showRuby} />
               </span>
             ))}
@@ -800,15 +996,15 @@ function VocabCard({
         </section>
       ) : null}
       {analysis ? (
-        <section className="mt-5 border-t border-[#e5ddd1] pt-5">
-          <h4 className="text-xs font-semibold text-[#856033]">{labels.analysis}</h4>
-          <p className="mt-2 text-sm leading-7 text-[#5f625b]">
+        <section className="mt-5 border-t border-[#f0d4dd] pt-5">
+          <h4 className="text-xs font-bold text-[#a84269]">{labels.analysis}</h4>
+          <p className="mt-2 text-sm leading-7 text-[#74646b]">
             <RubyText text={analysis} items={[item]} enabled={showRuby} />
           </p>
         </section>
       ) : null}
       {item.content_origin === 'ai_generated' && item.verification_status !== 'verified' ? (
-        <p className="mt-3 rounded-md border border-[#d5a95f] bg-[#fff4d8] p-3 text-xs leading-5 text-[#6f4a16]">
+        <p className="mt-3 rounded-2xl border border-[#f0cf80] bg-[#fff8df] p-3 text-xs leading-5 text-[#775516]">
           {labels.unverifiedContentNotice}
         </p>
       ) : null}
