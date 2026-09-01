@@ -1,39 +1,63 @@
 import { createServer } from 'node:http';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { dirname, extname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   analyzeWeakPoints,
   addDraftAnnotation,
   buildDraftRevisionContext,
+  buildDraftProcessingContext,
   buildStudyRecord,
+  confirmDraftForAgentProcessing,
   createDailyReviewPackDraft,
+  createDailyPractice,
+  createDailyPracticeFromDraft,
+  createListeningRecording,
   createListeningQuestion,
   createLearningCapture,
   createReviewPackDraft,
+  createReadingQuestion,
   createUser,
+  createWordbook,
   databasePath,
   deleteSession,
   deleteListeningQuestion,
+  deleteReadingQuestion,
+  deleteReviewPackDraft,
   getReviewPackDraft,
+  getDailyPractice,
   getStudyState,
   getStudyPlan,
   saveGeneratedStudyPlan,
   listReviewPackDrafts,
+  listDailyPractices,
   listListeningQuestions,
+  listListeningRecordings,
+  listReadingQuestions,
   listLearningCaptures,
+  listWordbooks,
   listeningAudioForUser,
+  listeningRecordingAudioForUser,
   loadReviewData,
   loginUser,
   reviewDataPath,
   saveAnswer,
   savePracticeState,
+  saveProgressEntry,
   saveSettings,
   saveStudyPlanProfile,
   updateStudyPlanTask,
   updateLearningCaptureStatus,
+  updateWordbook,
+  updateReviewPackDraft,
   userForToken,
 } from './storage.mjs';
 
 const port = Number(process.env.JLPT_API_PORT ?? 8791);
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const localOfficialRoot = join(rootDir, '.local', 'official-jlpt');
+const localMockRoot = join(rootDir, '.local', 'mock-exams');
 
 const server = createServer(async (req, res) => {
   try {
@@ -42,7 +66,45 @@ const server = createServer(async (req, res) => {
     const user = userForToken(token);
 
     if (req.method === 'GET' && url.pathname === '/api/health') {
-      return json(res, 200, { ok: true, databasePath: databasePath(), reviewDataPath: reviewDataPath() });
+      return json(res, 200, buildHealthPayload());
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/local-official-samples') {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local official samples are only available from localhost' });
+      }
+      return json(res, 200, readLocalOfficialSamples(url.searchParams.get('module')));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/local-mock-exams') {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local mock exams are only available from localhost' });
+      }
+      return readLocalMockExamManifest(res);
+    }
+
+    const localMockExamMatch = /^\/api\/local-mock-exams\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'GET' && localMockExamMatch) {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local mock exams are only available from localhost' });
+      }
+      return readLocalMockExam(res, localMockExamMatch[1]);
+    }
+
+    const localMockFileMatch = /^\/api\/local-mock-files\/(.+)$/.exec(url.pathname);
+    if (req.method === 'GET' && localMockFileMatch) {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local mock files are only available from localhost' });
+      }
+      return streamLocalFile(res, localMockRoot, localMockFileMatch[1], 'Local mock file not found');
+    }
+
+    const localOfficialMatch = /^\/api\/local-official-jlpt\/(.+)$/.exec(url.pathname);
+    if (req.method === 'GET' && localOfficialMatch) {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local official files are only available from localhost' });
+      }
+      return streamLocalOfficialFile(res, localOfficialMatch[1]);
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/register') {
@@ -78,6 +140,20 @@ const server = createServer(async (req, res) => {
       return json(res, 200, loadReviewData());
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/wordbooks') {
+      return json(res, 200, { wordbooks: listWordbooks(user.id) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/wordbooks') {
+      return json(res, 201, { wordbook: createWordbook(user.id, await readJson(req)) });
+    }
+
+    const wordbookMatch = /^\/api\/wordbooks\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'PATCH' && wordbookMatch) {
+      const wordbook = updateWordbook(user.id, decodeURIComponent(wordbookMatch[1]), await readJson(req));
+      return wordbook ? json(res, 200, { wordbook }) : json(res, 404, { error: 'Wordbook not found' });
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/study-state') {
       return json(res, 200, getStudyState(user.id));
     }
@@ -108,6 +184,11 @@ const server = createServer(async (req, res) => {
     if (req.method === 'PUT' && url.pathname === '/api/study-state/practice') {
       savePracticeState(user.id, await readJson(req));
       return json(res, 200, getStudyState(user.id));
+    }
+
+    const progressMatch = /^\/api\/study-state\/progress\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'PUT' && progressMatch) {
+      return json(res, 200, saveProgressEntry(user.id, decodeURIComponent(progressMatch[1]), await readJson(req)));
     }
 
     if (req.method === 'POST' && url.pathname === '/api/answers') {
@@ -161,6 +242,33 @@ const server = createServer(async (req, res) => {
       return createReadStream(audio.audio_path).pipe(res);
     }
 
+    const listeningRecordingsMatch = /^\/api\/listening-questions\/([^/]+)\/recordings$/.exec(url.pathname);
+    if (req.method === 'GET' && listeningRecordingsMatch) {
+      return json(res, 200, { recordings: listListeningRecordings(user.id, listeningRecordingsMatch[1]) });
+    }
+    if (req.method === 'POST' && listeningRecordingsMatch) {
+      const recording = createListeningRecording(user.id, listeningRecordingsMatch[1], await readJson(req, 36 * 1024 * 1024));
+      return json(res, 201, {
+        recording,
+        agentMessage: `请通过 jlpt_review MCP 调用 get_listening_recording_analysis_context 分析录音 ${recording.id}，再用 save_listening_recording_analysis 写回结果。`,
+      });
+    }
+
+    const listeningRecordingAudioMatch = /^\/api\/listening-recordings\/([^/]+)\/audio$/.exec(url.pathname);
+    if (req.method === 'GET' && listeningRecordingAudioMatch) {
+      const audio = listeningRecordingAudioForUser(user.id, listeningRecordingAudioMatch[1]);
+      if (!audio) {
+        return json(res, 404, { error: 'Listening recording audio not found' });
+      }
+      res.writeHead(200, {
+        'content-type': audio.audio_mime,
+        'content-length': audio.audio_size,
+        'cache-control': 'private, no-store',
+        'content-disposition': 'inline',
+      });
+      return createReadStream(audio.audio_path).pipe(res);
+    }
+
     const listeningQuestionMatch = /^\/api\/listening-questions\/([^/]+)$/.exec(url.pathname);
     if (req.method === 'DELETE' && listeningQuestionMatch) {
       if (!deleteListeningQuestion(user.id, listeningQuestionMatch[1])) {
@@ -169,8 +277,49 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { ok: true });
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/reading-questions') {
+      return json(res, 200, { questions: listReadingQuestions(user.id) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/reading-questions') {
+      const question = createReadingQuestion(user.id, await readJson(req));
+      return json(res, 201, { question });
+    }
+
+    const readingQuestionMatch = /^\/api\/reading-questions\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'DELETE' && readingQuestionMatch) {
+      if (!deleteReadingQuestion(user.id, readingQuestionMatch[1])) {
+        return json(res, 404, { error: 'Reading question not found' });
+      }
+      return json(res, 200, { ok: true });
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/drafts') {
       return json(res, 200, { drafts: listReviewPackDrafts(user.id) });
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/daily-practices') {
+      return json(res, 200, { practices: listDailyPractices(user.id) });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/daily-practices') {
+      const practice = createDailyPractice(user.id, await readJson(req));
+      return json(res, 201, { practice });
+    }
+
+    const draftPublishMatch = /^\/api\/drafts\/([^/]+)\/publish-daily-practice$/.exec(url.pathname);
+    if (req.method === 'POST' && draftPublishMatch) {
+      const practice = createDailyPracticeFromDraft(user.id, draftPublishMatch[1], await readJson(req));
+      return json(res, 201, { practice });
+    }
+
+    const dailyPracticeMatch = /^\/api\/daily-practices\/([^/]+)$/.exec(url.pathname);
+    if (req.method === 'GET' && dailyPracticeMatch) {
+      const practice = getDailyPractice(user.id, dailyPracticeMatch[1]);
+      if (!practice) {
+        return json(res, 404, { error: 'Daily practice not found' });
+      }
+      return json(res, 200, { practice });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/drafts') {
@@ -199,6 +348,24 @@ const server = createServer(async (req, res) => {
       return json(res, 200, context);
     }
 
+    const draftProcessingMatch = /^\/api\/drafts\/([^/]+)\/processing-context$/.exec(url.pathname);
+    if (req.method === 'GET' && draftProcessingMatch) {
+      const context = buildDraftProcessingContext(user.id, draftProcessingMatch[1]);
+      if (!context) {
+        return json(res, 404, { error: 'Draft not found' });
+      }
+      return json(res, 200, context);
+    }
+
+    const draftConfirmMatch = /^\/api\/drafts\/([^/]+)\/confirm$/.exec(url.pathname);
+    if (req.method === 'POST' && draftConfirmMatch) {
+      const context = confirmDraftForAgentProcessing(user.id, draftConfirmMatch[1], await readJson(req));
+      if (!context) {
+        return json(res, 404, { error: 'Draft not found' });
+      }
+      return json(res, 200, context);
+    }
+
     const draftMatch = /^\/api\/drafts\/([^/]+)$/.exec(url.pathname);
     if (req.method === 'GET' && draftMatch) {
       const draft = getReviewPackDraft(user.id, draftMatch[1]);
@@ -206,6 +373,21 @@ const server = createServer(async (req, res) => {
         return json(res, 404, { error: 'Draft not found' });
       }
       return json(res, 200, { draft });
+    }
+
+    if (req.method === 'PATCH' && draftMatch) {
+      const draft = updateReviewPackDraft(user.id, draftMatch[1], await readJson(req));
+      if (!draft) {
+        return json(res, 404, { error: 'Draft not found' });
+      }
+      return json(res, 200, { draft });
+    }
+
+    if (req.method === 'DELETE' && draftMatch) {
+      if (!deleteReviewPackDraft(user.id, draftMatch[1])) {
+        return json(res, 404, { error: 'Draft not found' });
+      }
+      return json(res, 200, { ok: true });
     }
 
     return json(res, 404, { error: 'Not found' });
@@ -219,6 +401,64 @@ server.listen(port, () => {
   console.log(`JLPT local backend listening on http://localhost:${port}`);
   console.log(`SQLite: ${databasePath()}`);
 });
+
+function buildHealthPayload() {
+  const projectConfigPath = join(rootDir, '.codex', 'config.toml');
+  const userConfigPath = join(homedir(), '.codex', 'config.toml');
+  const mcpServerPath = join(rootDir, 'server', 'mcp-server.mjs');
+  const mcpStatusPath = join(rootDir, '.local', 'mcp-status.json');
+  const projectConfig = readJsonFile(projectConfigPath);
+  const userConfig = readJsonFile(userConfigPath);
+  const mcpStatus = readJsonFile(mcpStatusPath);
+  const mcpServerReady = existsSync(mcpServerPath);
+  const projectConfigReady = configIncludesJlptMcp(projectConfig, rootDir);
+  const userConfigReady = configIncludesJlptMcp(userConfig, rootDir);
+  const codexConfigReady = projectConfigReady || userConfigReady;
+
+  return {
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    databaseReady: existsSync(databasePath()),
+    reviewDataReady: existsSync(reviewDataPath()),
+    mcp: {
+      serverReady: mcpServerReady,
+      codexConfigReady,
+      projectConfigReady,
+      userConfigReady,
+      configScope: projectConfigReady ? 'project' : userConfigReady ? 'user' : 'none',
+      commandReady: mcpServerReady && codexConfigReady,
+      lastSeenAt: typeof mcpStatus?.lastSeenAt === 'string' ? mcpStatus.lastSeenAt : null,
+      lastMethod: typeof mcpStatus?.lastMethod === 'string' ? mcpStatus.lastMethod : null,
+      lastTool: typeof mcpStatus?.lastTool === 'string' ? mcpStatus.lastTool : null,
+    },
+  };
+}
+
+function readJsonFile(filePath) {
+  if (!existsSync(filePath)) {
+    return null;
+  }
+  const raw = readFileSync(filePath, 'utf8');
+  if (filePath.endsWith('.json')) {
+    return JSON.parse(raw);
+  }
+  return raw;
+}
+
+function configIncludesJlptMcp(config, expectedCwd) {
+  if (typeof config !== 'string') {
+    return false;
+  }
+  const match = /\[mcp_servers\.jlpt_review\]([\s\S]*?)(?:\n\[|$)/.exec(config);
+  if (!match) {
+    return false;
+  }
+  const section = match[1];
+  const cwdMatch = /cwd\s*=\s*"([^"]+)"/.exec(section);
+  return /command\s*=\s*"node"/.test(section)
+    && /server\/mcp-server\.mjs/.test(section)
+    && (!cwdMatch || resolve(cwdMatch[1]) === expectedCwd);
+}
 
 function bearerToken(req) {
   const header = req.headers.authorization ?? '';
@@ -248,4 +488,75 @@ function json(res, status, body) {
     'cache-control': 'no-store',
   });
   res.end(JSON.stringify(body));
+}
+
+function readLocalOfficialSamples(module) {
+  const samplesPath = join(localOfficialRoot, 'sample2018', 'n1', 'official-samples.json');
+  if (!existsSync(samplesPath)) {
+    return { samples: [] };
+  }
+  const payload = JSON.parse(readFileSync(samplesPath, 'utf8'));
+  const samples = Array.isArray(payload.samples) ? payload.samples : [];
+  return {
+    samples: module ? samples.filter((sample) => sample.module === module) : samples,
+  };
+}
+
+function streamLocalOfficialFile(res, relativePath) {
+  return streamLocalFile(res, localOfficialRoot, relativePath, 'Local official file not found');
+}
+
+function readLocalMockExam(res, examId) {
+  const decodedId = decodeURIComponent(examId);
+  const examPath = resolve(localMockRoot, decodedId, 'exam.json');
+  if (!examPath.startsWith(`${localMockRoot}/`) || !existsSync(examPath)) {
+    return json(res, 404, { error: 'Local mock exam not found' });
+  }
+  return json(res, 200, JSON.parse(readFileSync(examPath, 'utf8')));
+}
+
+function readLocalMockExamManifest(res) {
+  const manifestPath = join(localMockRoot, 'manifest.json');
+  if (!existsSync(manifestPath)) {
+    return json(res, 200, { exams: [] });
+  }
+  return json(res, 200, JSON.parse(readFileSync(manifestPath, 'utf8')));
+}
+
+function streamLocalFile(res, root, relativePath, notFoundMessage) {
+  const decoded = decodeURIComponent(relativePath);
+  const filePath = resolve(root, decoded);
+  if (!filePath.startsWith(`${root}/`) || !existsSync(filePath)) {
+    return json(res, 404, { error: notFoundMessage });
+  }
+  const stat = statSync(filePath);
+  if (!stat.isFile()) {
+    return json(res, 404, { error: notFoundMessage });
+  }
+  res.writeHead(200, {
+    'content-type': contentTypeFor(filePath),
+    'content-length': stat.size,
+    'cache-control': 'private, no-store',
+    'content-disposition': 'inline',
+  });
+  return createReadStream(filePath).pipe(res);
+}
+
+function contentTypeFor(filePath) {
+  return ({
+    '.pdf': 'application/pdf',
+    '.mp3': 'audio/mpeg',
+    '.m4a': 'audio/mp4',
+    '.wav': 'audio/wav',
+    '.json': 'application/json; charset=utf-8',
+    '.txt': 'text/plain; charset=utf-8',
+  })[extname(filePath).toLowerCase()] ?? 'application/octet-stream';
+}
+
+function isLoopbackRequest(req) {
+  const rawHost = String(req.headers.host ?? '');
+  const host = rawHost.startsWith('[')
+    ? rawHost.slice(1, rawHost.indexOf(']'))
+    : rawHost.split(':')[0];
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }

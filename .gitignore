@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -32,9 +32,11 @@ yarn-error.log*
 # deployment and generated files
 .vercel
 next-env.d.ts
-/dist/
+dist/
 *.tsbuildinfo
 /.wrangler/
 /outputs/
 /work/
 /.local/
+/.codex/config.toml
+.idea/

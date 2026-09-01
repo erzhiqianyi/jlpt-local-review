@@ -8,10 +8,17 @@ export function buildQuestions(items: VocabItem[], locale: Locale): Question[] {
 
   items.forEach((item, index) => {
     const allowedKinds = new Set(questionKindsForItem(item));
-    const example = item.examples?.[0]?.ja;
+    if (item.deck === 'grammar_expression' && item.practice_questions?.length) {
+      item.practice_questions.forEach((seed, seedIndex) => {
+        if (seed.kind && seed.kind !== 'grammar') return;
+        questions.push(buildSeededGrammarQuestion(item, seed, seedIndex, locale, items));
+      });
+      return;
+    }
+
     const sentence = questionSentence(item);
     const kanaSentence = item.reading ? questionSentence(item, item.reading) : sentence;
-    const context = example ?? sentence;
+    const context = questionContext(item) ?? sentence;
 
     if (allowedKinds.has('grammar')) {
       questions.push(buildGrammarQuestion(item, items, index, locale));
@@ -93,19 +100,19 @@ function questionKindsForItem(item: VocabItem): QuestionKind[] {
     if (hasContext) {
       inferredKinds.push('grammar');
     }
-    if (item.paraphrase_ja || item.meaning_ja) {
+    if (hasContext && (item.paraphrase_ja || item.meaning_ja)) {
       inferredKinds.push('meaning');
     }
   } else {
     if (hasContext) {
       inferredKinds.push('moji_goi');
     }
-    if (item.paraphrase_ja || item.meaning_ja) {
+    if (hasContext && (item.paraphrase_ja || item.meaning_ja)) {
       inferredKinds.push('meaning');
     }
     if (hasContext && item.reading && containsKanji(item.original) && questionPool(item, 'kanji_to_kana', [item]).length >= 3) {
       inferredKinds.push('kanji_to_kana');
-      if (['N2', 'N3', 'N4', 'N5'].includes(item.jlpt_level ?? '')) {
+      if (['N2', 'N3', 'N4', 'N5'].includes(item.jlpt_level ?? '') && hasControlledDistractors(item, 'kana_to_kanji')) {
         inferredKinds.push('kana_to_kanji');
       }
     }
@@ -115,18 +122,36 @@ function questionKindsForItem(item: VocabItem): QuestionKind[] {
   return unique([...inferredKinds, ...listedKinds]).filter((kind) => {
     if (kind === 'grammar') return isGrammarItem && hasContext;
     if (kind === 'moji_goi') return hasContext;
-    if (kind === 'meaning') return Boolean(item.paraphrase_ja || item.meaning_ja);
-    if (kind === 'kana_to_kanji') return hasContext && Boolean(item.reading) && containsKanji(item.original) && item.jlpt_level !== 'N1';
+    if (kind === 'meaning') return hasContext && Boolean(item.paraphrase_ja || item.meaning_ja);
+    if (kind === 'kana_to_kanji') return hasContext && Boolean(item.reading) && containsKanji(item.original) && item.jlpt_level !== 'N1' && hasControlledDistractors(item, 'kana_to_kanji');
     if (kind === 'kanji_to_kana') return hasContext && Boolean(item.reading) && containsKanji(item.original) && questionPool(item, 'kanji_to_kana', [item]).length >= 3;
     return false;
   });
 }
 
+function hasControlledDistractors(item: VocabItem, kind: QuestionKind) {
+  return unique((item.question_distractors?.[kind] ?? []).filter(Boolean)).length >= 3;
+}
+
 function hasUsableQuestionContext(item: VocabItem) {
-  return Boolean(
-    item.examples?.some((candidate) => candidate.ja.includes(item.original))
-    || item.collocations?.some((candidate) => candidate.includes(item.original)),
-  );
+  return Boolean(questionContext(item));
+}
+
+function questionContext(item: VocabItem) {
+  const examples = item.examples?.map((candidate) => candidate.ja) ?? [];
+  return [...examples, ...stringCollocations(item.collocations)].find((candidate) => isUsableQuestionContext(candidate, item.original));
+}
+
+function isUsableQuestionContext(candidate: string | undefined, target: string) {
+  if (!candidate || !target || !candidate.includes(target)) {
+    return false;
+  }
+  if (/教材(?:の第\d+週)?では[「『].+[」』]という表現を学んだ/u.test(candidate)) {
+    return false;
+  }
+  const prompt = candidate.replace(target, '（　）').trim();
+  const surroundingText = candidate.replace(target, '').trim();
+  return prompt !== '（　）' && surroundingText.length > 0;
 }
 
 function containsKanji(value: string) {
@@ -201,9 +226,8 @@ export function deckLabelsFor(locale: Locale): Record<Deck | 'all', string> {
 
 function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
   const labels = translations[locale];
-  const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
-  const context = example ?? questionSentence(item);
-  const prompt = example ? example.replace(item.original, '（　）') : questionSentence(item, '（　）');
+  const context = questionContext(item) ?? questionSentence(item);
+  const prompt = context.replace(item.original, '（　）');
   const choiceList = choices(item.original, questionPool(item, 'grammar', allItems), index + 5, fallbackChoicesForKind(item, 'grammar'));
 
   return {
@@ -219,10 +243,52 @@ function buildGrammarQuestion(item: VocabItem, allItems: VocabItem[], index: num
   };
 }
 
+function buildSeededGrammarQuestion(
+  item: VocabItem,
+  seed: NonNullable<VocabItem['practice_questions']>[number],
+  index: number,
+  locale: Locale,
+  allItems: VocabItem[],
+): Question {
+  const labels = translations[locale];
+  const prompt = seed.prompt ?? questionSentence(item).replace(item.original, '（　）');
+  const answer = seed.answer ?? item.original;
+  const choiceList = choices(answer, seed.choices ?? item.question_distractors?.grammar ?? [], index, grammarFallbackChoices(item));
+  const context = [seed.instruction, prompt].filter(Boolean).join(' ');
+
+  return {
+    id: seed.id ?? `${item.id}-grammar-seed-${index + 1}`,
+    itemId: item.id,
+    kind: 'grammar',
+    title: labels.grammarTitle,
+    instruction: seed.instruction ?? labels.grammarInstruction,
+    prompt,
+    choices: choiceList,
+    answer,
+    translationZh: seed.translation_zh,
+    context,
+    correctReason: seededGrammarCorrectReason(item, seed, answer, context, locale),
+    memoryPoint: memoryPointFor(item, locale),
+    choiceAnalysis: choiceList.map((choice) => ({
+      choice,
+      correct: choice === answer,
+      explanation: choice === answer
+        ? seededGrammarCorrectChoice(seed, locale)
+        : grammarDistractorExplanation(
+          choice,
+          item,
+          locale,
+          allItems,
+          context,
+          seed.tested_expression ?? seed.form_analysis_zh ?? '',
+        ),
+    })),
+  };
+}
+
 function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: number, locale: Locale): Question {
   const labels = translations[locale];
-  const example = item.examples?.find((candidate) => candidate.ja.includes(item.original))?.ja;
-  const context = example ?? questionSentence(item);
+  const context = questionContext(item) ?? questionSentence(item);
   const prompt = context.replace(item.original, '（　）');
   const choiceList = choices(item.original, questionPool(item, 'moji_goi', allItems), index + 4, fallbackChoicesForKind(item, 'moji_goi'));
 
@@ -239,6 +305,30 @@ function buildMojiGoiQuestion(item: VocabItem, allItems: VocabItem[], index: num
   };
 }
 
+function seededGrammarCorrectReason(
+  item: VocabItem,
+  seed: NonNullable<VocabItem['practice_questions']>[number],
+  answer: string,
+  context: string,
+  locale: Locale,
+) {
+  if (locale === 'ja') {
+    return seed.explanation_zh
+      ? `正解は「${answer}」です。${seed.form_analysis_zh ?? ''}`
+      : `「${context}」では「${answer}」が文の接続と意味に合います。`;
+  }
+  if (locale === 'en') {
+    return `The correct answer is “${answer}.” ${seed.form_analysis_zh ?? ''} ${seed.explanation_zh ?? itemAnalysis(item, locale)}`.trim();
+  }
+  return `正确答案是「${answer}」。${[seed.form_analysis_zh, seed.explanation_zh].filter(Boolean).join(' ')}`;
+}
+
+function seededGrammarCorrectChoice(seed: NonNullable<VocabItem['practice_questions']>[number], locale: Locale) {
+  if (locale === 'ja') return seed.form_analysis_zh ? `接続条件に合う正解です。${seed.form_analysis_zh}` : '接続条件と意味に合う正解です。';
+  if (locale === 'en') return seed.form_analysis_zh ? `This matches the required form. ${seed.form_analysis_zh}` : 'This matches both the form and meaning.';
+  return seed.form_analysis_zh ? `这个选项符合接续要求。${seed.form_analysis_zh}` : '这个选项同时符合接续和语义。';
+}
+
 function buildQuestionExplanation(
   item: VocabItem,
   choiceList: string[],
@@ -246,10 +336,11 @@ function buildQuestionExplanation(
   allItems: VocabItem[],
   locale: Locale,
   context: string,
-): Pick<Question, 'context' | 'correctReason' | 'memoryPoint' | 'choiceAnalysis'> {
+): Pick<Question, 'context' | 'translationZh' | 'correctReason' | 'memoryPoint' | 'choiceAnalysis'> {
   const answer = answerForKind(item, kind, locale);
   return {
     context,
+    translationZh: translationForContext(item, context),
     correctReason: correctReasonFor(item, kind, locale, context),
     memoryPoint: memoryPointFor(item, locale),
     choiceAnalysis: choiceList.map((choice) => ({
@@ -258,6 +349,13 @@ function buildQuestionExplanation(
       explanation: choiceExplanationFor(choice, choice === answer, item, kind, allItems, locale),
     })),
   };
+}
+
+function translationForContext(item: VocabItem, context: string) {
+  const normalizedContext = context.replace(/\s+/gu, '').replace(/[，、]/gu, '、');
+  return item.examples?.find((example) => (
+    example.zh && example.ja.replace(/\s+/gu, '').replace(/[，、]/gu, '、') === normalizedContext
+  ))?.zh;
 }
 
 function answerForKind(item: VocabItem, kind: QuestionKind, locale: Locale) {
@@ -273,7 +371,7 @@ function answerForKind(item: VocabItem, kind: QuestionKind, locale: Locale) {
 function correctReasonFor(item: VocabItem, kind: QuestionKind, locale: Locale, context: string) {
   const meaning = itemMeaning(item, locale);
   const reading = item.reading ?? '';
-  const collocation = item.collocations?.find((value) => value.includes(item.original)) ?? context;
+  const collocation = stringCollocations(item.collocations).find((value) => value.includes(item.original)) ?? context;
   const isProperNameReading = kind === 'kanji_to_kana' && (item.deck === 'name_reading' || item.type === 'proper_name');
 
   if (isProperNameReading) {
@@ -374,7 +472,7 @@ function choiceExplanationFor(
   }
 
   const candidateMeaning = itemMeaning(candidate, locale);
-  const candidateCollocation = candidate.collocations?.find((value) => value.includes(candidate.original));
+  const candidateCollocation = stringCollocations(candidate.collocations).find((value) => value.includes(candidate.original));
 
   if (locale === 'ja') {
     if (kind === 'kana_to_kanji') return `「${candidate.original}」の読みは「${candidate.reading ?? '不明'}」で、「${target.reading}」の表記ではありません。`;
@@ -396,6 +494,114 @@ function choiceExplanationFor(
   return `「${candidate.original}」表示“${candidateMeaning}”${candidateCollocation ? `，常见搭配是「${candidateCollocation}」` : ''}，与本句需要表达的意思不符。`;
 }
 
+function stringCollocations(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => typeof entry === 'string' ? entry : isRecord(entry) ? entry.text : undefined)
+    .map((entry) => typeof entry === 'string' ? entry.trim() : '')
+    .filter(Boolean);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function grammarDistractorExplanation(
+  choice: string,
+  target: VocabItem,
+  locale: Locale,
+  allItems: VocabItem[],
+  context: string,
+  testedExpression: string,
+) {
+  const normalizedChoice = normalizeGrammarExpression(choice);
+  const tailoredExplanation = monoNaraDistractorExplanation(normalizedChoice, locale, context, testedExpression);
+  if (normalizeGrammarExpression(target.original) === 'ものなら' && tailoredExplanation) {
+    return tailoredExplanation;
+  }
+
+  const comparison = [...(target.comparison_notes ?? []), ...(target.comparisons ?? [])]
+    .find((entry) => normalizeGrammarExpression(entry.target ?? '') === normalizedChoice);
+  const candidate = allItems.find((item) => normalizeGrammarExpression(item.original) === normalizedChoice);
+  const form = candidate?.grammar_forms?.[0]?.form;
+  const usage = candidate?.meaning_zh || candidate?.core_memory;
+
+  if (locale === 'ja') {
+    const normalUse = candidate
+      ? `「${choice}」は通常${form ? `「${form}」の形で、` : ''}${candidate.meaning_ja ?? '別の文法機能'}を表します。`
+      : `「${choice}」自体は別の接続・意味で使う文法表現です。`;
+    return `${normalUse}この文が求める「${target.original}」の接続と意味には合いません。`;
+  }
+  if (locale === 'en') {
+    const normalUse = candidate
+      ? `“${choice}” is normally used${form ? ` in the pattern “${form}”` : ''} to express a different grammatical meaning.`
+      : `“${choice}” is a valid grammar expression in a different form and context.`;
+    return `${normalUse} It does not match the connection and meaning required here by “${target.original}.”`;
+  }
+
+  if (candidate && usage) {
+    return `「${choice}」通常${form ? `接「${form}」` : '用于其他接续'}，表示“${firstSentence(usage)}”。本题需要「${target.original}」所表达的“${firstSentence(target.meaning_zh)}”，因此不能使用。`;
+  }
+  if (comparison?.difference_zh) {
+    return `「${choice}」本身可用于其他接续和语义场景。${comparison.difference_zh}`;
+  }
+  return `「${choice}」本身是语法表达，但它有自己的接续和使用场景；本题需要「${target.original}」所表达的“${firstSentence(target.meaning_zh)}”，因此不能使用。`;
+}
+
+function normalizeGrammarExpression(value: string) {
+  return value.replace(/^[〜～~]/u, '').replace(/^た(?=が最後$)/u, '');
+}
+
+function firstSentence(value: string) {
+  return value.split(/[。\n]/u)[0].replace(/[；;]$/u, '');
+}
+
+function monoNaraDistractorExplanation(choice: string, locale: Locale, context: string, testedExpression: string) {
+  const potentialFormExplanations: Record<string, Record<Locale, string>> = {
+    が最後: {
+      'zh-CN': '「～たが最後」通常接动词た形，表示“一旦做了，之后就会陷入难以挽回的结果”（例：秘密を知られたが最後、逃げられない）。本题是「行ける＋ものなら」的可能条件，前项不是た形，后项也不是不可挽回的结果，所以不能用「が最後」。',
+      ja: '「～たが最後」は動詞のた形に付き、一度そうなれば取り返しのつかない結果になる場面で使います。この文は「行ける」という可能条件と話し手の意志を表しており、た形接続でも不可逆的な結果でもないため使えません。',
+      en: '“〜たが最後” follows a verb in the past form and means that once something happens, an irreversible result follows. Here “行ける” sets a possible condition and the second clause states an intention, so neither the form nor the function fits.',
+    },
+    が早いか: {
+      'zh-CN': '「～が早いか」通常接动词辞书形或た形，叙述前项刚发生、后项就紧接着发生的两个实际动作（例：ベルが鳴るが早いか、学生たちは飛び出した）。本题是在假设“如果能去”并表达准备的意志，不是叙述两个已经发生的瞬间动作，所以不能用。',
+      ja: '「～が早いか」は動詞の辞書形・た形に付き、前の動作が起こるとほぼ同時に次の実際の動作が起こったことを述べます。この文は「行けるなら」という可能条件と準備する意志を表すため使えません。',
+      en: '“〜が早いか” follows a dictionary or past verb form and narrates two actual actions occurring almost simultaneously. This sentence instead sets the hypothetical condition “if I can go” and states an intention, so it does not fit.',
+    },
+    とたんに: {
+      'zh-CN': '「～たとたん（に）」通常接动词た形，表示前项刚完成就突然发生后项，后项常带意外性（例：外に出たとたん、雨が降り出した）。本题前面是可能形「行ける」，不是「行けた」；后项也是说话人的准备意志，不是突然发生的事件，所以不能用。',
+      ja: '「～たとたん（に）」は動詞のた形に付き、前の動作が完了した直後に予想外の出来事が起こる場面で使います。ここは可能形「行ける」で、後件も突然の出来事ではなく話し手の意志なので使えません。',
+      en: '“〜たとたん（に）” follows a verb in the past form and marks an often unexpected event immediately after the first action. Here the form is the potential “行ける,” and the second clause is the speaker’s intention rather than a sudden event.',
+    },
+  };
+  if (testedExpression.includes('可能形') || context.includes('行ける')) {
+    return potentialFormExplanations[choice]?.[locale];
+  }
+
+  if (!testedExpression.includes('意向形') && !context.includes('言おう')) {
+    return undefined;
+  }
+
+  const volitionalFormExplanations: Record<string, Record<Locale, string>> = {
+    が最後: {
+      'zh-CN': '「～たが最後」通常接动词た形，表示“一旦做了，之后就会陷入难以挽回的结果”（例：秘密を知られたが最後、逃げられない）。本题前面是意向形「言おう」，不是た形「言った」，所以即使后项同样是不好的结果，接续也不成立；这里应使用「意向形＋ものなら」。',
+      ja: '「～たが最後」は動詞のた形に付き、一度そうなれば取り返しのつかない結果になる場面で使います。後件の意味は近くても、ここは意向形「言おう」であって、た形「言った」ではないため接続できません。',
+      en: '“〜たが最後” follows a verb in the past form and marks an irreversible result. Although the second clause has a similar negative consequence, the preceding form is the volitional “言おう,” not the past “言った,” so the connection is invalid.',
+    },
+    が早いか: {
+      'zh-CN': '「～が早いか」通常接动词辞书形或た形，叙述前项刚发生、后项就紧接着发生的两个实际动作（例：ベルが鳴るが早いか、学生たちは飛び出した）。本题前面是意向形「言おう」，后项是假设会出现的坏结果，不是在叙述两个已发生的瞬间动作，所以不能用。',
+      ja: '「～が早いか」は動詞の辞書形・た形に付き、前の動作とほぼ同時に次の実際の動作が起こったことを述べます。ここは意向形「言おう」と仮定上の悪い結果なので使えません。',
+      en: '“〜が早いか” follows a dictionary or past form and narrates two actual actions occurring almost simultaneously. Here “言おう” is volitional and the second clause is a hypothetical bad result, so it does not fit.',
+    },
+    とたんに: {
+      'zh-CN': '「～たとたん（に）」通常接动词た形，表示前项刚完成就突然发生后项，后项常带意外性（例：外に出たとたん、雨が降り出した）。本题前面是意向形「言おう」，不是た形「言った」，而且整句是在警告假设后果，不是在叙述已经突然发生的事件，所以不能用。',
+      ja: '「～たとたん（に）」は動詞のた形に付き、前の動作の直後に予想外の出来事が起こる場面で使います。ここは意向形「言おう」で、実際に起きた突然の出来事を述べる文でもないため使えません。',
+      en: '“〜たとたん（に）” follows a verb in the past form and marks an often unexpected event immediately afterward. Here “言おう” is volitional, and the sentence warns of a hypothetical consequence rather than narrating a sudden event.',
+    },
+  };
+  return volitionalFormExplanations[choice]?.[locale];
+}
+
 function itemForChoice(choice: string, kind: QuestionKind, items: VocabItem[]) {
   if (kind === 'meaning') {
     return items.find((item) => item.paraphrase_ja === choice);
@@ -415,7 +621,11 @@ function memoryPointFor(item: VocabItem, locale: Locale) {
 }
 
 function choices(answer: string, pool: string[], salt: number, fallback: string[] = []) {
-  const distractors = unique([...pool, ...fallback].filter((item) => item && item !== answer)).slice(0, 12);
+  const preferred = unique(pool.filter((item) => item && item !== answer));
+  const distractors = (preferred.length >= 3
+    ? preferred
+    : unique([...preferred, ...fallback].filter((item) => item && item !== answer)))
+    .slice(0, 12);
   const selected = [answer, ...rotate(distractors, salt).slice(0, 3)];
   return rotate(unique(selected), salt % 4);
 }
@@ -424,7 +634,10 @@ function fallbackChoicesForKind(item: VocabItem, kind: QuestionKind) {
   if (kind === 'kanji_to_kana') {
     return readingDistractors(item.reading ?? '');
   }
-  if (kind === 'kana_to_kanji' || kind === 'moji_goi' || kind === 'grammar') {
+  if (kind === 'grammar') {
+    return grammarFallbackChoices(item);
+  }
+  if (kind === 'kana_to_kanji' || kind === 'moji_goi') {
     return ['測定', '認定', '養成', '豊富', '概観', '経過', '辛抱', '目次'].filter((choice) => choice !== item.original);
   }
   return [
@@ -435,6 +648,25 @@ function fallbackChoicesForKind(item: VocabItem, kind: QuestionKind) {
     '時間が過ぎ、物事がある段階まで進むこと。',
     '能力や人材を時間をかけて育てること。',
   ].filter((choice) => choice !== item.paraphrase_ja && choice !== item.meaning_ja);
+}
+
+function grammarFallbackChoices(item: VocabItem) {
+  return [
+    'とたんに',
+    'と思うと',
+    '以来',
+    'が早いか',
+    'や',
+    'や否や',
+    'なり',
+    'そばから',
+    'からというもの',
+    'にあって',
+    'にあっても',
+    'たびに',
+    'たが最後',
+    'ものなら',
+  ].filter((choice) => choice !== item.original && choice !== item.grammar_point);
 }
 
 function rotate<T>(items: T[], count: number) {
@@ -455,7 +687,7 @@ function shortMeaning(meaning: string) {
 }
 
 function questionSentence(item: VocabItem, replacement = item.original) {
-  const example = item.examples?.[0]?.ja;
+  const example = questionContext(item);
   if (example) {
     return example.replace(item.original, replacement);
   }

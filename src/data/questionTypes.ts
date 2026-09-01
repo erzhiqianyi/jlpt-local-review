@@ -1,6 +1,6 @@
-import type { Locale } from '../types';
+import type { Locale, QuestionTypeSection } from '../types';
 
-export type QuestionTypeSection = 'vocabulary' | 'grammar' | 'reading' | 'listening';
+export type { QuestionTypeSection } from '../types';
 
 export type OfficialQuestionType = {
   id: string;

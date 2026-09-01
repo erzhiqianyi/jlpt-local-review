@@ -117,13 +117,18 @@ Recommended values:
 
 ## Optional But Useful Fields
 
+`original` is the canonical dictionary form or standard spelling used throughout the app. Preserve a learner-provided inflected or nonstandard surface form in the relevant source sentence or source metadata instead of adding a separate `normalized` attribute.
+
 - `reading`
 - `meaning_ja` for the Japanese dictionary-style definition shown on the reading page
 - `paraphrase_ja` for the Japanese answer used by `meaning` / `言い換え類義`
+- Keep those two fields semantically distinct: `meaning_ja` explains the entry, while `paraphrase_ja` is a shorter replacement that still fits the question sentence. An exact duplicate is invalid for a `meaning` question.
 - `ruby_terms`
 - `localizations`
 - `jlpt_level`
 - `part_of_speech`
+  - Use a grammatical category such as `名詞`, `名詞句`, `動詞`, `動詞句`, `イ形容詞`, `イ形容詞句`, `ナ形容詞`, or `名詞・サ変動詞`.
+  - Do not store generic content labels such as `語句`, `词语`, `word`, or `expression` as the part of speech.
 - `collocations`
 - `collocation_ruby`
 - `examples`
@@ -132,6 +137,28 @@ Recommended values:
 - `tags`
 - `question_kinds`
 - `question_distractors`
+
+### Grammar Register Fields
+
+Every `grammar_expression` item should include:
+
+- `usage_register`: one of `written`, `spoken`, `both`, or `formal`.
+- `usage_register_zh`: a concise Chinese explanation of where the form sounds natural. If variants differ, explain each variant separately.
+- `everyday_alternatives`: natural conversational equivalents as `{ "ja": "...", "zh": "..." }` objects. This is especially important for written or formal grammar.
+- `exam_register_zh`: an optional exam-focused note kept separate from real-world register.
+- `practice_questions[].translation_zh`: the complete Chinese translation of the sentence with the correct answer inserted. It is required for practice analysis and must not be replaced by a partial paraphrase or answer rationale.
+
+Example:
+
+```json
+{
+  "usage_register": "both",
+  "usage_register_zh": "「〜たと思うと」偏叙述和书面描写；「〜たと思ったら」在日常口语中更常见。",
+  "everyday_alternatives": [
+    { "ja": "Vたらすぐ", "zh": "口语：一……就马上……" }
+  ]
+}
+```
 
 ## Furigana Fields
 

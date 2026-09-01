@@ -1,8 +1,9 @@
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   officialModuleMeta,
-  sampleById,
   samplesForModule,
+  type OfficialModuleSample,
   type OfficialSampleModule,
 } from '../../data/officialModuleSamples';
 import type { Locale } from '../../types';
@@ -10,21 +11,33 @@ import type { Locale } from '../../types';
 const OFFICIAL_TYPES_URL = 'https://www.jlpt.jp/e/guideline/testsections.html';
 const OFFICIAL_PURPOSES_URL = 'https://www.jlpt.jp/e/guideline/pdf/n1_e_revised.pdf';
 const OFFICIAL_SAMPLES_URL = 'https://www.jlpt.jp/e/samples/sampleindex.html';
+const SAMPLE_INDEX_PAGE_SIZE = 8;
+const localOfficialNotice: Record<Locale, string> = {
+  'zh-CN': '已载入本机 .local 官方题 demo；这些资源仅供个人本地备考使用。',
+  ja: 'ローカルの .local 公式問題デモを読み込みました。個人学習用です。',
+  en: 'Loaded local .local official-question demo resources for personal study.',
+};
+const localOfficialBadge: Record<Locale, string> = {
+  'zh-CN': '本地官方题 · 不进 Git',
+  ja: 'ローカル公式問題・Git対象外',
+  en: 'Local official item · not in Git',
+};
 
 type SharedProps = {
   module: OfficialSampleModule;
   labels: Record<string, string>;
   locale: Locale;
+  token?: string;
 };
 
-export function OfficialModuleSamples({ module, sampleId, labels, locale, onOpen, onBack }: SharedProps & {
+export function OfficialModuleSamples({ module, sampleId, labels, locale, token, onOpen, onBack }: SharedProps & {
   sampleId?: string;
   onOpen: (id: string) => void;
   onBack: () => void;
 }) {
   return sampleId
-    ? <OfficialSampleDetail module={module} sampleId={sampleId} labels={labels} locale={locale} onBack={onBack} />
-    : <OfficialSampleIndex module={module} labels={labels} locale={locale} onOpen={onOpen} />;
+    ? <OfficialSampleDetail module={module} sampleId={sampleId} labels={labels} locale={locale} token={token} onBack={onBack} />
+    : <OfficialSampleIndex module={module} labels={labels} locale={locale} token={token} onOpen={onOpen} />;
 }
 
 export function OfficialSampleEntry({ module, labels, locale, onOpen }: SharedProps & { onOpen: () => void }) {
@@ -47,7 +60,18 @@ export function OfficialSampleEntry({ module, labels, locale, onOpen }: SharedPr
 
 function OfficialSampleIndex({ module, labels, locale, onOpen }: SharedProps & { onOpen: (id: string) => void }) {
   const meta = officialModuleMeta[module];
-  const samples = samplesForModule(module);
+  const localSamples = useLocalOfficialSamples(module);
+  const samples = [...localSamples, ...samplesForModule(module)];
+  const [pageIndex, setPageIndex] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(samples.length / SAMPLE_INDEX_PAGE_SIZE));
+  const currentPage = Math.min(pageIndex, pageCount - 1);
+  const pageStart = currentPage * SAMPLE_INDEX_PAGE_SIZE;
+  const pageItems = samples.slice(pageStart, pageStart + SAMPLE_INDEX_PAGE_SIZE);
+  const pageEnd = pageStart + pageItems.length;
+
+  useEffect(() => {
+    setPageIndex((index) => Math.min(index, pageCount - 1));
+  }, [pageCount]);
 
   return (
     <section className="min-w-0">
@@ -55,6 +79,7 @@ function OfficialSampleIndex({ module, labels, locale, onOpen }: SharedProps & {
         <p className="text-sm font-semibold text-[#7d6032]">JLPT N1 · {labels.sampleOriginalBadge}</p>
         <h1 className="mt-1 text-2xl font-semibold text-[#27312c]">{meta.title[locale]}</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[#68716b]">{meta.body[locale]}</p>
+        {localSamples.length ? <p className="mt-2 max-w-3xl text-xs leading-5 text-[#7a5a25]">{localOfficialNotice[locale]}</p> : null}
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#53605a]">
           <span><strong className="text-[#27312c]">{meta.officialTypeCount}</strong> {labels.sampleOfficialTypeCount}</span>
@@ -63,20 +88,49 @@ function OfficialSampleIndex({ module, labels, locale, onOpen }: SharedProps & {
         </div>
       </header>
 
-      <div className="divide-y divide-[#dfe5dc] border-b border-[#dfe5dc]">
-        {samples.map((sample) => (
-          <button key={sample.id} type="button" onClick={() => onOpen(sample.id)} className="group flex min-h-28 w-full items-center gap-4 py-4 text-left hover:bg-[#f7f9f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31564c]">
-            <span className="min-w-0 flex-1">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-base font-semibold text-[#27312c]">{sample.title[locale]}</span>
-                <span className="text-xs font-semibold text-[#7d6032]">{sample.officialName}</span>
-              </span>
-              <span className="mt-1 block text-sm leading-6 text-[#68716b]">{sample.summary[locale]}</span>
-              <span className="mt-2 block text-xs text-[#7a807b]">{labels.sampleEstimatedMinutes.replace('{minutes}', String(sample.estimatedMinutes))}</span>
-            </span>
-            <span aria-hidden="true" className="shrink-0 text-xl text-[#7b8780] transition-transform group-hover:translate-x-1">→</span>
-          </button>
-        ))}
+      <div className="overflow-x-auto border-b border-[#dfe5dc] md:overflow-x-visible">
+        <table className="w-full min-w-[560px] table-fixed border-collapse text-left text-sm md:min-w-0">
+          <thead className="bg-[#f3f6f1] text-xs font-semibold text-[#5b665f]">
+            <tr>
+              <th className="w-[44%] px-4 py-3">{labels.questions}</th>
+              <th className="w-[26%] px-3 py-3">{labels.questionTypeQuestionForm}</th>
+              <th className="w-[22%] px-3 py-3">{labels.entryColumnCreated}</th>
+              <th className="w-[8%] px-4 py-3 text-right"><span className="sr-only">{labels.entryOpen}</span></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#dfe5dc]">
+            {pageItems.map((sample) => (
+              <tr key={sample.id} className="bg-white hover:bg-[#f7f9f5]">
+                <td className="px-4 py-3 align-top">
+                  <button type="button" onClick={() => onOpen(sample.id)} className="block min-w-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#31564c]">
+                    <span className="block break-words text-base font-semibold text-[#27312c]">{sample.title[locale]}</span>
+                    <span className="mt-1 block break-words text-xs font-semibold text-[#7d6032]">{sample.officialName}</span>
+                    {sample.sourceKind === 'local_official' ? <span className="mt-1 block text-xs text-[#7a807b]">{sample.sourceLabel?.[locale]}</span> : null}
+                  </button>
+                </td>
+                <td className="px-3 py-3 align-top text-[#4f5b55]">{labels[`questionTypeSection_${sample.module}`]}</td>
+                <td className="px-3 py-3 align-top text-[#4f5b55]">{labels.sampleEstimatedMinutes.replace('{minutes}', String(sample.estimatedMinutes))}</td>
+                <td className="px-4 py-3 text-right align-top">
+                  <button type="button" aria-label={`${labels.entryOpen}: ${sample.title[locale]}`} title={labels.entryOpen} onClick={() => onOpen(sample.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#b9c9c1] bg-white text-[#24473f] hover:bg-[#f2f6f1]">
+                    <ExternalLink size={17} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e5ddd1] px-4 py-3 text-sm text-[#59645e]">
+          <span className="font-semibold">{pageStart + 1}-{pageEnd} / {samples.length} {labels.questions}</span>
+          <div className="flex items-center gap-2">
+            <button type="button" aria-label={labels.entryPagePrev} title={labels.entryPagePrev} disabled={currentPage === 0} onClick={() => setPageIndex((index) => Math.max(0, index - 1))} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1] disabled:cursor-not-allowed disabled:opacity-40">
+              <ChevronLeft size={18} />
+            </button>
+            <span className="min-w-14 text-center font-semibold text-[#34443c]">{currentPage + 1} / {pageCount}</span>
+            <button type="button" aria-label={labels.entryPageNext} title={labels.entryPageNext} disabled={currentPage >= pageCount - 1} onClick={() => setPageIndex((index) => Math.min(pageCount - 1, index + 1))} className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#c8bcae] bg-white text-[#24473f] hover:bg-[#f2f6f1] disabled:cursor-not-allowed disabled:opacity-40">
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <OfficialSourceFooter labels={labels} />
@@ -85,13 +139,20 @@ function OfficialSampleIndex({ module, labels, locale, onOpen }: SharedProps & {
 }
 
 function OfficialSampleDetail({ module, sampleId, labels, locale, onBack }: SharedProps & { sampleId: string; onBack: () => void }) {
-  const sample = sampleById(module, sampleId);
+  const localSamples = useLocalOfficialSamples(module);
+  const sample = [...localSamples, ...samplesForModule(module)].find((candidate) => candidate.id === sampleId);
   const [selected, setSelected] = useState<number | null>(null);
+  const [subAnswers, setSubAnswers] = useState<Record<string, number>>({});
   const [revealed, setRevealed] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const subQuestions = sample?.subQuestions ?? [];
+  const hasSubQuestions = subQuestions.length > 0;
+  const answeredCount = subQuestions.filter((item) => subAnswers[item.id] !== undefined).length;
+  const correctCount = subQuestions.filter((item) => subAnswers[item.id] === item.answerIndex).length;
 
   useEffect(() => {
     setSelected(null);
+    setSubAnswers({});
     setRevealed(false);
     setSpeaking(false);
     window.speechSynthesis?.cancel();
@@ -135,12 +196,26 @@ function OfficialSampleDetail({ module, sampleId, labels, locale, onBack }: Shar
             <h1 className="mt-1 text-2xl font-semibold text-[#27312c]">{sample.title[locale]}</h1>
             <p className="mt-2 text-sm leading-6 text-[#68716b]">{sample.summary[locale]}</p>
           </div>
-          <span className="w-fit rounded bg-[#f1ead7] px-2 py-1 text-xs font-semibold text-[#765c25]">{labels.sampleOriginalBadge}</span>
+          <span className="w-fit rounded bg-[#f1ead7] px-2 py-1 text-xs font-semibold text-[#765c25]">{sample.sourceKind === 'local_official' ? localOfficialBadge[locale] : labels.sampleOriginalBadge}</span>
         </div>
       </header>
 
       <section className="border-b border-[#dfe5dc] py-6">
         <p className="text-sm leading-7 text-[#4f5b55]">{sample.instruction}</p>
+
+        {sample.audioUrl ? (
+          <div className="mt-5 border-l-2 border-[#9eb4b7] pl-4">
+            <audio controls preload="metadata" src={sample.audioUrl} className="w-full max-w-3xl" />
+          </div>
+        ) : null}
+
+        {sample.questionPdfUrl || sample.answerPdfUrl || sample.transcriptPdfUrl ? (
+          <div className="mt-4 flex flex-wrap gap-3">
+            {sample.questionPdfUrl ? <OfficialFileLink href={sample.questionPdfUrl} label="問題PDF" /> : null}
+            {sample.answerPdfUrl ? <OfficialFileLink href={sample.answerPdfUrl} label="正答表PDF" /> : null}
+            {sample.transcriptPdfUrl ? <OfficialFileLink href={sample.transcriptPdfUrl} label="スクリプトPDF" /> : null}
+          </div>
+        ) : null}
 
         {sample.ttsText ? (
           <div className="mt-5 border-l-2 border-[#9eb4b7] pl-4">
@@ -161,23 +236,47 @@ function OfficialSampleDetail({ module, sampleId, labels, locale, onBack }: Shar
         ))}
 
         <h2 className="mt-6 text-lg font-semibold leading-7 text-[#27312c]">{sample.question}</h2>
-        <div className="mt-4 grid gap-2">
-          {sample.choices.map((choice, index) => {
-            const resultClass = revealed
-              ? index === sample.answerIndex ? 'border-[#6f947c] bg-[#edf5ee]' : selected === index ? 'border-[#c9907d] bg-[#fbf1ed]' : 'border-[#d8e0d7] bg-white'
-              : selected === index ? 'border-[#31564c] bg-[#edf3ef]' : 'border-[#d8e0d7] bg-white hover:bg-[#f7f9f5]';
-            return (
-              <label key={index} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm ${resultClass}`}>
-                <input type="radio" name={`official-sample-${sample.id}`} checked={selected === index} onChange={() => { setSelected(index); setRevealed(false); }} />
-                <span>{index + 1}. {choice}</span>
-              </label>
-            );
-          })}
-        </div>
+        {hasSubQuestions ? (
+          <div className="mt-4 grid gap-3">
+            {subQuestions.map((item) => (
+              <fieldset key={item.id} className="rounded-md border border-[#d8e0d7] bg-white p-3">
+                <legend className="px-1 text-sm font-semibold text-[#27312c]">{item.label}</legend>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {item.choices.map((choice, index) => {
+                    const resultClass = revealed
+                      ? index === item.answerIndex ? 'border-[#6f947c] bg-[#edf5ee]' : subAnswers[item.id] === index ? 'border-[#c9907d] bg-[#fbf1ed]' : 'border-[#d8e0d7] bg-white'
+                      : subAnswers[item.id] === index ? 'border-[#31564c] bg-[#edf3ef]' : 'border-[#d8e0d7] bg-white hover:bg-[#f7f9f5]';
+                    return (
+                      <label key={choice} className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold ${resultClass}`}>
+                        <input type="radio" name={item.id} checked={subAnswers[item.id] === index} onChange={() => { setSubAnswers((current) => ({ ...current, [item.id]: index })); setRevealed(false); }} />
+                        <span>{choice}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-2">
+            {sample.choices.map((choice, index) => {
+              const resultClass = revealed
+                ? index === sample.answerIndex ? 'border-[#6f947c] bg-[#edf5ee]' : selected === index ? 'border-[#c9907d] bg-[#fbf1ed]' : 'border-[#d8e0d7] bg-white'
+                : selected === index ? 'border-[#31564c] bg-[#edf3ef]' : 'border-[#d8e0d7] bg-white hover:bg-[#f7f9f5]';
+              return (
+                <label key={index} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm ${resultClass}`}>
+                  <input type="radio" name={`official-sample-${sample.id}`} checked={selected === index} onChange={() => { setSelected(index); setRevealed(false); }} />
+                  <span>{index + 1}. {choice}</span>
+                </label>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" disabled={selected === null} onClick={() => setRevealed(true)} className="h-10 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{labels.sampleCheckAnswer}</button>
-          {revealed && selected !== null ? <p role="status" className={`text-sm font-semibold ${selected === sample.answerIndex ? 'text-[#356146]' : 'text-[#8a493c]'}`}>{selected === sample.answerIndex ? labels.listeningCorrect : labels.listeningWrong}</p> : null}
+          <button type="button" disabled={hasSubQuestions ? answeredCount < subQuestions.length : selected === null} onClick={() => setRevealed(true)} className="h-10 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{labels.sampleCheckAnswer}</button>
+          {revealed && hasSubQuestions ? <p role="status" className={`text-sm font-semibold ${correctCount === subQuestions.length ? 'text-[#356146]' : 'text-[#8a493c]'}`}>{correctCount} / {subQuestions.length}</p> : null}
+          {revealed && !hasSubQuestions && selected !== null ? <p role="status" className={`text-sm font-semibold ${selected === sample.answerIndex ? 'text-[#356146]' : 'text-[#8a493c]'}`}>{selected === sample.answerIndex ? labels.listeningCorrect : labels.listeningWrong}</p> : null}
         </div>
       </section>
 
@@ -199,6 +298,14 @@ function OfficialSampleDetail({ module, sampleId, labels, locale, onBack }: Shar
   );
 }
 
+function OfficialFileLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center rounded-md border border-[#c8d1c8] bg-white px-3 text-sm font-semibold text-[#31564c] hover:bg-[#f3f6f1]">
+      {label} ↗
+    </a>
+  );
+}
+
 function OfficialSourceFooter({ labels }: { labels: Record<string, string> }) {
   return (
     <footer className="pt-5">
@@ -211,4 +318,25 @@ function OfficialSourceFooter({ labels }: { labels: Record<string, string> }) {
       </div>
     </footer>
   );
+}
+
+function useLocalOfficialSamples(module: OfficialSampleModule) {
+  const [samples, setSamples] = useState<OfficialModuleSample[]>([]);
+
+  useEffect(() => {
+    let disposed = false;
+    fetch(`/api/local-official-samples?module=${encodeURIComponent(module)}`)
+      .then((response) => response.ok ? response.json() : { samples: [] })
+      .then((payload) => {
+        if (!disposed) setSamples(Array.isArray(payload.samples) ? payload.samples : []);
+      })
+      .catch(() => {
+        if (!disposed) setSamples([]);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [module]);
+
+  return samples;
 }

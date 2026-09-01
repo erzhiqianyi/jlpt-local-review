@@ -1,6 +1,7 @@
+import { Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { officialN1QuestionTypes } from '../../data/questionTypes';
-import type { Locale } from '../../types';
+import type { CustomQuestionTypeTip, Locale } from '../../types';
 
 const OFFICIAL_SOURCE_URL = 'https://www.jlpt.jp/e/guideline/testsections.html';
 
@@ -9,13 +10,18 @@ type QuestionTypeDetailProps = {
   labels: Record<string, string>;
   locale: Locale;
   customTip?: string;
+  customTipEntry?: CustomQuestionTypeTip;
   onBack: () => void;
   onUpdateTip: (id: string, tip: string) => void;
+  onUpdateCustomTip: (id: string, input: { title: string; description: string; tip: string }) => void;
+  onDeleteCustomTip: (id: string) => void;
 };
 
-export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUpdateTip }: QuestionTypeDetailProps) {
+export function QuestionTypeDetail({ id, labels, locale, customTip, customTipEntry, onBack, onUpdateTip, onUpdateCustomTip, onDeleteCustomTip }: QuestionTypeDetailProps) {
   const item = officialN1QuestionTypes.find((candidate) => candidate.id === id);
   const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftDescription, setDraftDescription] = useState('');
   const [draftTip, setDraftTip] = useState('');
 
   useEffect(() => {
@@ -23,7 +29,7 @@ export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUp
     setDraftTip('');
   }, [id]);
 
-  if (!item) {
+  if (!item && !customTipEntry) {
     return (
       <section className="py-10">
         <p className="text-sm text-[#68716b]">{labels.questionTypeNotFound}</p>
@@ -32,15 +38,30 @@ export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUp
     );
   }
 
-  const displayedTip = customTip || item.defaultTip[locale];
+  const isCustomEntry = Boolean(customTipEntry);
+  const title = customTipEntry?.title ?? item?.name[locale] ?? '';
+  const subtitle = customTipEntry ? labels.questionTypeCustomTip : item?.officialName ?? '';
+  const sectionLabel = customTipEntry ? labels[`questionTypeSection_${customTipEntry.section}`] : item ? labels[`questionTypeSection_${item.section}`] : '';
+  const description = customTipEntry?.description || item?.description[locale] || labels.questionTypeCustomDescriptionEmpty;
+  const displayedTip = customTipEntry?.tip ?? customTip ?? item?.defaultTip[locale] ?? '';
 
   function startEditing() {
+    setDraftTitle(customTipEntry?.title ?? '');
+    setDraftDescription(customTipEntry?.description ?? '');
     setDraftTip(displayedTip);
     setEditing(true);
   }
 
   function saveTip() {
-    onUpdateTip(id, draftTip.trim());
+    if (customTipEntry) {
+      onUpdateCustomTip(id, {
+        title: draftTitle.trim() || customTipEntry.title,
+        description: draftDescription.trim(),
+        tip: draftTip.trim(),
+      });
+    } else {
+      onUpdateTip(id, draftTip.trim());
+    }
     setEditing(false);
   }
 
@@ -51,23 +72,23 @@ export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUp
       <header className="mt-3 border-b border-[#d7dfd6] pb-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#7d6032]">JLPT N1 · {labels[`questionTypeSection_${item.section}`]}</p>
-            <h1 className="mt-1 text-2xl font-semibold text-[#27312c]">{item.name[locale]}</h1>
-            <p className="mt-1 text-sm font-semibold text-[#7d6032]">{item.officialName}</p>
+            <p className="text-sm font-semibold text-[#7d6032]">JLPT N1 · {sectionLabel}</p>
+            <h1 className="mt-1 text-2xl font-semibold text-[#27312c]">{title}</h1>
+            <p className="mt-1 text-sm font-semibold text-[#7d6032]">{subtitle}</p>
           </div>
-          {customTip ? <span className="w-fit rounded bg-[#e7f0eb] px-2 py-1 text-xs font-semibold text-[#31564c]">{labels.questionTypePersonalized}</span> : null}
+          {isCustomEntry ? <span className="w-fit rounded bg-[#e8eef4] px-2 py-1 text-xs font-semibold text-[#2f526a]">{labels.questionTypeCustomTip}</span> : customTip ? <span className="w-fit rounded bg-[#e7f0eb] px-2 py-1 text-xs font-semibold text-[#31564c]">{labels.questionTypePersonalized}</span> : null}
         </div>
       </header>
 
       <section className="border-b border-[#dfe5dc] py-6">
         <p className="text-xs font-semibold text-[#6b746e]">{labels.questionTypeQuestionForm}</p>
-        <p className="mt-2 max-w-3xl text-base leading-7 text-[#3f5149]">{item.description[locale]}</p>
+        <p className="mt-2 max-w-3xl whitespace-pre-wrap text-base leading-7 text-[#3f5149]">{description}</p>
       </section>
 
       <section className="py-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold text-[#6b746e]">{customTip ? labels.questionTypeMyTip : labels.questionTypeDefaultTip}</p>
+            <p className="text-xs font-semibold text-[#6b746e]">{isCustomEntry || customTip ? labels.questionTypeMyTip : labels.questionTypeDefaultTip}</p>
             <h2 className="mt-1 text-lg font-semibold text-[#27312c]">{labels.questionTypeSolvingApproach}</h2>
           </div>
           {!editing ? <button type="button" onClick={startEditing} className="h-10 rounded-md border border-[#c8d1c8] bg-white px-4 text-sm font-semibold text-[#31564c] hover:bg-[#f3f6f1]">{labels.questionTypeEditTip}</button> : null}
@@ -75,11 +96,23 @@ export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUp
 
         {editing ? (
           <div className="mt-4 max-w-3xl">
+            {customTipEntry ? (
+              <div className="mb-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                <label className="min-w-0 text-sm font-semibold text-[#34443c]">
+                  <span className="mb-1 block">{labels.questionTypeCustomTitle}</span>
+                  <input value={draftTitle} onChange={(event) => setDraftTitle(event.target.value)} maxLength={80} className="h-10 w-full rounded-md border border-[#c8d1c8] bg-white px-3 text-sm font-normal text-[#27312c]" />
+                </label>
+                <label className="min-w-0 text-sm font-semibold text-[#34443c]">
+                  <span className="mb-1 block">{labels.questionTypeCustomDescription}</span>
+                  <input value={draftDescription} onChange={(event) => setDraftDescription(event.target.value)} maxLength={200} className="h-10 w-full rounded-md border border-[#c8d1c8] bg-white px-3 text-sm font-normal text-[#27312c]" />
+                </label>
+              </div>
+            ) : null}
             <textarea aria-label={labels.questionTypeTipEditor} value={draftTip} onChange={(event) => setDraftTip(event.target.value)} maxLength={2000} className="min-h-44 w-full rounded-md border border-[#c8d1c8] bg-white p-4 text-base leading-7" />
             <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" onClick={saveTip} className="h-10 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white">{labels.questionTypeSaveTip}</button>
+              <button type="button" onClick={saveTip} disabled={!draftTip.trim()} className="h-10 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{labels.questionTypeSaveTip}</button>
               <button type="button" onClick={() => setEditing(false)} className="h-10 rounded-md border border-[#d7dfd6] bg-white px-4 text-sm font-semibold text-[#4f5b55]">{labels.questionTypeCancel}</button>
-              {customTip ? <button type="button" onClick={() => { onUpdateTip(id, ''); setEditing(false); }} className="h-10 rounded-md border border-[#d9c9c3] bg-white px-4 text-sm font-semibold text-[#7a4d42]">{labels.questionTypeResetTip}</button> : null}
+              {!customTipEntry && customTip ? <button type="button" onClick={() => { onUpdateTip(id, ''); setEditing(false); }} className="h-10 rounded-md border border-[#d9c9c3] bg-white px-4 text-sm font-semibold text-[#7a4d42]">{labels.questionTypeResetTip}</button> : null}
             </div>
           </div>
         ) : (
@@ -88,8 +121,15 @@ export function QuestionTypeDetail({ id, labels, locale, customTip, onBack, onUp
       </section>
 
       <footer className="border-t border-[#dfe5dc] pt-4">
-        <p className="text-xs leading-5 text-[#7a807b]">{labels.questionTypeTipNotice}</p>
-        <a href={OFFICIAL_SOURCE_URL} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-10 items-center text-sm font-semibold text-[#31564c] hover:underline">{labels.questionTypeOfficialSource} ↗</a>
+        <p className="text-xs leading-5 text-[#7a807b]">{isCustomEntry ? labels.questionTypeCustomNotice : labels.questionTypeTipNotice}</p>
+        {isCustomEntry ? (
+          <button type="button" onClick={() => { onDeleteCustomTip(id); onBack(); }} className="mt-2 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#7a4d42] hover:underline">
+            <Trash2 size={16} />
+            {labels.questionTypeDeleteCustom}
+          </button>
+        ) : (
+          <a href={OFFICIAL_SOURCE_URL} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-10 items-center text-sm font-semibold text-[#31564c] hover:underline">{labels.questionTypeOfficialSource} ↗</a>
+        )}
       </footer>
     </article>
   );

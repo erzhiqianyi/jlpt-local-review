@@ -12,14 +12,38 @@ const dataRoot = process.env.JLPT_REVIEW_DATA_PATH
   : join(rootDir, 'public', 'data', 'review-data');
 const legacyDataPath = join(rootDir, 'public', 'data', 'review-data.json');
 
+const memoryCardFields = new Set([
+  'original', 'reading', 'jlpt_level', 'part_of_speech', 'meaning', 'meaning_ja',
+  'core_memory', 'explanation_zh', 'analysis', 'grammar_forms', 'grammar_features', 'base_form', 'conjugations',
+  'collocations', 'comparisons', 'usage_register', 'exam_register_zh', 'everyday_alternatives', 'notes', 'tags',
+  'source_grammar_point', 'source_chat_summary',
+]);
+const defaultMemoryCardFrontFields = ['original'];
+const defaultMemoryCardBackFields = ['original', 'grammar_forms', 'meaning', 'core_memory'];
+const memoryCardFrontCompatKey = '_memory_card_front_fields';
+const memoryCardBackCompatKey = '_memory_card_back_fields';
+
 const defaultSettings = {
   showReviewRuby: true,
   showExplanationRuby: true,
   locale: 'zh-CN',
   fontSize: 'standard',
+  memoryCardFrontFields: defaultMemoryCardFrontFields,
+  memoryCardBackFields: defaultMemoryCardBackFields,
   feedbackMode: 'immediate',
   questionTypeTips: {},
+  customQuestionTypeTips: [],
 };
+
+const listeningQuestionTypeIds = new Set([
+  'listening-task',
+  'listening-points',
+  'listening-outline',
+  'listening-quick',
+  'listening-integrated',
+  'listening-basic-training',
+]);
+const defaultListeningQuestionTypeId = 'listening-task';
 
 let db;
 
@@ -95,10 +119,23 @@ export function getDb() {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS daily_practices (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        practice_date TEXT NOT NULL,
+        version INTEGER NOT NULL DEFAULT 1,
+        title TEXT NOT NULL,
+        minutes INTEGER NOT NULL,
+        practice_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS listening_questions (
         id TEXT PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         title TEXT NOT NULL,
+        question_type_id TEXT NOT NULL DEFAULT 'listening-task',
         question TEXT NOT NULL,
         choices_json TEXT NOT NULL,
         answer_index INTEGER NOT NULL,
@@ -107,6 +144,34 @@ export function getDb() {
         audio_mime TEXT NOT NULL,
         audio_size INTEGER NOT NULL,
         audio_path TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS listening_recordings (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        listening_question_id TEXT NOT NULL REFERENCES listening_questions(id) ON DELETE CASCADE,
+        audio_mime TEXT NOT NULL,
+        audio_size INTEGER NOT NULL,
+        audio_path TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        analysis_json TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS listening_recordings_user_status
+      ON listening_recordings(user_id, status, created_at);
+
+      CREATE TABLE IF NOT EXISTS reading_questions (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        passage TEXT NOT NULL,
+        question TEXT NOT NULL,
+        choices_json TEXT NOT NULL,
+        answer_index INTEGER NOT NULL,
+        explanation TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
 
@@ -122,35 +187,356 @@ export function getDb() {
         body TEXT NOT NULL,
         category TEXT NOT NULL,
         context TEXT NOT NULL,
+        target_deck TEXT,
+        target_wordbook_id TEXT,
         status TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS wordbooks (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        deck TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(user_id, title)
+      );
+
+      CREATE TABLE IF NOT EXISTS wordbook_title_overrides (
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        wordbook_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY(user_id, wordbook_id),
+        UNIQUE(user_id, title)
+      );
+
+      CREATE TABLE IF NOT EXISTS review_items (
+        id TEXT PRIMARY KEY,
+        item_json TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'database',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
     `);
+    ensureColumn('listening_questions', 'question_type_id', "TEXT NOT NULL DEFAULT 'listening-task'");
+    ensureColumn('listening_questions', 'library_number', 'INTEGER');
+    ensureListeningLibraryNumbers();
+    ensureColumn('learning_captures', 'target_deck', 'TEXT');
+    ensureColumn('learning_captures', 'target_wordbook_id', 'TEXT');
+    ensureDailyPracticesMultiVersion();
+    ensureReviewItemsSeeded();
+    migrateCanonicalReviewItems();
+    migrateMemoryCardSettings();
   }
   return db;
 }
 
-export function loadReviewData() {
-  const files = reviewDataFiles();
-  if (!files.length) {
-    return { generated_at: new Date().toISOString(), items: [] };
+function ensureColumn(table, column, definition) {
+  const hasColumn = db.prepare(`PRAGMA table_info(${table})`).all().some((row) => row.name === column);
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
-  const archives = files.map((file) => JSON.parse(readFileSync(file, 'utf8')));
-  const generatedAt = archives
-    .map((archive) => archive.generated_at)
+}
+
+function ensureListeningLibraryNumbers() {
+  const database = db;
+  const missingRows = database.prepare(`
+    SELECT id, user_id
+    FROM listening_questions
+    WHERE library_number IS NULL
+    ORDER BY user_id, created_at, rowid
+  `).all();
+  const nextNumberByUser = new Map();
+  const maxNumber = database.prepare(`
+    SELECT COALESCE(MAX(library_number), 0) AS value
+    FROM listening_questions
+    WHERE user_id = ?
+  `);
+  const assignNumber = database.prepare('UPDATE listening_questions SET library_number = ? WHERE id = ?');
+  database.exec('BEGIN IMMEDIATE');
+  try {
+    for (const row of missingRows) {
+      const current = nextNumberByUser.get(row.user_id) ?? Number(maxNumber.get(row.user_id).value);
+      const next = current + 1;
+      assignNumber.run(next, row.id);
+      nextNumberByUser.set(row.user_id, next);
+    }
+    database.exec('CREATE UNIQUE INDEX IF NOT EXISTS listening_questions_user_library_number ON listening_questions(user_id, library_number)');
+    database.exec('COMMIT');
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function ensureDailyPracticesMultiVersion() {
+  const table = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'daily_practices'").get();
+  if (!table) return;
+  const hasUniqueDate = /UNIQUE\s*\(\s*user_id\s*,\s*practice_date\s*\)/iu.test(String(table.sql ?? ''));
+  if (!hasUniqueDate) {
+    ensureColumn('daily_practices', 'version', 'INTEGER NOT NULL DEFAULT 1');
+    return;
+  }
+  db.exec(`
+    ALTER TABLE daily_practices RENAME TO daily_practices_legacy;
+    CREATE TABLE daily_practices (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      practice_date TEXT NOT NULL,
+      version INTEGER NOT NULL DEFAULT 1,
+      title TEXT NOT NULL,
+      minutes INTEGER NOT NULL,
+      practice_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    INSERT INTO daily_practices (id, user_id, practice_date, version, title, minutes, practice_json, created_at, updated_at)
+    SELECT id, user_id, practice_date, 1, title, minutes, practice_json, created_at, updated_at
+    FROM daily_practices_legacy;
+    DROP TABLE daily_practices_legacy;
+  `);
+}
+
+export function loadReviewData() {
+  const rows = getDb()
+    .prepare('SELECT item_json, updated_at FROM review_items')
+    .all();
+  const items = rows
+    .map((row) => normalizeStoredReviewItem(JSON.parse(row.item_json)))
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || (a.input_at ?? '').localeCompare(b.input_at ?? '') || a.id.localeCompare(b.id));
+  const generatedAt = rows
+    .map((row) => row.updated_at)
     .filter(Boolean)
     .sort()
     .at(-1) ?? new Date().toISOString();
-  const items = archives
-    .flatMap((archive) => archive.items ?? [])
-    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || (a.input_at ?? '').localeCompare(b.input_at ?? '') || a.id.localeCompare(b.id));
+  const files = reviewDataFiles();
   return {
     generated_at: generatedAt,
-    archive_root: dataRoot,
-    archive_files: files.map((file) => file.replace(`${rootDir}/`, '')),
+    data_source: 'sqlite',
+    export_backup_root: dataRoot,
+    export_backup_files: files.map((file) => file.replace(`${rootDir}/`, '')),
     items,
   };
+}
+
+function ensureReviewItemsSeeded() {
+  const existing = db.prepare('SELECT COUNT(*) AS count FROM review_items').get();
+  if (existing.count > 0) {
+    return;
+  }
+  const files = reviewDataFiles();
+  if (!files.length) {
+    return;
+  }
+  const now = new Date().toISOString();
+  const insert = db.prepare(`
+    INSERT INTO review_items (id, item_json, source, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      item_json = excluded.item_json,
+      source = excluded.source,
+      updated_at = excluded.updated_at
+  `);
+  for (const file of files) {
+    const archive = JSON.parse(readFileSync(file, 'utf8'));
+    const source = file.replace(`${rootDir}/`, '');
+    for (const item of archive.items ?? []) {
+      const normalized = normalizeReviewItem(item);
+      insert.run(normalized.id, JSON.stringify(normalized), `json-backup:${source}`, now, now);
+    }
+  }
+}
+
+export function upsertReviewItem(item, { source = 'mcp' } = {}) {
+  const normalized = normalizeReviewItem(item);
+  const now = new Date().toISOString();
+  const existing = getDb().prepare('SELECT created_at FROM review_items WHERE id = ?').get(normalized.id);
+  getDb()
+    .prepare(`
+      INSERT INTO review_items (id, item_json, source, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        item_json = excluded.item_json,
+        source = excluded.source,
+        updated_at = excluded.updated_at
+    `)
+    .run(normalized.id, JSON.stringify(normalized), String(source).slice(0, 120), existing?.created_at ?? now, now);
+  return reviewItemById(normalized.id);
+}
+
+export function reviewItemById(id) {
+  const row = getDb().prepare('SELECT item_json FROM review_items WHERE id = ?').get(id);
+  return row ? JSON.parse(row.item_json) : null;
+}
+
+export function exportReviewDataBackup() {
+  const data = loadReviewData();
+  const byMonth = new Map();
+  for (const item of data.items) {
+    const date = String(item.date ?? '').match(/^\d{4}-\d{2}-\d{2}$/) ? item.date : new Date().toISOString().slice(0, 10);
+    const [year, month] = date.split('-');
+    const key = `${year}/${month}`;
+    const list = byMonth.get(key) ?? [];
+    list.push(item);
+    byMonth.set(key, list);
+  }
+  const files = [];
+  for (const [key, items] of byMonth) {
+    const [year, month] = key.split('/');
+    const file = join(dataRoot, year, `${month}.json`);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, `${JSON.stringify({
+      generated_at: new Date().toISOString(),
+      archive_month: key,
+      data_source: 'sqlite-export',
+      items,
+      daily_packs: [],
+    }, null, 2)}\n`);
+    files.push(file.replace(`${rootDir}/`, ''));
+  }
+  return { exported_at: new Date().toISOString(), files, item_count: data.items.length };
+}
+
+function normalizeReviewItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    throw new Error('Review item must be an object');
+  }
+  const id = String(item.id ?? '').trim();
+  const submittedOriginal = String(item.original ?? '').trim();
+  const deck = String(item.deck ?? '').trim();
+  const type = String(item.type ?? '').trim();
+  if (!id || !submittedOriginal || !deck || !type) {
+    throw new Error('Review item requires id, deck, type, and original');
+  }
+  if (!['n1_vocab', 'name_reading', 'grammar_expression'].includes(deck)) {
+    throw new Error('Invalid review item deck');
+  }
+  const submittedNormalized = String(item.normalized ?? '').trim();
+  const original = deck === 'grammar_expression'
+    ? submittedOriginal
+    : submittedNormalized || submittedOriginal;
+  const canonicalItem = { ...item };
+  delete canonicalItem.normalized;
+  const examples = Array.isArray(item.examples)
+    ? item.examples.filter((example) => String(example?.ja ?? '').trim())
+    : [];
+  const collocations = normalizeCollocations(item.collocations);
+  if (deck === 'n1_vocab' && type !== 'proper_name' && examples.length < 2) {
+    throw new Error('Vocabulary review items require at least two Japanese example sentences');
+  }
+  if (deck === 'n1_vocab' && type !== 'proper_name' && examples.some((example) => !String(example?.zh ?? '').trim())) {
+    throw new Error('Every vocabulary example sentence requires a Chinese translation');
+  }
+  if (deck === 'n1_vocab' && type !== 'proper_name' && examples.every((example) => /教材(?:の第\d+週)?では[「『].+[」』]という表現を学んだ/u.test(String(example?.ja ?? '')))) {
+    throw new Error('Vocabulary review items require a natural usage context, not only a sentence saying the expression was studied');
+  }
+  const meaningJa = String(item.meaning_ja ?? '').trim();
+  const paraphraseJa = String(item.paraphrase_ja ?? '').trim();
+  const questionKinds = Array.isArray(item.question_kinds) ? item.question_kinds : [];
+  if (questionKinds.includes('meaning') && meaningJa && meaningJa === paraphraseJa) {
+    throw new Error('Meaning questions require paraphrase_ja to be a distinct concise paraphrase, not a duplicate of meaning_ja');
+  }
+  const partOfSpeech = String(item.part_of_speech ?? '').trim();
+  if (deck === 'n1_vocab' && type !== 'proper_name' && /^(?:語句|语句|詞語|词语|word|expression)$/iu.test(partOfSpeech)) {
+    throw new Error('Vocabulary review items require a specific part_of_speech such as 名詞, 動詞, 形容詞, or a precise phrase category');
+  }
+  const needsConjugations = /(?:动词|動詞|verb|形容词|形容詞|adjective)/iu.test(`${type} ${partOfSpeech}`);
+  const inflectionClass = String(item.inflection_class ?? '').trim();
+  const baseForm = String(item.base_form ?? '').trim();
+  const validInflectionClasses = new Set(['godan', 'ichidan', 'suru', 'kuru', 'i_adjective', 'na_adjective']);
+  const conjugations = Array.isArray(item.conjugations)
+    ? item.conjugations.filter((entry) => String(entry?.kind ?? '').trim() && String(entry?.form ?? '').trim())
+    : [];
+  if (needsConjugations && !partOfSpeech) {
+    throw new Error('Verb and adjective review items require part_of_speech');
+  }
+  if (needsConjugations && !validInflectionClasses.has(inflectionClass)) {
+    throw new Error('Verb and adjective review items require a valid inflection_class');
+  }
+  if (needsConjugations && !baseForm) {
+    throw new Error('Verb and adjective review items require base_form');
+  }
+  if (needsConjugations && conjugations.length < 3) {
+    throw new Error('Verb and adjective review items require at least three conjugation forms');
+  }
+  return {
+    ...canonicalItem,
+    id,
+    date: String(item.date ?? new Date().toISOString().slice(0, 10)),
+    deck,
+    type,
+    original,
+    examples,
+    collocations,
+    part_of_speech: partOfSpeech || undefined,
+    inflection_class: inflectionClass || undefined,
+    base_form: baseForm || undefined,
+    conjugations,
+    meaning_zh: String(item.meaning_zh ?? item.meaning ?? '').trim(),
+    meaning_ja: meaningJa || undefined,
+    paraphrase_ja: paraphraseJa || undefined,
+    core_memory: String(item.core_memory ?? '').trim(),
+  };
+}
+
+function migrateCanonicalReviewItems() {
+  const rows = db.prepare('SELECT id, item_json FROM review_items').all();
+  if (!rows.length) return;
+  const update = db.prepare('UPDATE review_items SET item_json = ?, updated_at = ? WHERE id = ?');
+  const now = new Date().toISOString();
+  db.exec('BEGIN');
+  try {
+    for (const row of rows) {
+      const current = JSON.parse(row.item_json);
+      const canonical = normalizeStoredReviewItem(current);
+      const legacyNormalized = String(canonical.normalized ?? '').trim();
+      if (canonical.deck !== 'grammar_expression' && legacyNormalized) {
+        canonical.original = legacyNormalized;
+      }
+      delete canonical.normalized;
+      const nextJson = JSON.stringify(canonical);
+      if (nextJson !== row.item_json) {
+        update.run(nextJson, now, row.id);
+      }
+    }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function normalizeStoredReviewItem(item) {
+  return {
+    ...item,
+    collocations: normalizeCollocations(item?.collocations),
+  };
+}
+
+function normalizeCollocations(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => typeof entry === 'string' ? entry : entry?.text)
+    .map((entry) => String(entry ?? '').trim())
+    .filter(Boolean);
+}
+
+function migrateMemoryCardSettings() {
+  const rows = db.prepare('SELECT user_id, settings_json FROM user_settings').all();
+  const update = db.prepare('UPDATE user_settings SET settings_json = ?, updated_at = ? WHERE user_id = ?');
+  const now = new Date().toISOString();
+  for (const row of rows) {
+    const current = JSON.parse(row.settings_json);
+    const canonical = normalizeSettings(current);
+    const nextJson = JSON.stringify(canonical);
+    if (nextJson !== row.settings_json) {
+      update.run(nextJson, now, row.user_id);
+    }
+  }
 }
 
 function reviewDataFiles() {
@@ -240,6 +626,7 @@ export function createListeningQuestion(userId, payload) {
     ? payload.choices.map((choice) => String(choice ?? '').trim())
     : [];
   const answerIndex = Number(payload?.answerIndex);
+  const questionTypeId = normalizeListeningQuestionTypeId(payload?.questionTypeId);
   const audioMime = String(payload?.audioMime ?? '').toLowerCase();
   const audioFileName = String(payload?.audioFileName ?? 'listening-audio').trim().slice(0, 180);
   const audioBase64 = String(payload?.audioBase64 ?? '').replace(/\s/g, '');
@@ -269,17 +656,26 @@ export function createListeningQuestion(userId, payload) {
   const explanation = String(payload?.explanation ?? '').trim().slice(0, 2000);
   mkdirSync(userAudioDir, { recursive: true });
   writeFileSync(audioPath, audio, { flag: 'wx' });
+  const database = getDb();
+  database.exec('BEGIN IMMEDIATE');
   try {
-    getDb().prepare(`
+    const libraryNumber = Number(database.prepare(`
+      SELECT COALESCE(MAX(library_number), 0) + 1 AS value
+      FROM listening_questions
+      WHERE user_id = ?
+    `).get(userId).value);
+    database.prepare(`
       INSERT INTO listening_questions (
-        id, user_id, title, question, choices_json, answer_index, explanation,
+        id, user_id, library_number, title, question_type_id, question, choices_json, answer_index, explanation,
         audio_file_name, audio_mime, audio_size, audio_path, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      id, userId, title, question, JSON.stringify(choices), answerIndex, explanation,
+      id, userId, libraryNumber, title, questionTypeId, question, JSON.stringify(choices), answerIndex, explanation,
       audioFileName, audioMime, audio.length, audioPath, now,
     );
+    database.exec('COMMIT');
   } catch (error) {
+    database.exec('ROLLBACK');
     unlinkSync(audioPath);
     throw error;
   }
@@ -288,7 +684,7 @@ export function createListeningQuestion(userId, payload) {
 
 export function listListeningQuestions(userId) {
   return getDb().prepare(`
-    SELECT id, title, question, choices_json, answer_index, explanation,
+    SELECT id, library_number, title, question_type_id, question, choices_json, answer_index, explanation,
       audio_file_name, audio_mime, audio_size, created_at
     FROM listening_questions
     WHERE user_id = ?
@@ -298,7 +694,7 @@ export function listListeningQuestions(userId) {
 
 export function listeningQuestionForUser(userId, id) {
   const row = getDb().prepare(`
-    SELECT id, title, question, choices_json, answer_index, explanation,
+    SELECT id, library_number, title, question_type_id, question, choices_json, answer_index, explanation,
       audio_file_name, audio_mime, audio_size, created_at
     FROM listening_questions
     WHERE user_id = ? AND id = ?
@@ -320,11 +716,183 @@ export function deleteListeningQuestion(userId, id) {
   if (!audio) {
     return false;
   }
+  const recordingAudio = getDb().prepare('SELECT audio_path FROM listening_recordings WHERE user_id = ? AND listening_question_id = ?').all(userId, id);
   getDb().prepare('DELETE FROM listening_questions WHERE user_id = ? AND id = ?').run(userId, id);
   if (existsSync(audio.audio_path)) {
     unlinkSync(audio.audio_path);
   }
+  for (const recording of recordingAudio) {
+    if (existsSync(recording.audio_path)) unlinkSync(recording.audio_path);
+  }
   return true;
+}
+
+export function createListeningRecording(userId, listeningQuestionId, payload) {
+  const question = listeningQuestionForUser(userId, listeningQuestionId);
+  if (!question) throw new Error('Listening question not found');
+  const audioMime = String(payload?.audioMime ?? '').toLowerCase();
+  const audioBase64 = String(payload?.audioBase64 ?? '').replace(/\s/g, '');
+  if (!audioMime.startsWith('audio/') || !audioBase64 || !/^[A-Za-z0-9+/]*={0,2}$/.test(audioBase64)) {
+    throw new Error('A valid audio recording is required');
+  }
+  const audio = Buffer.from(audioBase64, 'base64');
+  if (!audio.length || audio.length > 25 * 1024 * 1024) {
+    throw new Error('Audio recording must be 25 MB or smaller');
+  }
+  const id = randomBytes(12).toString('base64url');
+  const recordingDir = join(localDir, 'listening-recordings', String(userId));
+  const audioPath = join(recordingDir, `${id}.${audioExtension(audioMime)}`);
+  const now = new Date().toISOString();
+  mkdirSync(recordingDir, { recursive: true });
+  writeFileSync(audioPath, audio, { flag: 'wx' });
+  try {
+    getDb().prepare(`
+      INSERT INTO listening_recordings (
+        id, user_id, listening_question_id, audio_mime, audio_size, audio_path,
+        status, analysis_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, ?, ?)
+    `).run(id, userId, listeningQuestionId, audioMime, audio.length, audioPath, now, now);
+  } catch (error) {
+    unlinkSync(audioPath);
+    throw error;
+  }
+  return listeningRecordingForUser(userId, id);
+}
+
+export function listListeningRecordings(userId, listeningQuestionId) {
+  return getDb().prepare(`
+    SELECT id, listening_question_id, audio_mime, audio_size, status, analysis_json, created_at, updated_at
+    FROM listening_recordings
+    WHERE user_id = ? AND listening_question_id = ?
+    ORDER BY created_at DESC
+  `).all(userId, listeningQuestionId).map(mapListeningRecording);
+}
+
+export function listPendingListeningRecordings(userId) {
+  return getDb().prepare(`
+    SELECT id, listening_question_id, audio_mime, audio_size, status, analysis_json, created_at, updated_at
+    FROM listening_recordings
+    WHERE user_id = ? AND status IN ('pending', 'analyzing')
+    ORDER BY created_at
+  `).all(userId).map(mapListeningRecording);
+}
+
+export function listeningRecordingForUser(userId, id) {
+  const row = getDb().prepare(`
+    SELECT id, listening_question_id, audio_mime, audio_size, status, analysis_json, created_at, updated_at
+    FROM listening_recordings
+    WHERE user_id = ? AND id = ?
+  `).get(userId, id);
+  return row ? mapListeningRecording(row) : null;
+}
+
+export function listeningRecordingAudioForUser(userId, id) {
+  const row = getDb().prepare(`
+    SELECT audio_path, audio_mime, audio_size
+    FROM listening_recordings
+    WHERE user_id = ? AND id = ?
+  `).get(userId, id);
+  return row && existsSync(row.audio_path) ? row : null;
+}
+
+export function buildListeningRecordingAnalysisContext(userId, id) {
+  const row = getDb().prepare(`
+    SELECT recordings.id, recordings.status, recordings.audio_path AS recording_path,
+      recordings.audio_mime AS recording_mime, recordings.audio_size AS recording_size,
+      questions.id AS question_id, questions.library_number, questions.title,
+      questions.question_type_id, questions.question, questions.audio_path AS reference_path,
+      questions.audio_mime AS reference_mime, questions.audio_size AS reference_size
+    FROM listening_recordings AS recordings
+    JOIN listening_questions AS questions ON questions.id = recordings.listening_question_id
+    WHERE recordings.user_id = ? AND recordings.id = ?
+  `).get(userId, id);
+  if (!row || !existsSync(row.recording_path) || !existsSync(row.reference_path)) return null;
+  if (row.status === 'pending') {
+    getDb().prepare("UPDATE listening_recordings SET status = 'analyzing', updated_at = ? WHERE user_id = ? AND id = ?").run(new Date().toISOString(), userId, id);
+  }
+  return {
+    recording_id: row.id,
+    status: row.status === 'pending' ? 'analyzing' : row.status,
+    question: {
+      id: row.question_id,
+      library_number: Number(row.library_number),
+      title: row.title,
+      question_type_id: normalizeListeningQuestionTypeId(row.question_type_id),
+      prompt: row.question,
+    },
+    learner_recording: { local_path: row.recording_path, mime: row.recording_mime, size: Number(row.recording_size) },
+    reference_audio: { local_path: row.reference_path, mime: row.reference_mime, size: Number(row.reference_size) },
+    analysis_requirements: [
+      'Read both local audio files. Do not infer pronunciation quality from filenames or metadata alone.',
+      'Compare the learner recording with the reference for intelligibility, missing or substituted content, pacing, pauses, rhythm, and intonation when the available local tools support those observations.',
+      'Clearly separate directly observed audio evidence from transcript-based inference.',
+      'Return concise, actionable feedback in the learner interface language.',
+      'Write the result back with save_listening_recording_analysis.',
+    ],
+  };
+}
+
+export function saveListeningRecordingAnalysis(userId, id, payload) {
+  const recording = listeningRecordingForUser(userId, id);
+  if (!recording) return null;
+  const status = payload?.status === 'failed' ? 'failed' : 'completed';
+  const analysis = status === 'completed' ? normalizeListeningRecordingAnalysis(payload?.analysis) : null;
+  const now = new Date().toISOString();
+  getDb().prepare(`
+    UPDATE listening_recordings
+    SET status = ?, analysis_json = ?, updated_at = ?
+    WHERE user_id = ? AND id = ?
+  `).run(status, analysis ? JSON.stringify(analysis) : null, now, userId, id);
+  return listeningRecordingForUser(userId, id);
+}
+
+export function createReadingQuestion(userId, payload) {
+  const passage = String(payload?.passage ?? '').trim();
+  const question = String(payload?.question ?? '').trim();
+  const choices = Array.isArray(payload?.choices)
+    ? payload.choices.map((choice) => String(choice ?? '').trim())
+    : [];
+  const answerIndex = Number(payload?.answerIndex);
+  if (!passage || !question || choices.length !== 4 || choices.some((choice) => !choice)) {
+    throw new Error('Passage, question, and four non-empty choices are required');
+  }
+  if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= choices.length) {
+    throw new Error('Choose a valid correct answer');
+  }
+
+  const id = randomBytes(12).toString('base64url');
+  const now = new Date().toISOString();
+  const title = String(payload?.title ?? '').trim().slice(0, 120) || question.slice(0, 120);
+  const explanation = String(payload?.explanation ?? '').trim().slice(0, 2000);
+  getDb().prepare(`
+    INSERT INTO reading_questions (
+      id, user_id, title, passage, question, choices_json, answer_index, explanation, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, userId, title, passage.slice(0, 8000), question.slice(0, 1000), JSON.stringify(choices), answerIndex, explanation, now);
+  return readingQuestionForUser(userId, id);
+}
+
+export function listReadingQuestions(userId) {
+  return getDb().prepare(`
+    SELECT id, title, passage, question, choices_json, answer_index, explanation, created_at
+    FROM reading_questions
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+  `).all(userId).map(mapReadingQuestion);
+}
+
+export function readingQuestionForUser(userId, id) {
+  const row = getDb().prepare(`
+    SELECT id, title, passage, question, choices_json, answer_index, explanation, created_at
+    FROM reading_questions
+    WHERE user_id = ? AND id = ?
+  `).get(userId, id);
+  return row ? mapReadingQuestion(row) : null;
+}
+
+export function deleteReadingQuestion(userId, id) {
+  const result = getDb().prepare('DELETE FROM reading_questions WHERE user_id = ? AND id = ?').run(userId, id);
+  return result.changes > 0;
 }
 
 export function getStudyState(userId) {
@@ -374,6 +942,7 @@ export function saveStudyPlanProfile(userId, profile) {
     profile: normalizedProfile,
     status: current.tasks.length ? 'needs_refresh' : 'profile_only',
     tasks: current.tasks,
+    phases: current.phases,
     generatedAt: current.generatedAt,
   };
   return saveStudyPlanDocument(userId, next);
@@ -385,6 +954,9 @@ export function saveGeneratedStudyPlan(userId, payload) {
   if (!tasks.length) {
     throw new Error('Generated plan must include at least one daily task');
   }
+  const phases = payload?.phases === undefined
+    ? current.phases
+    : normalizeStudyPlanPhases(payload.phases, current.profile);
   const now = new Date().toISOString();
   const completedById = new Map(current.tasks.filter((task) => task.status === 'completed').map((task) => [task.id, task]));
   const mergedTasks = tasks.map((task) => completedById.get(task.id) ?? task);
@@ -392,6 +964,7 @@ export function saveGeneratedStudyPlan(userId, payload) {
     profile: current.profile,
     status: 'ready',
     tasks: mergedTasks,
+    phases,
     generatedAt: now,
   });
 }
@@ -424,8 +997,12 @@ export function getPlanGenerationContext(userId) {
     recentAttempts: practice.attemptHistory.slice(0, 20),
     instructions: [
       'Create concrete daily JLPT tasks between profile.startDate and profile.examDate.',
+      'Split the study period into 2 to 5 phases and return them as the phases array. Each phase needs startDate, endDate, a short focus, and the concrete points it covers. Phases must stay inside the study period and should not overlap. Read profile.phaseStrategy as the learner\'s intent for this split.',
+      'Use the textbook section names and currentPosition notes in profile.materials as the plan spine. Do not write generic tasks such as "study grammar"; cite the exact lesson, question type, or section name.',
+      'Every study task should include an observable output: complete the lesson exercises, write confusing points into captures, mark reading evidence locations, or replay listening error segments.',
       'Use only the learner materials in profile.materials unless the learner goal explicitly requests other resources.',
       'Keep each day within profile.dailyMinutes and approximately profile.studyDaysPerWeek study days per week.',
+      'Treat language school as a weekday fixed class by default. Do not automatically reduce weekend workload unless profile.fixedSchedule explicitly says there are weekend classes too.',
       'Use recentAttempts, weakPoints, and dailySummaries to adjust future workload.',
       'Write the result with save_generated_study_plan. Do not edit monthly review-data JSON.',
     ],
@@ -450,6 +1027,10 @@ function saveStudyPlanDocument(userId, plan) {
 export function saveAnswer(userId, { questionId, itemId, selected, correct, progressEntry, attemptHistory, activeAttempt }) {
   if (!questionId || !itemId || typeof selected !== 'string' || typeof correct !== 'boolean' || !progressEntry) {
     throw new Error('Invalid answer payload');
+  }
+  if (String(questionId).startsWith('memory-card:')) {
+    saveProgressEntry(userId, itemId, progressEntry);
+    return;
   }
   const now = new Date().toISOString();
   const database = getDb();
@@ -482,6 +1063,21 @@ export function saveAnswer(userId, { questionId, itemId, selected, correct, prog
   if (Array.isArray(attemptHistory) || activeAttempt !== undefined) {
     savePracticeState(userId, { attemptHistory, activeAttempt });
   }
+}
+
+export function saveProgressEntry(userId, itemId, progressEntry) {
+  if (!itemId || !progressEntry || typeof progressEntry !== 'object') {
+    throw new Error('Invalid progress payload');
+  }
+  const now = new Date().toISOString();
+  getDb().prepare(`
+    INSERT INTO progress (user_id, item_id, progress_json, updated_at)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(user_id, item_id) DO UPDATE SET
+      progress_json = excluded.progress_json,
+      updated_at = excluded.updated_at
+  `).run(userId, itemId, JSON.stringify(progressEntry), now);
+  return getStudyState(userId);
 }
 
 export function savePracticeState(userId, { answers, attemptHistory, activeAttempt }) {
@@ -541,6 +1137,7 @@ export function buildStudyRecord(userId) {
     attempt_history: state.attemptHistory,
     active_attempt: state.activeAttempt,
     learning_captures: listLearningCaptures(userId),
+    wordbooks: listWordbooks(userId),
     settings: state.settings,
     ai_prompt: [
       '请分析这份 JLPT 学习记录。',
@@ -551,23 +1148,119 @@ export function buildStudyRecord(userId) {
   };
 }
 
-export function createLearningCapture(userId, { body, category = 'unsure', context = '' }) {
+export function listWordbooks(userId) {
+  const overrides = builtInWordbookOverrides(userId);
+  const customRows = getDb()
+    .prepare('SELECT id, title, deck, created_at, updated_at FROM wordbooks WHERE user_id = ? ORDER BY created_at ASC')
+    .all(userId);
+  return [
+    ...builtInWordbooks().map((wordbook) => ({
+      ...wordbook,
+      title: overrides.get(wordbook.id)?.title ?? wordbook.title,
+      createdAt: overrides.get(wordbook.id)?.createdAt,
+      updatedAt: overrides.get(wordbook.id)?.updatedAt,
+    })),
+    ...customRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      deck: normalizeWordbookDeck(row.deck),
+      builtIn: false,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    })),
+  ];
+}
+
+export function createWordbook(userId, { title, deck = 'n1_vocab' } = {}) {
+  const normalizedTitle = normalizeWordbookTitle(title);
+  const normalizedDeck = normalizeWordbookDeck(deck);
+  const existing = listWordbooks(userId).find((wordbook) => wordbook.title.toLocaleLowerCase() === normalizedTitle.toLocaleLowerCase());
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const id = `wordbook-${randomBytes(9).toString('base64url')}`;
+  getDb()
+    .prepare('INSERT INTO wordbooks (id, user_id, title, deck, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, userId, normalizedTitle, normalizedDeck, now, now);
+  return {
+    id,
+    title: normalizedTitle,
+    deck: normalizedDeck,
+    builtIn: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function updateWordbook(userId, id, { title } = {}) {
+  const wordbookId = String(id ?? '').trim();
+  const existing = wordbookById(userId, wordbookId);
+  if (!existing) return null;
+  const normalizedTitle = normalizeWordbookTitle(title);
+  const duplicate = listWordbooks(userId).find((wordbook) => (
+    wordbook.id !== wordbookId
+    && wordbook.title.toLocaleLowerCase() === normalizedTitle.toLocaleLowerCase()
+  ));
+  if (duplicate) throw new Error('A wordbook with this title already exists');
+  const now = new Date().toISOString();
+  if (existing.builtIn) {
+    getDb().prepare(`
+      INSERT INTO wordbook_title_overrides (user_id, wordbook_id, title, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, wordbook_id) DO UPDATE SET title = excluded.title, updated_at = excluded.updated_at
+    `).run(userId, wordbookId, normalizedTitle, now, now);
+  } else {
+    getDb()
+      .prepare('UPDATE wordbooks SET title = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+      .run(normalizedTitle, now, userId, wordbookId);
+  }
+  updateReviewItemWordbookTitles(wordbookId, normalizedTitle, now);
+  return wordbookById(userId, wordbookId);
+}
+
+function updateReviewItemWordbookTitles(wordbookId, title, updatedAt) {
+  const database = getDb();
+  const rows = database.prepare('SELECT id, item_json FROM review_items').all();
+  const update = database.prepare('UPDATE review_items SET item_json = ?, updated_at = ? WHERE id = ?');
+  database.exec('BEGIN');
+  try {
+    for (const row of rows) {
+      const item = JSON.parse(row.item_json);
+      if (item.targetWordbookId !== wordbookId || item.targetWordbookTitle === title) continue;
+      update.run(JSON.stringify({ ...item, targetWordbookTitle: title }), updatedAt, row.id);
+    }
+    database.exec('COMMIT');
+  } catch (error) {
+    database.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+export function createLearningCapture(userId, { body, category = 'unsure', context = '', targetDeck, target_deck, targetWordbookId, target_wordbook_id } = {}) {
   const text = String(body ?? '').trim();
   if (!text) throw new Error('Capture body is required');
   const now = new Date().toISOString();
+  const normalizedCategory = normalizeCaptureCategory(category);
+  const targetWordbook = normalizeCaptureTargetWordbook(userId, {
+    category: normalizedCategory,
+    targetDeck: targetDeck ?? target_deck,
+    targetWordbookId: targetWordbookId ?? target_wordbook_id,
+  });
   const capture = {
     id: randomBytes(12).toString('base64url'),
     body: text.slice(0, 5000),
-    category: normalizeCaptureCategory(category),
+    category: normalizedCategory,
     context: String(context ?? '').trim().slice(0, 2000),
+    targetDeck: targetWordbook?.deck,
+    targetWordbookId: targetWordbook?.id,
+    targetWordbookTitle: targetWordbook?.title,
     status: 'inbox',
     createdAt: now,
     updatedAt: now,
   };
   getDb().prepare(`
-    INSERT INTO learning_captures (id, user_id, body, category, context, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(capture.id, userId, capture.body, capture.category, capture.context, capture.status, now, now);
+    INSERT INTO learning_captures (id, user_id, body, category, context, target_deck, target_wordbook_id, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(capture.id, userId, capture.body, capture.category, capture.context, capture.targetDeck ?? null, capture.targetWordbookId ?? null, capture.status, now, now);
   return capture;
 }
 
@@ -589,11 +1282,15 @@ export function updateLearningCaptureStatus(userId, id, status) {
 }
 
 function learningCaptureFromRow(row) {
+  const targetWordbook = row.target_wordbook_id ? wordbookById(row.user_id, row.target_wordbook_id) : null;
   return {
     id: row.id,
     body: row.body,
     category: row.category,
     context: row.context,
+    targetDeck: targetWordbook?.deck ?? row.target_deck ?? undefined,
+    targetWordbookId: targetWordbook?.id ?? row.target_wordbook_id ?? undefined,
+    targetWordbookTitle: targetWordbook?.title ?? undefined,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -602,6 +1299,69 @@ function learningCaptureFromRow(row) {
 
 function normalizeCaptureCategory(value) {
   return ['word', 'grammar', 'sentence', 'listening', 'reading', 'unsure'].includes(value) ? value : 'unsure';
+}
+
+function normalizeCaptureTargetWordbook(userId, { category, targetDeck, targetWordbookId }) {
+  if (category === 'grammar') return wordbookById(userId, 'grammar_expression');
+  if (category !== 'word') return null;
+  const requestedId = String(targetWordbookId ?? '').trim();
+  if (requestedId) {
+    const wordbook = wordbookById(userId, requestedId);
+    if (wordbook && wordbook.deck !== 'grammar_expression') return wordbook;
+  }
+  const deck = normalizeWordbookDeck(targetDeck);
+  return wordbookById(userId, deck === 'name_reading' ? 'name_reading' : 'n1_vocab');
+}
+
+function wordbookById(userId, id) {
+  const builtIn = builtInWordbooks().find((wordbook) => wordbook.id === id);
+  if (builtIn) {
+    const override = builtInWordbookOverrides(userId).get(builtIn.id);
+    return {
+      ...builtIn,
+      title: override?.title ?? builtIn.title,
+      createdAt: override?.createdAt,
+      updatedAt: override?.updatedAt,
+    };
+  }
+  const row = getDb()
+    .prepare('SELECT id, title, deck, created_at, updated_at FROM wordbooks WHERE user_id = ? AND id = ?')
+    .get(userId, id);
+  return row ? {
+    id: row.id,
+    title: row.title,
+    deck: normalizeWordbookDeck(row.deck),
+    builtIn: false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  } : null;
+}
+
+function builtInWordbooks() {
+  return [
+    { id: 'n1_vocab', title: 'N1/N2 词汇', deck: 'n1_vocab', builtIn: true },
+    { id: 'name_reading', title: '补充・人名读法', deck: 'name_reading', builtIn: true },
+  ];
+}
+
+function builtInWordbookOverrides(userId) {
+  const builtInIds = new Set(builtInWordbooks().map((wordbook) => wordbook.id));
+  const rows = getDb()
+    .prepare('SELECT wordbook_id, title, created_at, updated_at FROM wordbook_title_overrides WHERE user_id = ?')
+    .all(userId);
+  return new Map(rows
+    .filter((row) => builtInIds.has(row.wordbook_id))
+    .map((row) => [row.wordbook_id, { title: row.title, createdAt: row.created_at, updatedAt: row.updated_at }]));
+}
+
+function normalizeWordbookTitle(value) {
+  const title = String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!title) throw new Error('Wordbook title is required');
+  return title;
+}
+
+function normalizeWordbookDeck(value) {
+  return ['n1_vocab', 'name_reading', 'grammar_expression'].includes(value) ? value : 'n1_vocab';
 }
 
 export function listDueReviews(userId, at = new Date().toISOString()) {
@@ -645,32 +1405,645 @@ export function analyzeWeakPoints(userId) {
   };
 }
 
-export function createDailyReviewPackDraft(userId, { title, minutes = 30 } = {}) {
-  const analysis = analyzeWeakPoints(userId);
+function questionKindFromId(questionId = '') {
+  if (questionId.includes('-kanji-to-kana-')) return 'kanji_to_kana';
+  if (questionId.includes('-kana-to-kanji-')) return 'kana_to_kanji';
+  if (questionId.includes('-moji-goi-')) return 'moji_goi';
+  if (questionId.includes('-meaning-')) return 'meaning';
+  if (questionId.includes('-grammar-')) return 'grammar';
+  return 'unknown';
+}
+
+function answerHistoryFor(state) {
+  const attemptAnswers = (state.attemptHistory ?? []).flatMap((attempt) =>
+    (attempt.answers ?? []).map((answer) => ({
+      ...answer,
+      attemptId: attempt.id,
+      view: attempt.view,
+      deck: attempt.deck,
+      kind: answer.kind ?? questionKindFromId(answer.questionId),
+    })),
+  );
+  if (attemptAnswers.length) return attemptAnswers;
+  return Object.entries(state.answers ?? {}).map(([questionId, answer]) => ({
+    questionId,
+    itemId: questionId.replace(/-(grammar|meaning|moji-goi|kanji-to-kana|kana-to-kanji)-jlpt-v1$/, ''),
+    kind: questionKindFromId(questionId),
+    selected: answer.selected,
+    correct: Boolean(answer.correct),
+    answeredAt: answer.answeredAt,
+  }));
+}
+
+function compareIsoDesc(a, b) {
+  return String(b ?? '').localeCompare(String(a ?? ''));
+}
+
+function summarizeKindPerformance(answers) {
+  const byKind = new Map();
+  for (const answer of answers) {
+    const kind = answer.kind ?? 'unknown';
+    const current = byKind.get(kind) ?? { kind, total: 0, correct: 0, wrong: 0, lastAnsweredAt: '' };
+    current.total += 1;
+    current.correct += answer.correct ? 1 : 0;
+    current.wrong += answer.correct ? 0 : 1;
+    current.lastAnsweredAt = [current.lastAnsweredAt, answer.answeredAt].filter(Boolean).sort().at(-1) ?? current.lastAnsweredAt;
+    byKind.set(kind, current);
+  }
+  return [...byKind.values()]
+    .map((entry) => ({ ...entry, accuracy: entry.total ? entry.correct / entry.total : 0 }))
+    .sort((a, b) => b.wrong - a.wrong || a.accuracy - b.accuracy || compareIsoDesc(a.lastAnsweredAt, b.lastAnsweredAt));
+}
+
+function recentWrongAnswers(answers, limit = 12) {
+  return answers
+    .filter((answer) => !answer.correct)
+    .sort((a, b) => compareIsoDesc(a.answeredAt, b.answeredAt))
+    .slice(0, limit);
+}
+
+function targetedItems(data, state, dueItems, wrongAnswers) {
+  const itemsById = new Map(data.items.map((item) => [item.id, item]));
+  const progressEntries = Object.entries(state.progress ?? {})
+    .map(([itemId, progress]) => ({ item: itemsById.get(itemId), progress }))
+    .filter((entry) => entry.item);
+  const weakItems = progressEntries
+    .filter(({ progress }) => (progress.wrong ?? 0) > 0 || progress.status === 'learning')
+    .sort((a, b) => (b.progress.wrong ?? 0) - (a.progress.wrong ?? 0) || (a.progress.correct ?? 0) - (b.progress.correct ?? 0))
+    .map(({ item }) => item);
+  const wrongItems = wrongAnswers.map((answer) => itemsById.get(answer.itemId)).filter(Boolean);
+  const seen = new Set();
+  return [...wrongItems, ...weakItems, ...dueItems].filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function firstQuestionContext(item) {
+  const candidates = [
+    ...(item.examples ?? []).map((entry) => entry.ja),
+    item.example_ja,
+    item.source_original_sentence,
+    ...(item.collocations ?? []),
+  ].filter(Boolean);
+  return candidates.find((candidate) => String(candidate).includes(item.original)) ?? candidates[0] ?? item.original;
+}
+
+function choiceList(answer, distractors = [], fallback = []) {
+  return [answer, ...distractors, ...fallback]
+    .filter((choice, index, choices) => choice && choices.indexOf(choice) === index && choice !== 'undefined')
+    .slice(0, 4);
+}
+
+function generatedKanjiToKanaQuestion(item, index) {
+  if (!item.reading || !containsKanjiText(item.original) || !isKanaReading(item.reading)) return null;
+  const choices = choiceList(item.reading, item.question_distractors?.kanji_to_kana, readingDistractorsForPack(item.reading));
+  if (choices.length < 4) return null;
+  return {
+    id: `target-kanji-${String(index + 1).padStart(2, '0')}`,
+    item_id: item.id,
+    generated_from: 'weak_question_type',
+    target_reason: 'history_wrong_same_type',
+    type: '漢字読み',
+    instruction: '下線部の読み方として最もよいものを一つ選びなさい。',
+    prompt: firstQuestionContext(item),
+    promptTarget: item.original,
+    choices,
+    answer: item.reading,
+    explanation_zh: `历史记录显示读音题需要加强。本题只考「${item.original}」的读音：${item.reading}。${item.explanation_zh ?? item.meaning_zh ?? ''}`.trim(),
+  };
+}
+
+function containsKanjiText(value) {
+  return /[\u3400-\u9fff々〆ヵヶ]/u.test(String(value ?? ''));
+}
+
+function isKanaReading(value) {
+  return /^[\u3040-\u309f\u30a0-\u30ffー・]+$/u.test(String(value ?? ''));
+}
+
+function generatedMeaningQuestion(item, index) {
+  const answer = item.paraphrase_ja ?? item.meaning_ja;
+  if (!answer) return null;
+  const choices = choiceList(answer, item.question_distractors?.meaning, [
+    '重要さや優先順位が第一ではなく、後回しであること。',
+    '前の内容を言い換えたり、要点をまとめたりすること。',
+    'ある条件なら当然そうするという判断を表すこと。',
+  ]);
+  if (choices.length < 4) return null;
+  return {
+    id: `target-meaning-${String(index + 1).padStart(2, '0')}`,
+    item_id: item.id,
+    generated_from: 'weak_question_type',
+    target_reason: 'history_wrong_same_type',
+    type: '言い換え類義',
+    instruction: '次の表現の意味として最も近いものを一つ選びなさい。',
+    prompt: item.original,
+    choices,
+    answer,
+    explanation_zh: item.explanation_zh ?? item.meaning_zh ?? '',
+  };
+}
+
+function generatedGrammarQuestion(item, index) {
+  const practice = (item.practice_questions ?? []).find((question) => question.kind === 'grammar' || question.kind === '文の組み立て');
+  if (practice) {
+    return {
+      id: `target-grammar-${String(index + 1).padStart(2, '0')}`,
+      item_id: item.id,
+      source_question_id: practice.id,
+      generated_from: 'weak_question_type',
+      target_reason: 'history_wrong_same_type',
+      type: practice.kind,
+      instruction: practice.instruction,
+      prompt: practice.prompt,
+      choices: practice.choices,
+      answer: practice.answer,
+      explanation_zh: practice.explanation_zh ?? item.explanation_zh ?? '',
+      full_order: practice.full_order,
+      target_blank_index: practice.target_blank_index,
+    };
+  }
+  const context = firstQuestionContext(item);
+  const choices = choiceList(item.original, item.question_distractors?.grammar, ['が早いか', 'ものなら', 'とたんに']);
+  if (!context.includes(item.original) || choices.length < 4) return null;
+  return {
+    id: `target-grammar-${String(index + 1).padStart(2, '0')}`,
+    item_id: item.id,
+    generated_from: 'weak_question_type',
+    target_reason: 'history_wrong_same_type',
+    type: '文の文法1',
+    instruction: '次の文の（　）に入れるのに最もよいものを一つ選びなさい。',
+    prompt: context.replace(item.original, '（　）'),
+    choices,
+    answer: item.original,
+    explanation_zh: item.explanation_zh ?? '',
+  };
+}
+
+function generatedMojiGoiQuestion(item, index) {
+  const context = firstQuestionContext(item);
+  if (!context.includes(item.original)) return null;
+  const choices = choiceList(item.original, item.question_distractors?.moji_goi, ['確認', '整理', '判断']);
+  if (choices.length < 4) return null;
+  return {
+    id: `target-moji-${String(index + 1).padStart(2, '0')}`,
+    item_id: item.id,
+    generated_from: 'weak_question_type',
+    target_reason: 'history_wrong_same_type',
+    type: '文脈規定',
+    instruction: '次の文の（　）に入れるのに最もよいものを一つ選びなさい。',
+    prompt: context.replace(item.original, '（　）'),
+    choices,
+    answer: item.original,
+    explanation_zh: item.explanation_zh ?? item.meaning_zh ?? '',
+  };
+}
+
+function generatedQuestionForKind(item, kind, index) {
+  if (kind === 'kanji_to_kana') return generatedKanjiToKanaQuestion(item, index);
+  if (kind === 'meaning') return generatedMeaningQuestion(item, index);
+  if (kind === 'grammar') return generatedGrammarQuestion(item, index);
+  if (kind === 'moji_goi') return generatedMojiGoiQuestion(item, index);
+  return generatedMeaningQuestion(item, index) ?? generatedGrammarQuestion(item, index) ?? generatedKanjiToKanaQuestion(item, index);
+}
+
+function readingDistractorsForPack(reading) {
+  const replacements = [
+    ['ねん', 'とし'],
+    ['ねん', 'ねい'],
+    ['とし', 'ねん'],
+    ['てい', 'たい'],
+    ['せい', 'しょう'],
+    ['しょう', 'せい'],
+    ['こう', 'こ'],
+    ['そう', 'そ'],
+    ['かん', 'がん'],
+    ['にん', 'じん'],
+  ];
+  const variants = replacements
+    .map(([source, target]) => reading.includes(source) ? reading.replace(source, target) : '')
+    .filter(Boolean);
+  const synthetic = [
+    reading.replace(/ん/u, 'い'),
+    reading.replace(/(.)\1/u, '$1'),
+    reading.includes('ん') ? reading.replace(/ん/u, 'う') : '',
+    reading.length > 2 ? `${reading.slice(0, -1)}い` : '',
+    reading.length > 2 ? `${reading.slice(0, -1)}う` : '',
+    `${reading.slice(0, Math.max(1, reading.length - 1))}ん`,
+  ];
+  return [...new Set([...variants, ...synthetic])]
+    .filter((choice) => choice && choice !== reading)
+    .slice(0, 6);
+}
+
+function buildTargetedReviewPack(userId, { title, minutes = 30 } = {}) {
+  const data = loadReviewData();
+  const state = getStudyState(userId);
+  const allAnswers = answerHistoryFor(state);
+  const kindPerformance = summarizeKindPerformance(allAnswers);
+  const wrongAnswers = recentWrongAnswers(allAnswers);
+  const dueItems = listDueReviews(userId);
+  const candidates = targetedItems(data, state, dueItems, wrongAnswers);
+  const priorityKinds = kindPerformance.filter((kind) => kind.wrong > 0).map((kind) => kind.kind);
+  if (!priorityKinds.length) priorityKinds.push('meaning', 'grammar', 'kanji_to_kana');
+
+  const generatedPractice = [];
+  const seenQuestion = new Set();
+  for (const kind of priorityKinds) {
+    const sameKindWrongItems = wrongAnswers
+      .filter((answer) => answer.kind === kind)
+      .map((answer) => candidates.find((item) => item.id === answer.itemId))
+      .filter(Boolean);
+    const itemPool = sameKindWrongItems.length ? [...sameKindWrongItems, ...candidates] : candidates;
+    for (const item of itemPool) {
+      if (generatedPractice.length >= 12) break;
+      const question = generatedQuestionForKind(item, kind, generatedPractice.length);
+      if (!question) continue;
+      const key = `${question.type}|${question.prompt}|${question.answer}|${(question.choices ?? []).join('|')}`;
+      if (seenQuestion.has(key)) continue;
+      seenQuestion.add(key);
+      generatedPractice.push({
+        ...question,
+        id: `target-${String(generatedPractice.length + 1).padStart(2, '0')}`,
+        itemId: question.item_id,
+        kind,
+      });
+    }
+    if (generatedPractice.length >= 12) break;
+  }
+
+  const focusItems = candidates.slice(0, 12).map((item) => {
+    const progress = state.progress[item.id] ?? {};
+    return {
+      id: item.id,
+      original: item.original,
+      deck: item.deck,
+      jlpt_level: item.jlpt_level,
+      status: progress.status ?? 'new',
+      correct: progress.correct ?? 0,
+      wrong: progress.wrong ?? 0,
+      nextReviewAt: progress.nextReviewAt,
+      reason: wrongAnswers.some((answer) => answer.itemId === item.id) ? 'recent_wrong' : dueItems.some((due) => due.id === item.id) ? 'due_review' : 'weak_progress',
+    };
+  });
+
+  const warmup = candidates.slice(0, 10).map((item) => {
+    const isGrammar = item.deck === 'grammar_expression' || item.type === 'expression' || item.type === 'grammar';
+    return {
+      item_id: item.id,
+      target_reason: wrongAnswers.some((answer) => answer.itemId === item.id) ? 'recent_wrong' : dueItems.some((due) => due.id === item.id) ? 'due_review' : 'weak_progress',
+      prompt: isGrammar
+        ? `「${item.original}」的接续、意思、使用限制是什么？`
+        : `「${item.original}」怎么读？中文意思和一个常见搭配是什么？`,
+      answer: [item.reading && item.reading !== item.original ? item.reading : null, item.core_memory, item.meaning_zh, item.explanation_zh].filter(Boolean).join('\n'),
+    };
+  });
+
   const now = new Date().toISOString();
+  return {
+    kind: 'daily_review_pack',
+    strategy: 'targeted_by_history',
+    minutes,
+    generated_at: now,
+    practice_plan: [
+      { minutes: Math.min(8, minutes), task: 'Warmup：只看 prompt，口头回答读音、接续、核心义。' },
+      { minutes: Math.max(10, Math.round(minutes * 0.55)), task: 'Same-type practice：优先做历史错题对应题型的新题。' },
+      { minutes: Math.max(5, minutes - Math.min(8, minutes) - Math.max(10, Math.round(minutes * 0.55))), task: 'Error log：错题写下题型、误选原因、正确判断步骤。' },
+    ],
+    diagnosis: {
+      total_answers: allAnswers.length,
+      recent_wrong_answers: wrongAnswers.slice(0, 8).map((answer) => ({
+        questionId: answer.questionId,
+        itemId: answer.itemId,
+        kind: answer.kind,
+        selected: answer.selected,
+        answeredAt: answer.answeredAt,
+      })),
+      weak_question_types: kindPerformance.slice(0, 6),
+      rule: '优先生成历史错题同题型的新题；没有错题时才按到期复习和 learning 状态补充。',
+    },
+    warmup,
+    quiz: generatedPractice,
+    focus_items: focusItems,
+    due_items: dueItems.slice(0, 12).map((item) => ({ id: item.id, original: item.original, deck: item.deck })),
+    generated_practice: generatedPractice,
+    sections: [
+      {
+        title: 'Targeted diagnosis',
+        body: 'Review starts from wrong-answer question types, not random deck sampling.',
+        items: kindPerformance.slice(0, 6),
+      },
+      {
+        title: 'Same-type practice',
+        body: 'These questions are generated from the weak question types found in answer history.',
+        items: generatedPractice,
+      },
+      {
+        title: 'Due review',
+        body: 'Use these items for spaced repetition after the targeted set.',
+        items: dueItems.slice(0, 12).map((item) => ({ id: item.id, original: item.original, deck: item.deck })),
+      },
+    ],
+    next_step: '先完成 same-type practice；错题只记录题型、误选原因和正确判断步骤。',
+  };
+}
+
+export function createDailyReviewPackDraft(userId, { title, minutes = 30 } = {}) {
+  const now = new Date().toISOString();
+  const content = buildTargetedReviewPack(userId, { title, minutes });
   return createReviewPackDraft(userId, {
     title: title || `Daily review draft ${now.slice(0, 10)}`,
-    content: {
-      kind: 'daily_review_pack',
-      minutes,
-      generated_at: now,
-      focus_items: analysis.weakest_items.slice(0, 8),
-      due_items: analysis.due_items.slice(0, 12),
-      sections: [
-        {
-          title: 'Weak items',
-          body: 'Review the items with wrong answers or learning status first.',
-          items: analysis.weakest_items.slice(0, 8),
-        },
-        {
-          title: 'Due review',
-          body: 'Use these items for spaced repetition today.',
-          items: analysis.due_items.slice(0, 12),
-        },
-      ],
-      next_step: 'Add comments in the draft preview, then ask the MCP client to optimize from the revision context.',
-    },
+    content,
   });
+}
+
+export function createDailyPractice(userId, { title, minutes = 30, date } = {}) {
+  const practiceDate = normalizePracticeDate(date);
+  const content = buildTargetedReviewPack(userId, { title, minutes });
+  const id = `daily-${practiceDate}-${randomBytes(6).toString('base64url')}`;
+  const now = new Date().toISOString();
+  const version = nextDailyPracticeVersion(userId, practiceDate);
+  const practice = {
+    id,
+    date: practiceDate,
+    version,
+    title: String(title || `${practiceDate} JLPT 今日练习 v${version}`).slice(0, 120),
+    minutes: Number.isFinite(Number(minutes)) ? Math.max(5, Math.min(240, Math.round(Number(minutes)))) : 30,
+    strategy: content.strategy,
+    generated_at: now,
+    diagnosis: content.diagnosis,
+    practice_plan: content.practice_plan,
+    questions: dailyPracticeQuestions(content.generated_practice ?? content.quiz ?? [], id),
+  };
+  if (!practice.questions.length) {
+    throw new Error('No daily practice questions could be generated from the current study history');
+  }
+  getDb()
+    .prepare(`
+      INSERT INTO daily_practices (id, user_id, practice_date, version, title, minutes, practice_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(id, userId, practiceDate, version, practice.title, practice.minutes, JSON.stringify(practice), now, now);
+  return getDailyPractice(userId, id);
+}
+
+export function createDailyPracticeFromDraft(userId, draftId, { date, title } = {}) {
+  const draft = getReviewPackDraft(userId, draftId);
+  if (!draft) {
+    throw new Error('Draft not found');
+  }
+  if (draft.status !== 'approved' && draft.status !== 'archived') {
+    throw new Error('Only approved drafts can be published as daily practice');
+  }
+
+  const existing = getDb()
+    .prepare(`
+      SELECT id, practice_json
+      FROM daily_practices
+      WHERE user_id = ?
+      ORDER BY updated_at DESC
+    `)
+    .all(userId)
+    .find((row) => JSON.parse(row.practice_json).sourceDraftId === draft.id);
+  if (existing) {
+    return getDailyPractice(userId, existing.id);
+  }
+
+  const content = draft.content && typeof draft.content === 'object' ? draft.content : {};
+  const sourceSections = Array.isArray(content.sections) ? content.sections : [];
+  const sourceQuestions = sourceSections.flatMap((section) =>
+    (Array.isArray(section.questions) ? section.questions : []).map((question) => ({ section, question })),
+  );
+  if (!sourceQuestions.length) {
+    throw new Error('Approved draft does not contain a complete question set');
+  }
+
+  const reviewItems = loadReviewData().items;
+  const practiceDate = normalizePracticeDate(date);
+  const id = `daily-${practiceDate}-${randomBytes(6).toString('base64url')}`;
+  const now = new Date().toISOString();
+  const version = nextDailyPracticeVersion(userId, practiceDate);
+  const questions = sourceQuestions.map(({ section, question }, index) => {
+    const choices = Array.isArray(question.choices) ? question.choices.map((choice) => String(choice)) : [];
+    const answerIndex = Number.isInteger(question.answerIndex)
+      ? question.answerIndex
+      : choices.indexOf(String(question.answer ?? ''));
+    if (choices.length < 2 || answerIndex < 0 || answerIndex >= choices.length) {
+      throw new Error(`Draft question ${question.id ?? index + 1} has an invalid answer`);
+    }
+    const answer = choices[answerIndex];
+    const item = reviewItems.find((candidate) =>
+      (candidate.practice_questions ?? []).some((seed) => seed.id === question.id || (
+        seed.source_draft_id === draft.id && seed.tested_expression === question.tested
+      )),
+    );
+    const explanation = String(question.explanation_zh ?? question.explanation ?? '').trim();
+    return {
+      id: `${id}-q${String(index + 1).padStart(2, '0')}`,
+      sourceQuestionId: String(question.id ?? `draft-q${index + 1}`),
+      sourceDraftId: draft.id,
+      itemId: item?.id ?? String(question.id ?? `draft-q${index + 1}`),
+      kind: draftQuestionKind(question.kind),
+      title: String(section.title ?? `問題${section.id ?? ''}`).trim(),
+      instruction: String(section.instruction ?? '').trim(),
+      prompt: String(question.prompt ?? '').trim(),
+      promptTarget: question.target ? String(question.target) : undefined,
+      choices,
+      answer,
+      answerIndex,
+      context: String(question.prompt ?? '').trim(),
+      correctReason: explanation || `正确答案是「${answer}」。`,
+      memoryPoint: String(question.tested ?? question.target ?? answer),
+      choiceAnalysis: choices.map((choice, choiceIndex) => ({
+        choice,
+        correct: choiceIndex === answerIndex,
+        explanation: choiceIndex === answerIndex
+          ? (explanation || `「${choice}」是正确答案。`)
+          : `「${choice}」不符合本题语境。`,
+      })),
+    };
+  });
+  const practice = {
+    id,
+    date: practiceDate,
+    version,
+    title: String(title || draft.title).slice(0, 120),
+    minutes: Number.isFinite(Number(content.time_limit_minutes))
+      ? Math.max(5, Math.min(240, Math.round(Number(content.time_limit_minutes))))
+      : 30,
+    strategy: 'approved_draft_full_set',
+    sourceDraftId: draft.id,
+    content_origin: 'ai_generated',
+    verification_status: content.verification_status ?? 'needs_review',
+    generated_at: now,
+    disclaimer: '本套练习由 AI 根据学习内容生成，不是 JLPT 官方真题或历年真题。',
+    sections: sourceSections.map((section) => ({
+      id: String(section.id ?? ''),
+      title: String(section.title ?? ''),
+      instruction: String(section.instruction ?? ''),
+      questionCount: Array.isArray(section.questions) ? section.questions.length : 0,
+    })),
+    questions,
+  };
+  getDb()
+    .prepare(`
+      INSERT INTO daily_practices (id, user_id, practice_date, version, title, minutes, practice_json, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    .run(id, userId, practiceDate, version, practice.title, practice.minutes, JSON.stringify(practice), now, now);
+
+  const annotations = [
+    ...draft.annotations,
+    {
+      id: randomBytes(8).toString('base64url'),
+      body: `已发布为 ${practiceDate} 今日整套练习：${practice.id}（${questions.length} 题）。`,
+      created_at: now,
+    },
+  ];
+  getDb()
+    .prepare('UPDATE review_pack_drafts SET status = ?, annotations_json = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .run('archived', JSON.stringify(annotations), now, userId, draft.id);
+  return getDailyPractice(userId, id);
+}
+
+function draftQuestionKind(value) {
+  const text = String(value ?? '');
+  if (text.includes('文脈')) return 'moji_goi';
+  if (text.includes('言い換え') || text.includes('類義') || text.includes('説明') || text.includes('用法')) return 'meaning';
+  if (text.includes('漢字読み')) return 'kanji_to_kana';
+  if (text.includes('表記')) return 'kana_to_kanji';
+  if (text.includes('文法') || text.includes('組み立て')) return 'grammar';
+  return 'meaning';
+}
+
+export function listDailyPractices(userId) {
+  return getDb()
+    .prepare(`
+      SELECT id, practice_date, version, title, minutes, practice_json, created_at, updated_at
+      FROM daily_practices
+      WHERE user_id = ?
+      ORDER BY updated_at DESC
+    `)
+    .all(userId)
+    .map(rowToDailyPracticeSummary);
+}
+
+export function getDailyPractice(userId, id) {
+  const row = getDb()
+    .prepare(`
+      SELECT id, practice_date, version, title, minutes, practice_json, created_at, updated_at
+      FROM daily_practices
+      WHERE user_id = ? AND id = ?
+    `)
+    .get(userId, id);
+  return row ? rowToDailyPractice(row) : null;
+}
+
+function rowToDailyPracticeSummary(row) {
+  const practice = JSON.parse(row.practice_json);
+  return {
+    id: row.id,
+    date: row.practice_date,
+    version: row.version ?? practice.version ?? 1,
+    title: row.title,
+    minutes: row.minutes,
+    strategy: practice.strategy ?? 'targeted_by_history',
+    questionCount: Array.isArray(practice.questions) ? practice.questions.length : 0,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function rowToDailyPractice(row) {
+  return {
+    ...rowToDailyPracticeSummary(row),
+    ...JSON.parse(row.practice_json),
+    id: row.id,
+    date: row.practice_date,
+    version: row.version ?? 1,
+    title: row.title,
+    minutes: row.minutes,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+function nextDailyPracticeVersion(userId, practiceDate) {
+  const row = getDb()
+    .prepare('SELECT COALESCE(MAX(version), 0) + 1 AS version FROM daily_practices WHERE user_id = ? AND practice_date = ?')
+    .get(userId, practiceDate);
+  return Number(row?.version) || 1;
+}
+
+function normalizePracticeDate(value) {
+  const candidate = String(value ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/u.test(candidate)) {
+    return candidate;
+  }
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function dailyPracticeQuestions(generatedPractice, practiceId) {
+  return generatedPractice
+    .map((question, index) => normalizeDailyPracticeQuestion(question, practiceId, index))
+    .filter(Boolean);
+}
+
+function normalizeDailyPracticeQuestion(question, practiceId, index) {
+  if (!question || typeof question !== 'object') return null;
+  const kind = normalizeQuestionKind(question.kind ?? question.type);
+  const choices = Array.isArray(question.choices) ? question.choices.map((choice) => String(choice)).filter(Boolean) : [];
+  const answer = String(question.answer ?? '').trim();
+  const itemId = String(question.itemId ?? question.item_id ?? '').trim();
+  const prompt = String(question.prompt ?? '').trim();
+  if (!kind || !choices.length || !answer || !itemId || !prompt) return null;
+  const id = `${practiceId}-q${String(index + 1).padStart(2, '0')}`;
+  const explanation = String(question.explanation_zh ?? question.explanation ?? '').trim();
+  return {
+    id,
+    sourceQuestionId: question.id,
+    itemId,
+    kind,
+    title: questionTitleForKind(kind),
+    instruction: String(question.instruction ?? '').trim(),
+    prompt,
+    promptTarget: question.promptTarget ? String(question.promptTarget) : undefined,
+    choices,
+    answer,
+    context: prompt,
+    correctReason: explanation || `正确答案是「${answer}」。`,
+    memoryPoint: explanation || `复习目标：${question.promptTarget ?? answer}`,
+    choiceAnalysis: choices.map((choice) => ({
+      choice,
+      correct: choice === answer,
+      explanation: choice === answer ? `「${choice}」是本题正确答案。` : `「${choice}」不符合本题目标。`,
+    })),
+  };
+}
+
+function normalizeQuestionKind(value) {
+  const text = String(value ?? '');
+  if (['grammar', 'moji_goi', 'meaning', 'kana_to_kanji', 'kanji_to_kana'].includes(text)) return text;
+  if (text.includes('漢字読み')) return 'kanji_to_kana';
+  if (text.includes('言い換え') || text.includes('類義')) return 'meaning';
+  if (text.includes('文脈')) return 'moji_goi';
+  if (text.includes('文の文法') || text.includes('文の組み立て') || text.includes('grammar')) return 'grammar';
+  return null;
+}
+
+function questionTitleForKind(kind) {
+  if (kind === 'grammar') return '文法练习';
+  if (kind === 'moji_goi') return '文字・語彙练习';
+  if (kind === 'kanji_to_kana') return '漢字読み练习';
+  if (kind === 'kana_to_kanji') return '表記练习';
+  return '言い換え练习';
 }
 
 export function createReviewPackDraft(userId, { title, content, status = 'draft' }) {
@@ -730,6 +2103,38 @@ export function getReviewPackDraft(userId, id) {
   };
 }
 
+export function updateReviewPackDraft(userId, id, { title, content }) {
+  const draft = getReviewPackDraft(userId, id);
+  if (!draft) {
+    return null;
+  }
+  const nextTitle = String(title ?? '').trim();
+  if (!nextTitle) {
+    throw new Error('Draft title is required');
+  }
+  if (content === undefined) {
+    throw new Error('Draft content is required');
+  }
+  const now = new Date().toISOString();
+  const nextDraft = {
+    ...draft,
+    title: nextTitle.slice(0, 120),
+    content,
+    updated_at: now,
+  };
+  getDb()
+    .prepare('UPDATE review_pack_drafts SET title = ?, content_json = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .run(nextDraft.title, JSON.stringify(nextDraft.content), now, userId, id);
+  return nextDraft;
+}
+
+export function deleteReviewPackDraft(userId, id) {
+  const result = getDb()
+    .prepare('DELETE FROM review_pack_drafts WHERE user_id = ? AND id = ?')
+    .run(userId, id);
+  return result.changes > 0;
+}
+
 export function addDraftAnnotation(userId, id, { body }) {
   const draft = getReviewPackDraft(userId, id);
   if (!draft) {
@@ -758,6 +2163,68 @@ export function addDraftAnnotation(userId, id, { body }) {
   return nextDraft;
 }
 
+export function confirmDraftForAgentProcessing(userId, id, { unknownWords = '' } = {}) {
+  const draft = getReviewPackDraft(userId, id);
+  if (!draft) {
+    return null;
+  }
+  const now = new Date().toISOString();
+  const words = normalizeUnknownWords(unknownWords);
+  const annotations = words.length
+    ? [
+        ...draft.annotations,
+        {
+          id: randomBytes(8).toString('base64url'),
+          body: `用户确认草稿可处理。不认识单词：${words.join('、')}`,
+          created_at: now,
+        },
+      ]
+    : draft.annotations;
+  getDb()
+    .prepare('UPDATE review_pack_drafts SET status = ?, annotations_json = ?, updated_at = ? WHERE user_id = ? AND id = ?')
+    .run('approved', JSON.stringify(annotations), now, userId, id);
+  return buildDraftProcessingContext(userId, id, { unknownWords: words, confirmedAt: now });
+}
+
+export function buildDraftProcessingContext(userId, id, { unknownWords = [], confirmedAt } = {}) {
+  const draft = getReviewPackDraft(userId, id);
+  if (!draft) {
+    return null;
+  }
+  const words = Array.isArray(unknownWords) ? unknownWords : normalizeUnknownWords(unknownWords);
+  const studyRecord = buildStudyRecord(userId);
+  return {
+    draft,
+    confirmed_at: confirmedAt ?? null,
+    user_marks: {
+      unknown_words: words,
+    },
+    pending_captures: listLearningCaptures(userId, 'inbox'),
+    wordbooks: listWordbooks(userId),
+    study_record: studyRecord,
+    routing_rules: [
+      'Use draft.content.kind, source questions, and any original capture category to decide the target library.',
+      'When a pending capture has targetWordbookId or targetWordbookTitle, preserve that as the requested notebook metadata on the review item.',
+      'When a pending capture has targetDeck, honor it as the requested review_items deck unless the content clearly contradicts the category.',
+      'Vocabulary, kanji-reading, meaning, kana-to-kanji, and grammar items belong in the SQLite review_items library through upsert_review_item. JSON review-data files are export/import backups, not the primary store.',
+      'Reading questions belong in the reading question bank.',
+      'Listening questions belong in the listening question bank; keep source audio local and do not invent audio bytes.',
+      'Use user_marks.unknown_words to add vocabulary entries or extra practice seeds when they are not already covered.',
+      'When an approved draft contains a complete ordered question set, publish it as one Today daily practice through publish_draft_as_daily_practice. Do not split review packs across the long-term study plan.',
+      'Mark processed captures only after their content has been represented in the target library or in a follow-up draft.',
+    ],
+    agent_message: [
+      '请使用 jlpt_review MCP 登录我的本地 JLPT 账号，并处理这个已确认草稿。',
+      `草稿 ID：${draft.id}`,
+      words.length ? `用户标记的不认识单词：${words.join('、')}` : '用户没有额外标记不认识单词。',
+      '先调用 get_draft_processing_context 重新读取草稿、用户标记、待整理输入、学习记录和 routing_rules。',
+      '根据原始输入的题型和草稿内容，把数据放到对应库：词汇、语法、汉字读音、文字题种子通过 upsert_review_item 写入 SQLite review_items；阅读题写入阅读题库；听力题写入听力题库或生成需要本地音频的待办说明。JSON 只作为导出/备份格式。',
+      '如果草稿是一整套已确认试题，调用 publish_draft_as_daily_practice 原样保留题目与选项顺序，并把入口放在首页“今日工作台 → 今天的练习版本”；不要把这类复习拆进长期计划。',
+      '完成后说明改了哪些库、哪些 capture 已处理、还有哪些内容需要人工确认。不要跳过核对边界，也不要把 AI 生成内容说成官方真题。',
+    ].join('\n'),
+  };
+}
+
 export function buildDraftRevisionContext(userId, id) {
   const draft = getReviewPackDraft(userId, id);
   if (!draft) {
@@ -772,6 +2239,14 @@ export function buildDraftRevisionContext(userId, id) {
       '输出新的 draft 内容，不要直接写入正式月度归档 JSON。',
     ].join('\n'),
   };
+}
+
+function normalizeUnknownWords(value) {
+  return String(value ?? '')
+    .split(/[\n,，、;；\s]+/)
+    .map((word) => word.trim())
+    .filter(Boolean)
+    .slice(0, 80);
 }
 
 function normalizeDraftStatus(status) {
@@ -821,14 +2296,29 @@ function normalizeSettings(value) {
   const locale = value?.locale === 'ja' || value?.locale === 'en' || value?.locale === 'zh-CN' ? value.locale : defaultSettings.locale;
   const feedbackMode = value?.feedbackMode === 'batch' ? 'batch' : defaultSettings.feedbackMode;
   const fontSize = value?.fontSize === 'small' || value?.fontSize === 'large' ? value.fontSize : defaultSettings.fontSize;
+  const rawQuestionTypeTips = normalizeQuestionTypeTips(value?.questionTypeTips);
+  const questionTypeTips = Object.fromEntries(Object.entries(rawQuestionTypeTips).filter(([key]) => key !== memoryCardFrontCompatKey && key !== memoryCardBackCompatKey));
   return {
     showReviewRuby: typeof value?.showReviewRuby === 'boolean' ? value.showReviewRuby : defaultSettings.showReviewRuby,
     showExplanationRuby: typeof value?.showExplanationRuby === 'boolean' ? value.showExplanationRuby : defaultSettings.showExplanationRuby,
     locale,
     fontSize,
+    memoryCardFrontFields: normalizeMemoryCardFields(value?.memoryCardFrontFields ?? compatibilityMemoryCardFields(rawQuestionTypeTips[memoryCardFrontCompatKey]), defaultMemoryCardFrontFields),
+    memoryCardBackFields: normalizeMemoryCardFields(value?.memoryCardBackFields ?? compatibilityMemoryCardFields(rawQuestionTypeTips[memoryCardBackCompatKey]), defaultMemoryCardBackFields),
     feedbackMode,
-    questionTypeTips: normalizeQuestionTypeTips(value?.questionTypeTips),
+    questionTypeTips,
+    customQuestionTypeTips: normalizeCustomQuestionTypeTips(value?.customQuestionTypeTips),
   };
+}
+
+function normalizeMemoryCardFields(value, fallback) {
+  if (!Array.isArray(value)) return [...fallback];
+  const fields = [...new Set(value.filter((field) => typeof field === 'string' && memoryCardFields.has(field)))];
+  return fields.length ? fields : [...fallback];
+}
+
+function compatibilityMemoryCardFields(value) {
+  return typeof value === 'string' ? value.split(',').filter(Boolean) : undefined;
 }
 
 function normalizeQuestionTypeTips(value) {
@@ -843,14 +2333,40 @@ function normalizeQuestionTypeTips(value) {
   );
 }
 
+function normalizeCustomQuestionTypeTips(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const now = new Date().toISOString();
+  return value
+    .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
+    .map((item, index) => {
+      const section = ['vocabulary', 'grammar', 'reading', 'listening'].includes(item.section) ? item.section : 'vocabulary';
+      const id = typeof item.id === 'string' && /^custom-tip-[a-z0-9_-]{1,80}$/i.test(item.id) ? item.id : `custom-tip-legacy-${index}`;
+      return {
+        id,
+        section,
+        title: String(item.title ?? '').trim().slice(0, 80),
+        description: String(item.description ?? '').trim().slice(0, 200),
+        tip: String(item.tip ?? '').trim().slice(0, 2000),
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : now,
+        updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : now,
+      };
+    })
+    .filter((item) => item.title && item.tip)
+    .slice(0, 80);
+}
+
 function normalizeStudyPlanDocument(value) {
   const legacyProfile = value?.profile ?? value;
   const profile = normalizeStudyPlanProfile(legacyProfile);
   const tasks = normalizeStudyPlanTasks(value?.tasks ?? [], profile, false);
+  const phases = normalizeStudyPlanPhases(value?.phases ?? [], profile, false);
   return {
     profile,
     status: tasks.length ? (value?.status === 'needs_refresh' ? 'needs_refresh' : 'ready') : 'profile_only',
     tasks,
+    phases,
     ...(value?.generatedAt ? { generatedAt: normalizeTimestamp(value.generatedAt) } : {}),
   };
 }
@@ -875,6 +2391,11 @@ function normalizeStudyPlanProfile(value) {
     studyDaysPerWeek: clampInteger(value?.studyDaysPerWeek, 1, 7, fallback.studyDaysPerWeek),
     dailyMinutes: clampInteger(value?.dailyMinutes, 15, 480, fallback.dailyMinutes),
     materials,
+    materialStartStatus: ['not_started', 'in_progress', 'reviewing'].includes(value?.materialStartStatus) ? value.materialStartStatus : fallback.materialStartStatus,
+    fixedSchedule: String(value?.fixedSchedule ?? '').trim().slice(0, 1000),
+    supplementalNeeds: String(value?.supplementalNeeds ?? '').trim().slice(0, 1000),
+    phaseStrategy: String(value?.phaseStrategy ?? '').trim().slice(0, 1000),
+    postMaterialStrategy: String(value?.postMaterialStrategy ?? '').trim().slice(0, 1000),
     goal: String(value?.goal ?? '').trim().slice(0, 1000),
   };
 }
@@ -888,8 +2409,40 @@ function normalizeStudyMaterial(value, index) {
     id: /^[a-z0-9_-]{1,100}$/i.test(value?.id) ? value.id : `material-${index + 1}`,
     title,
     module: ['grammar', 'reading', 'listening', 'vocabulary', 'other'].includes(value?.module) ? value.module : 'other',
-    currentPosition: String(value?.currentPosition ?? value?.notes ?? '').trim().slice(0, 500),
+    currentPosition: String(value?.currentPosition ?? value?.notes ?? '').trim().slice(0, 1200),
   };
+}
+
+function normalizeStudyPlanPhases(value, profile, required = true) {
+  if (!Array.isArray(value)) {
+    if (required) throw new Error('Generated plan phases must be an array');
+    return [];
+  }
+  const phases = value.slice(0, 12).map((phase, index) => {
+    const startDate = clampDate(normalizeDate(phase?.startDate, profile.startDate), profile.startDate, profile.examDate);
+    const endDate = clampDate(normalizeDate(phase?.endDate, profile.examDate), profile.startDate, profile.examDate);
+    if (endDate < startDate) {
+      throw new Error(`Phase ${index + 1} ends before it starts`);
+    }
+    const focus = String(phase?.focus ?? '').trim().slice(0, 120);
+    if (!focus) throw new Error(`Phase ${index + 1} needs a focus`);
+    const points = Array.isArray(phase?.points)
+      ? phase.points.slice(0, 8).map((point) => String(point ?? '').trim().slice(0, 80)).filter(Boolean)
+      : [];
+    const goal = String(phase?.goal ?? '').trim().slice(0, 300);
+    return {
+      id: isIdentifier(phase?.id) ? phase.id : `phase-${index + 1}`,
+      startDate,
+      endDate,
+      focus,
+      points,
+      ...(goal ? { goal } : {}),
+    };
+  });
+  if (new Set(phases.map((phase) => phase.id)).size !== phases.length) {
+    throw new Error('Generated plan phase IDs must be unique');
+  }
+  return phases.sort((left, right) => left.startDate.localeCompare(right.startDate) || left.id.localeCompare(right.id));
 }
 
 function normalizeStudyPlanTasks(value, profile, required = true) {
@@ -904,7 +2457,7 @@ function normalizeStudyPlanTasks(value, profile, required = true) {
     }
     const title = String(task?.title ?? '').trim().slice(0, 160);
     if (!title) throw new Error(`Task ${index + 1} needs a title`);
-    const id = /^[a-z0-9_-]{1,120}$/i.test(task?.id) ? task.id : `task-${date}-${index + 1}`;
+    const id = isIdentifier(task?.id) ? task.id : `task-${date}-${index + 1}`;
     return {
       id,
       date,
@@ -939,10 +2492,30 @@ function defaultStudyPlanProfile() {
     studyDaysPerWeek: 6,
     dailyMinutes: 90,
     materials: [
-      { id: 'shin-kanzen-grammar', title: '新完全掌握 N1 语法', module: 'grammar', currentPosition: '' },
-      { id: 'shin-kanzen-reading', title: '新完全掌握 N1 阅读', module: 'reading', currentPosition: '' },
-      { id: 'shin-kanzen-listening', title: '新完全掌握 N1 听力', module: 'listening', currentPosition: '' },
+      {
+        id: 'shin-kanzen-grammar',
+        title: '新完全掌握 N1 语法',
+        module: 'grammar',
+        currentPosition: '从第 1 部 文の文法1 开始：ことがらを説明する、時間関係、範囲の始まり・限度、例示、関連・無関係、様子、付随行動、逆接、条件、目的・手段、原因・理由、可能・不可能・禁止、話題・評価、比較対照、結果・最終状態、強調、主張・断定、評価・感想、心情・強制的思い；之后整理文法形式、第 2 部 文の文法2、第 3 部 文章の文法。',
+      },
+      {
+        id: 'shin-kanzen-reading',
+        title: '新完全掌握 N1 阅读',
+        module: 'reading',
+        currentPosition: '从第 1 部 評論・解説・エッセイなど 开始：文章全体の意味、対比、言い換え、比喩、疑問提示文、指示語、だれが/何を、下線部の意味、理由、例；之后广告/通知/说明书/表・リスト，最后实战问题。',
+      },
+      {
+        id: 'shin-kanzen-listening',
+        title: '新完全掌握 N1 听力',
+        module: 'listening',
+        currentPosition: '从音声の特徴开始：似ている音、音の変化や縮約形；之后即時応答、課題理解、ポイント理解、概要理解、統合理解，并在各技能后做確認問題和模擬試験。',
+      },
     ],
+    materialStartStatus: 'not_started',
+    fixedSchedule: '',
+    supplementalNeeds: '',
+    phaseStrategy: '',
+    postMaterialStrategy: '',
     goal: '',
   };
 }
@@ -997,6 +2570,14 @@ function dateInTokyo(value) {
 
 function normalizeDate(value, fallback) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime()) ? value : fallback;
+}
+
+function isIdentifier(value) {
+  return typeof value === 'string' && /^[a-z0-9_-]{1,120}$/i.test(value);
+}
+
+function clampDate(value, min, max) {
+  return value < min ? min : value > max ? max : value;
 }
 
 function clampInteger(value, min, max, fallback) {
@@ -1054,7 +2635,9 @@ function parseJson(value, fallback) {
 function mapListeningQuestion(row) {
   return {
     id: row.id,
+    libraryNumber: Number(row.library_number),
     title: row.title,
+    questionTypeId: normalizeListeningQuestionTypeId(row.question_type_id),
     question: row.question,
     choices: parseJson(row.choices_json, []),
     answerIndex: Number(row.answer_index),
@@ -1062,6 +2645,58 @@ function mapListeningQuestion(row) {
     audioFileName: row.audio_file_name,
     audioMime: row.audio_mime,
     audioSize: Number(row.audio_size),
+    createdAt: row.created_at,
+  };
+}
+
+function mapListeningRecording(row) {
+  return {
+    id: row.id,
+    listeningQuestionId: row.listening_question_id,
+    audioMime: row.audio_mime,
+    audioSize: Number(row.audio_size),
+    status: ['pending', 'analyzing', 'completed', 'failed'].includes(row.status) ? row.status : 'pending',
+    analysis: parseJson(row.analysis_json, undefined),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function normalizeListeningRecordingAnalysis(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Analysis result is required');
+  }
+  const summary = String(value.summary ?? '').trim().slice(0, 2000);
+  const strengths = Array.isArray(value.strengths) ? value.strengths.map((item) => String(item ?? '').trim()).filter(Boolean).slice(0, 8) : [];
+  const improvements = Array.isArray(value.improvements) ? value.improvements.map((item) => String(item ?? '').trim()).filter(Boolean).slice(0, 8) : [];
+  const nextPractice = String(value.nextPractice ?? '').trim().slice(0, 2000);
+  if (!summary || !nextPractice) {
+    throw new Error('Analysis requires summary and nextPractice');
+  }
+  return {
+    summary,
+    transcript: String(value.transcript ?? '').trim().slice(0, 8000) || undefined,
+    referenceTranscript: String(value.referenceTranscript ?? '').trim().slice(0, 8000) || undefined,
+    strengths,
+    improvements,
+    nextPractice,
+  };
+}
+
+function normalizeListeningQuestionTypeId(value) {
+  const id = String(value ?? '').trim();
+  return listeningQuestionTypeIds.has(id) ? id : defaultListeningQuestionTypeId;
+}
+
+function mapReadingQuestion(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    passage: row.passage,
+    question: row.question,
+    choices: parseJson(row.choices_json, []),
+    answerIndex: Number(row.answer_index),
+    explanation: row.explanation,
     createdAt: row.created_at,
   };
 }

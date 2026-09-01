@@ -24,15 +24,20 @@ For Claude Code or other coding assistants, tell the assistant to read this `SKI
 
 For each item:
 
-- Preserve the Japanese surface form.
+- Store the canonical dictionary form or standard spelling directly in `original`; preserve the learner's surface form or original sentence in source fields when it matters.
 - Add `input_at` as an ISO 8601 timestamp for when the user provided the item.
-- Normalize obvious typos only in a separate field when needed.
+- Do not create a separate `normalized` display attribute.
 - Classify the deck as `n1_vocab`, `grammar_expression`, or `name_reading`.
 - Estimate JLPT level only when there is enough evidence; otherwise use `unknown`.
 - Write Chinese explanations for review.
 - When the user asks for multiple languages, keep the Japanese source fields stable and write translated learner-facing text under `localizations`.
-- Include reading, core memory, collocations, examples, comparisons, and analysis when relevant.
+- Include reading, core memory, collocations, comparisons, and analysis when relevant.
+- Give every vocabulary item at least two natural Japanese example sentences in `examples`. Every sentence must include its learner-language translation; for the default Simplified Chinese workflow, write it in `examples[].zh`.
+- Examples used for scored questions must show the expression doing real work in a concrete situation. Sentences such as `教材では「X」という表現を学んだ` are source notes, not valid quiz contexts; do not use them as prompts.
+- For verbs and adjectives, include `part_of_speech`, `inflection_class`, `base_form`, and `conjugations`. Use `godan`, `ichidan`, `suru`, `kuru`, `i_adjective`, or `na_adjective` for `inflection_class`. Use stable conjugation `kind` values such as `dictionary`, `polite`, `negative`, `past`, `te`, `conditional`, and `adverbial`; store the actual Japanese surface form in `form`.
+- Classify `part_of_speech` grammatically. Do not use generic content labels such as `語句`, `词语`, `word`, or `expression` as a part of speech. Use precise values such as `名詞`, `名詞句`, `動詞`, `動詞句`, `イ形容詞`, `イ形容詞句`, `ナ形容詞`, or `名詞・サ変動詞`, based on the head or predicate of the complete entry.
 - Add `meaning_ja` as a concise Japanese dictionary-style definition for every vocabulary item. Keep it distinct from the learner-language meaning and from `core_memory`.
+- For `言い換え類義`, write `paraphrase_ja` as a shorter, context-compatible rewording. Never copy `meaning_ja` into it unchanged; if no distinct natural paraphrase exists, do not enable the `meaning` question kind.
 - Write `core_memory` as a short exam-room recall note: the minimum cue needed to recognize the word, usage, or contrast quickly. Do not duplicate the full analysis.
 - Add kana readings for every Japanese field that contains kanji. Prefer structured `ruby_terms` arrays in data so the app can show or hide furigana without changing the base text.
 - Do not add furigana or ruby markup inside quiz prompts, choices, selected answers, or correct answers. Furigana is only for review cards and explanations.
@@ -59,6 +64,10 @@ Every generated question should support immediate correct/incorrect judging and 
 Apply the official JLPT-style structure: task instruction, complete natural context, target underlined in context, four options, and no Chinese/English hints inside the prompt or options.
 
 For grammar expressions, prefer a sentence with a blank plus controlled distractors that test connection or function. Do not turn a grammar item into an isolated reading, spelling, or dictionary-meaning question unless that was the learner's actual confusion.
+
+For every grammar expression, record its register explicitly with `usage_register` (`written`, `spoken`, `both`, or `formal`) and explain the nuance in `usage_register_zh`. Add natural conversational equivalents to `everyday_alternatives`, especially when the tested form is written or formal. When variants within one entry differ, explain which variant is more common in conversation instead of assigning an oversimplified label.
+
+Every item in `practice_questions` must include `translation_zh`: a complete, natural Chinese translation of the Japanese sentence after inserting the correct answer. Keep this separate from `explanation_zh`, which explains why the answer is correct.
 
 Furigana must be display-controlled, not baked into visible plain text. The review app should be able to hide furigana during recall and show it in explanations when the learner wants support. Question prompts and answer choices must stay plain so readings do not leak into the test.
 

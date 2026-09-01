@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JLPT 计划大纲 · 原型</title>
+<style>
+  :root {
+    --ink: #27312c; --ink-soft: #46514c; --muted: #68716b; --faint: #8b918a;
+    --green: #31564c; --green-mid: #5f8275; --green-pale: #a9c4b8;
+    --surface: #ffffff; --surface-alt: #fbfcf8; --surface-green: #f3f8f5; --surface-mint: #edf4ef;
+    --line: #dfe5dc; --line-soft: #f0f3ef; --line-strong: #d7dfd6;
+    --gold: #7d6032; --gold-deep: #a76c1c; --gold-pale: #fbfaf4; --gold-line: #c3a45b; --gold-chip: #f3eddc; --gold-chip-ink: #765c25;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: linear-gradient(135deg, #fffaf6 0%, #fff7fb 46%, #f8fff9 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+
+  /* prototype chrome */
+  .proto-bar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--line-strong); background: rgba(255, 253, 250, 0.94);
+    backdrop-filter: blur(6px); padding: 10px 18px;
+  }
+  .proto-bar strong { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .seg { display: flex; gap: 3px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); padding: 3px; }
+  .seg button { border: none; border-radius: 5px; background: transparent; padding: 6px 11px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .seg button.on { background: var(--green); color: #fff; }
+  .proto-note { margin-left: auto; font-size: 11px; color: var(--faint); }
+
+  .frame { margin: 0 auto; padding: 26px 22px 60px; max-width: 1180px; transition: max-width .18s ease; }
+  body.mobile .frame { max-width: 430px; padding: 18px 16px 90px; }
+
+  /* header */
+  .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line-strong); padding-bottom: 15px; }
+  .eyebrow { font-size: 13px; font-weight: 600; color: var(--gold); }
+  .head h1 { margin-top: 4px; font-size: 23px; font-weight: 600; letter-spacing: -.01em; }
+  .head p { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  body.mobile .head { flex-direction: column; gap: 12px; }
+  body.mobile .head h1 { font-size: 20px; }
+
+  .chip { display: inline-flex; align-items: center; border-radius: 4px; padding: 4px 9px; font-size: 12px; font-weight: 600; }
+  .chip-green { background: #e7f0eb; color: var(--green); }
+  .chip-gold { background: var(--gold-chip); color: var(--gold-chip-ink); }
+  .chip-grey { background: #f2f5f0; color: var(--muted); }
+
+  .banner { display: flex; align-items: center; gap: 16px; margin-top: 18px; border-left: 2px solid var(--gold-line); background: var(--gold-pale); padding: 13px 17px; }
+  .banner p.t { font-size: 13px; font-weight: 600; color: #51482f; }
+  .banner p.b { margin-top: 5px; font-size: 12px; line-height: 1.6; color: #6d674f; }
+  .banner button { flex-shrink: 0; height: 36px; border: 1px solid #c9b97b; border-radius: 6px; background: #fff; padding: 0 13px; font-size: 13px; font-weight: 600; color: #5c522f; }
+  body.mobile .banner { flex-direction: column; align-items: stretch; gap: 10px; }
+
+  /* status strip */
+  .strip { display: flex; align-items: center; gap: 18px; margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 13px 18px; box-shadow: 0 1px 2px rgba(39,49,44,.05); }
+  .strip .cell { flex-shrink: 0; }
+  .strip .cell p.k { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .strip .cell p.v { margin-top: 2px; font-size: 17px; font-weight: 600; }
+  .bar { height: 6px; border-radius: 3px; background: #e5ebe6; overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 3px; background: var(--green-mid); }
+  .strip .grow { flex-grow: 1; min-width: 0; }
+  .strip .sub { margin-top: 6px; font-size: 11px; color: var(--muted); }
+
+  .layout { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 18px; margin-top: 18px; align-items: start; }
+  body.mobile .layout { grid-template-columns: minmax(0, 1fr); }
+  body.mobile .rail { display: none; }
+
+  .card { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: 0 1px 2px rgba(39,49,44,.05); }
+  .rail { padding: 18px; }
+  .rail .k { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .rail .phase-nav { display: flex; flex-direction: column; gap: 2px; margin-top: 18px; }
+  .rail .phase-nav button { display: block; width: 100%; border: 1px solid transparent; border-radius: 6px; background: transparent; padding: 9px 11px; text-align: left; }
+  .rail .phase-nav button.on { border-color: var(--green-pale); background: var(--surface-green); }
+  .rail .phase-nav .row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .rail .phase-nav .nm { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .rail .phase-nav .ct { font-size: 11px; font-weight: 600; color: var(--faint); }
+  .rail .phase-nav .dt { margin-top: 3px; font-size: 11px; color: var(--faint); }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .filters button { border: 1px solid var(--line); border-radius: 4px; background: #fff; padding: 5px 9px; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .filters button.on { border-color: var(--green); background: var(--surface-mint); color: var(--green); }
+  .filters button.on.warn { border-color: #c9b97b; background: var(--gold-pale); color: var(--gold-chip-ink); }
+
+  /* outline */
+  .phases { display: flex; flex-direction: column; gap: 13px; }
+  .phase { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; box-shadow: 0 1px 2px rgba(39,49,44,.05); }
+  .phase.active { border-color: var(--green-pale); }
+  .phase > .ph-head { display: flex; align-items: center; gap: 13px; width: 100%; border: none; background: transparent; padding: 15px 19px; text-align: left; }
+  .phase.active > .ph-head { background: var(--surface-green); border-bottom: 1px solid var(--line); }
+  .phase.open.active > .ph-head { border-bottom: 1px solid var(--line); }
+  .caret { flex-shrink: 0; display: grid; place-items: center; width: 16px; height: 16px; color: var(--faint); transition: transform .15s ease; }
+  .phase.active .caret { color: var(--green); }
+  .phase.open > .ph-head .caret { transform: rotate(90deg); }
+  .ph-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .ph-title h2 { font-size: 15px; font-weight: 600; }
+  .ph-title .rg { font-size: 12px; color: var(--muted); }
+  .ph-goal { margin-top: 5px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+  .ph-count { flex-shrink: 0; }
+
+  .weeks { display: flex; flex-direction: column; }
+  .wk { border-top: 1px solid var(--line-soft); }
+  .wk:first-child { border-top: none; }
+  .wk > .wk-head { display: flex; align-items: center; gap: 13px; width: 100%; border: none; background: transparent; padding: 11px 19px; text-align: left; }
+  .wk.open > .wk-head { background: var(--surface-alt); }
+  .wk.now > .wk-head .wk-name { color: var(--ink); }
+  .wk-name { flex-shrink: 0; width: 112px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .wk-sum { flex-grow: 1; min-width: 0; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wk-ct { flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--faint); }
+  .wk-ct.warn { color: var(--gold-deep); }
+  .wk-ct.done { color: var(--green); }
+  .wk-body { background: var(--surface-alt); padding: 0 19px 12px 66px; }
+  body.mobile .wk-body { padding: 0 14px 12px; }
+  body.mobile .wk-name { width: auto; }
+
+  .task { display: flex; align-items: center; gap: 11px; min-height: 44px; border-top: 1px solid #eaeee8; padding: 6px 0; }
+  .task.sel { background: var(--surface-green); margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 5px; }
+  .task.today { background: #fdfbf2; margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 5px; }
+  .task .box { flex-shrink: 0; display: grid; place-items: center; width: 17px; height: 17px; border: 1.5px solid #d5dcd6; border-radius: 4px; background: #fff; padding: 0; }
+  .task .box.on { border-color: var(--green); background: var(--green); }
+  .task .box svg { opacity: 0; }
+  .task .box.on svg { opacity: 1; }
+  .task .dt { flex-shrink: 0; width: 66px; font-size: 12px; color: var(--faint); }
+  .task.today .dt { font-weight: 600; color: var(--gold-deep); }
+  .mod { flex-shrink: 0; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 600; }
+  .mod-grammar { background: var(--surface-mint); color: #2f5347; }
+  .mod-reading { background: #eef3f6; color: #2c4a58; }
+  .mod-listening { background: #f4eff6; color: #4c3a58; }
+  .mod-vocabulary { background: #f6f2e8; color: #5b4a26; }
+  .mod-other { background: #f1f3ef; color: #55605a; }
+  .task .ttl { flex-grow: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task.done .ttl { color: #7a807b; text-decoration: line-through; }
+  .task.skipped .ttl { color: #9aa09a; }
+  .task .min { flex-shrink: 0; font-size: 12px; color: var(--faint); }
+  .task .st { flex-shrink: 0; width: 64px; text-align: right; font-size: 11px; font-weight: 600; color: var(--faint); }
+  .task .st.done { color: var(--green); }
+  .task .st.late { color: var(--gold-deep); }
+  body.mobile .task .min { display: none; }
+  body.mobile .task .dt { width: 52px; font-size: 11px; }
+
+  .rowacts { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 0 11px 28px; background: var(--surface-green); margin: 0 -10px; padding-left: 38px; padding-right: 10px; border-radius: 0 0 5px 5px; }
+  .rowacts .hint { align-self: center; font-size: 11px; color: var(--faint); }
+  .mini { height: 30px; border: 1px solid #c8d1c8; border-radius: 5px; background: #fff; padding: 0 11px; font-size: 12px; font-weight: 600; color: var(--green); }
+  .mini.warn { border-color: #dcc9b5; color: #7a5d43; }
+
+  .batch { position: sticky; bottom: 14px; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; border: 1px solid var(--green); border-radius: 8px; background: #fff; box-shadow: 0 6px 20px rgba(39,49,44,.13); padding: 13px 18px; }
+  .batch .lbl { font-size: 13px; font-weight: 600; }
+  .batch .acts { display: flex; flex-wrap: wrap; gap: 8px; flex-grow: 1; }
+  .batch .primary { height: 36px; border: none; border-radius: 6px; background: var(--green); padding: 0 14px; font-size: 13px; font-weight: 600; color: #fff; }
+  .batch .ghost { height: 36px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--muted); }
+
+  /* calendar view */
+  .cal { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 18px; margin-top: 18px; align-items: start; }
+  body.mobile .cal { grid-template-columns: minmax(0,1fr); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); border-left: 1px solid var(--line-strong); border-top: 1px solid var(--line-strong); }
+  .cal-grid .hd { border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); background: #f2f5f0; padding: 6px 2px; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); }
+  .cal-grid .dy { min-height: 62px; border-right: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); background: #fff; padding: 5px; text-align: left; }
+  .cal-grid .dy.empty { background: #f7f8f5; }
+  .cal-grid .dy.sel { background: #e9f1ec; box-shadow: inset 0 0 0 2px var(--green); }
+  .cal-grid .dy.today { background: #fff8df; }
+  .cal-grid .dy .n { font-size: 12px; font-weight: 600; }
+  .cal-grid .dy .c { margin-top: 3px; font-size: 10px; font-weight: 600; color: var(--green); }
+  .cal-grid .dy .c.warn { color: var(--gold-deep); }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-nav button { height: 34px; width: 34px; border: 1px solid #c8d1c8; border-radius: 6px; background: #fff; color: var(--green); }
+
+  /* runway view */
+  .runway { position: relative; height: 96px; margin-top: 12px; }
+  .runway .segs { display: flex; height: 56px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .runway .segs div { display: flex; align-items: center; padding-left: 12px; font-size: 12px; font-weight: 600; }
+  .runway .actual { position: absolute; left: 1px; top: 33px; height: 22px; border-radius: 3px; background: var(--green); }
+  .runway .ghost { position: absolute; top: 25px; height: 38px; width: 2px; background: #8a8f88; }
+  .runway .ghost-l { position: absolute; top: 62px; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: #6f756e; white-space: nowrap; }
+  .runway .now { position: absolute; top: 0; height: 76px; width: 2px; background: #b0721f; }
+  .runway .now-l { position: absolute; top: -4px; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--gold-deep); white-space: nowrap; }
+  .weeksbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0,1fr); gap: 8px; align-items: end; height: 150px; margin-top: 18px; }
+  .weeksbar .col { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; gap: 6px; }
+  .weeksbar .track { position: relative; background: #e5ebe6; border-radius: 3px; }
+  .weeksbar .fill { position: absolute; bottom: 0; width: 100%; border-radius: 3px; background: var(--green); }
+  .weeksbar .lb { text-align: center; font-size: 10px; color: var(--faint); }
+
+  .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px; align-items: end; }
+  body.mobile .grid4 { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+  .metric .k { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .metric .v { margin-top: 4px; font-size: 30px; font-weight: 600; line-height: 1; }
+  .metric .s { margin-top: 6px; font-size: 12px; color: var(--muted); }
+
+  .empty-steps p { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f2f5f0; padding: 2px 6px; border-radius: 3px; }
+  .skeleton { border: 1px dashed #cfd8cf; border-radius: 8px; background: var(--surface-alt); padding: 16px 19px; }
+  .skeleton .l { display: block; height: 9px; border-radius: 5px; background: #eef1ec; }
+  .pad { padding: 22px; }
+  .mt16 { margin-top: 16px; } .mt12 { margin-top: 12px; } .mt8 { margin-top: 8px; }
+  .empty-hint { border-left: 2px solid var(--gold-line); background: var(--gold-pale); padding: 13px 17px; margin-top: 14px; }
+  .empty-hint p.t { font-size: 12px; font-weight: 600; color: #51482f; }
+  .empty-hint p.b { margin-top: 6px; font-size: 12px; line-height: 1.7; color: #6d674f; }
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <strong>原型</strong>
+  <div class="seg" id="view-seg">
+    <button data-view="outline" class="on">大纲</button>
+    <button data-view="calendar">日历</button>
+    <button data-view="runway">跑道</button>
+  </div>
+  <div class="seg" id="state-seg">
+    <button data-state="ready" class="on">已生成</button>
+    <button data-state="empty">未生成</button>
+  </div>
+  <div class="seg" id="size-seg">
+    <button data-size="desktop" class="on">桌面</button>
+    <button data-size="mobile">移动 430</button>
+  </div>
+  <button class="mini" id="reset">重置数据</button>
+  <span class="proto-note">今天固定为 2026-08-30 · 数据在内存中，改期立即生效</span>
+</div>
+
+<div class="frame" id="app"></div>
+
+<script>
+const TODAY = '2026-08-30';
+const PROFILE = { level: 'N1', startDate: '2026-06-15', examDate: '2026-12-06', studyDaysPerWeek: 6, dailyMinutes: 90 };
+const MATERIALS = {
+  grammar: '新完全掌握 N1 语法',
+  reading: '新完全掌握 N1 阅读',
+  listening: '新完全掌握 N1 听力',
+};
+const MODULE_LABEL = { grammar: '语法', reading: '阅读', listening: '听力', vocabulary: '单词', other: '综合' };
+
+const PHASES = [
+  { id: 'phase-1', startDate: '2026-06-15', endDate: '2026-08-09', focus: '基础打底',
+    points: ['文の文法1 §1–§6', '評論・解説 §1–§4', '音声の特徴'],
+    goal: '把语法第 1 部前六节和阅读基础技巧过一遍，听力先解决音变。' },
+  { id: 'phase-2', startDate: '2026-08-10', endDate: '2026-10-25', focus: '技能强化',
+    points: ['文の文法1 §7–§19', '文の文法2', '長文限时', '即時応答', '課題理解', 'ポイント理解'],
+    goal: '语法第 1 部收尾并进入第 2 部，阅读长文限时，听力四类题型各一轮。' },
+  { id: 'phase-3', startDate: '2026-10-26', endDate: '2026-12-06', focus: '模考冲刺',
+    points: ['6 套整卷限时', '错题回炉', '文章の文法', '統合理解'],
+    goal: '按考试节奏跑完 6 套整卷，错题两轮回炉。' },
+];
+
+const PLANS = {
+  'phase-1': [
+    ['grammar', '§1 ことがらを説明する 精读', 40], ['grammar', '§2 時間関係 精读', 40], ['grammar', '§3 範囲の始まり・限度', 40],
+    ['grammar', '§4 例示 精读', 35], ['grammar', '§5 関連・無関係', 35], ['grammar', '§6 様子 精读', 35],
+    ['reading', '§1 文章全体の意味', 45], ['reading', '§2 対比 精读', 45], ['reading', '§3 言い換え', 45], ['reading', '§4 比喩 精读', 45],
+    ['listening', '似ている音 20 题', 30], ['listening', '音の変化 20 题', 30], ['listening', '縮約形 跟读', 30],
+  ],
+  'phase-2': [
+    ['grammar', '§7 話題・評価 精读', 40], ['grammar', '§8 逆接 精读与例句整理', 40], ['grammar', '§9 条件 精读', 40],
+    ['grammar', '§10 目的・手段 确认题', 25], ['grammar', '§11 原因・理由', 40], ['grammar', '§12 可能・不可能・禁止', 40],
+    ['grammar', '§13 比較対照', 35], ['grammar', '§14 結果・最終状態', 35], ['grammar', '§15 強調 精读', 35],
+    ['grammar', '文の文法2 並べ替え 15 题', 30],
+    ['reading', '§5 比喩 限时 3 篇', 45], ['reading', '§6 疑問提示文', 45], ['reading', '§7 指示語・下線部の意味', 45], ['reading', '§8 理由と例', 45],
+    ['listening', '即時応答 25 题', 30], ['listening', '課題理解 5 题 + 精听', 30], ['listening', 'ポイント理解 5 题', 30], ['listening', '错音段落回放', 25],
+  ],
+  'phase-3': [
+    ['other', '模拟卷 限时整卷', 90], ['other', '模考错题回炉', 45],
+    ['grammar', '文章の文法 精读', 40], ['listening', '統合理解 4 题', 35], ['reading', '広告・通知 速读', 35],
+  ],
+};
+
+let tasks = [];
+let dirty = false;
+let view = 'outline';
+let planState = 'ready';
+let filter = 'all';
+let onlyOpen = false;
+let openPhases = new Set(['phase-2']);
+let openWeeks = new Set();
+let selected = new Set();
+let activeRow = null;
+let calMonth = '2026-08';
+let calDay = TODAY;
+
+/* ---------- data ---------- */
+function seedRandom(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648; }
+
+function buildTasks() {
+  const rand = seedRandom(20260830);
+  const out = [];
+  const cursor = new Date(PROFILE.startDate + 'T00:00:00');
+  const last = new Date(PROFILE.examDate + 'T00:00:00');
+  const pick = { 'phase-1': 0, 'phase-2': 0, 'phase-3': 0 };
+  while (cursor <= last) {
+    const date = iso(cursor);
+    cursor.setDate(cursor.getDate() + 1);
+    if (new Date(date + 'T00:00:00').getDay() === 4) continue; // 每周六天：周四休息
+    const phase = PHASES.find((p) => date >= p.startDate && date <= p.endDate);
+    if (!phase) continue;
+    const pool = PLANS[phase.id];
+    let minutes = 0;
+    const perDay = phase.id === 'phase-3' ? 2 : 2 + (rand() > 0.6 ? 1 : 0);
+    for (let i = 0; i < perDay; i += 1) {
+      const [module, title, mins] = pool[pick[phase.id]++ % pool.length];
+      if (minutes + mins > PROFILE.dailyMinutes) break;
+      minutes += mins;
+      out.push({
+        id: `task-${date}-${i + 1}`, date, title, module, minutes: mins,
+        materialId: module in MATERIALS ? module : undefined,
+        detail: module in MATERIALS ? MATERIALS[module] : '整卷与错题',
+        status: date < TODAY ? (rand() < 0.79 ? 'completed' : 'missed') : 'pending',
+      });
+    }
+  }
+  return out;
+}
+
+function iso(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function shiftDate(date, days) {
+  const next = new Date(date + 'T00:00:00');
+  next.setDate(next.getDate() + days);
+  return iso(next);
+}
+function weekStart(date) {
+  const d = new Date(date + 'T00:00:00');
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return iso(d);
+}
+function weekIndex(date) {
+  return Math.floor((new Date(weekStart(date) + 'T00:00:00') - new Date(weekStart(PROFILE.startDate) + 'T00:00:00')) / 604800000) + 1;
+}
+function fmtDay(date) {
+  const d = new Date(date + 'T00:00:00');
+  return `${d.getMonth() + 1}/${d.getDate()} ${'日一二三四五六'[d.getDay()]}`;
+}
+function fmtShort(date) {
+  const d = new Date(date + 'T00:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+function daysBetween(a, b) { return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
+
+function visible(task) {
+  if (filter !== 'all' && task.module !== filter) return false;
+  if (onlyOpen && (task.status === 'completed' || task.status === 'skipped')) return false;
+  return true;
+}
+function phaseTasks(phase) { return tasks.filter((t) => t.date >= phase.startDate && t.date <= phase.endDate); }
+function taskState(task) {
+  if (task.status === 'completed') return { cls: 'done', label: '完成' };
+  if (task.status === 'skipped') return { cls: '', label: '跳过' };
+  if (task.date === TODAY) return { cls: 'late', label: '今天' };
+  if (task.date < TODAY) return { cls: 'late', label: `逾期 ${daysBetween(task.date, TODAY)} 天` };
+  return { cls: '', label: '待办' };
+}
+
+function metrics() {
+  const due = tasks.filter((t) => t.date <= TODAY);
+  const done = tasks.filter((t) => t.status === 'completed');
+  const gap = due.length - done.length;
+  const minutesGap = due.reduce((sum, t) => sum + (t.status === 'completed' || t.status === 'skipped' ? 0 : t.minutes), 0);
+  return {
+    total: tasks.length, due: due.length, done: done.length, gap,
+    behindDays: (minutesGap / PROFILE.dailyMinutes),
+    rate: tasks.length ? Math.round((done.length / tasks.length) * 100) : 0,
+    daysLeft: daysBetween(TODAY, PROFILE.examDate),
+  };
+}
+
+/* ---------- mutations ---------- */
+function mutate(ids, fn) {
+  tasks = tasks.map((t) => (ids.includes(t.id) ? fn({ ...t }) : t));
+  dirty = true;
+  render();
+}
+function moveBy(ids, days) {
+  mutate(ids, (t) => {
+    let next = shiftDate(t.date, days);
+    if (next > PROFILE.examDate) next = PROFILE.examDate;
+    if (next < PROFILE.startDate) next = PROFILE.startDate;
+    return { ...t, date: next, status: t.status === 'missed' ? 'pending' : t.status };
+  });
+}
+function moveTo(ids, date) { mutate(ids, (t) => ({ ...t, date, status: t.status === 'missed' ? 'pending' : t.status })); }
+function setStatus(ids, status) { mutate(ids, (t) => ({ ...t, status })); }
+function spreadOverWeek(ids) {
+  const open = [];
+  const cursor = new Date(TODAY + 'T00:00:00');
+  for (let i = 0; i < 7 && open.length < ids.length; i += 1) {
+    const date = iso(cursor);
+    if (new Date(date + 'T00:00:00').getDay() !== 4) open.push(date);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  let i = 0;
+  mutate(ids, (t) => ({ ...t, date: open[i++ % open.length], status: t.status === 'missed' ? 'pending' : t.status }));
+}
+
+/* ---------- render ---------- */
+const app = document.getElementById('app');
+const esc = (value) => String(value).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const caret = '<span class="caret"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>';
+const tick = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+function render() {
+  app.innerHTML = planState === 'empty' ? renderEmpty() : renderPlan();
+  bind();
+}
+
+function header(sub, chipHtml) {
+  return `<div class="head">
+    <div>
+      <p class="eyebrow">计划大纲</p>
+      <h1>学习计划</h1>
+      <p>${sub}</p>
+    </div>
+    <div>${chipHtml}</div>
+  </div>`;
+}
+
+function renderPlan() {
+  const m = metrics();
+  const status = dirty
+    ? '<span class="chip chip-gold">需要重排</span>'
+    : '<span class="chip chip-green">计划已生成</span>';
+  const sub = view === 'outline'
+    ? '阶段 → 周 → 日 → 任务。默认只展开当前周，其余按周聚合成一行。'
+    : view === 'calendar' ? '同一份计划的日历视图，按天查看与勾选。' : '同一份计划的配速视图：应完成与已完成的差距。';
+
+  return header(sub, status)
+    + (dirty ? `<div class="banner">
+        <div style="flex-grow:1;min-width:0">
+          <p class="t">计划已改动 · 状态转为「需要重排」</p>
+          <p class="b">后面的日程还没有跟着调整。让 agent 用当前进度重新排一次（save_generated_study_plan 会保留已完成任务的 ID）。</p>
+        </div>
+        <button data-act="reseed">复制重排指令</button>
+      </div>` : '')
+    + `<div class="strip">
+        <div class="cell"><p class="k">距考试</p><p class="v">${m.daysLeft} 天</p></div>
+        <div class="grow">
+          <div class="bar"><span style="width:${m.rate}%"></span></div>
+          <p class="sub">${m.done} / ${m.total} 项 · 应完成 ${m.due} · ${m.gap > 0 ? `落后 ${m.gap} 项（约 ${m.behindDays.toFixed(1)} 学习日）` : '已跟上配速'}</p>
+        </div>
+        <div class="cell" style="text-align:right"><p class="k">完成率</p><p class="v" style="color:var(--green)">${m.rate}%</p></div>
+      </div>`
+    + (view === 'outline' ? renderOutline() : view === 'calendar' ? renderCalendar() : renderRunway());
+}
+
+function renderOutline() {
+  return `<div class="layout">
+    <aside class="card rail">
+      <p class="k">全程</p>
+      <p style="margin-top:4px;font-size:13px;font-weight:600">${fmtShort(PROFILE.startDate)} — ${fmtShort(PROFILE.examDate)}</p>
+      <p style="margin-top:8px;font-size:12px;color:var(--muted)">${tasks.length} 项 · ${tasks.reduce((s, t) => s + t.minutes, 0).toLocaleString()} 分 · ${weekIndex(PROFILE.examDate)} 周</p>
+      <div class="phase-nav">${PHASES.map(railPhase).join('')}</div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e9ede8">
+        <p class="k">筛选</p>
+        <div class="filters">
+          ${['all', 'grammar', 'reading', 'listening'].map((key) => `<button data-filter="${key}" class="${filter === key ? 'on' : ''}">${key === 'all' ? '全部' : MODULE_LABEL[key]}</button>`).join('')}
+          <button data-only class="${onlyOpen ? 'on warn' : ''}">仅未完成</button>
+        </div>
+      </div>
+    </aside>
+    <div>
+      <div class="phases">${PHASES.map(renderPhase).join('')}</div>
+      ${selected.size ? renderBatch() : ''}
+    </div>
+  </div>`;
+}
+
+function railPhase(phase) {
+  const list = phaseTasks(phase);
+  const done = list.filter((t) => t.status === 'completed').length;
+  const open = openPhases.has(phase.id);
+  return `<button data-phase="${phase.id}" class="${open ? 'on' : ''}">
+    <span class="row"><span class="nm">${PHASES.indexOf(phase) + 1} · ${esc(phase.focus)}</span><span class="ct">${done}/${list.length}</span></span>
+    <span class="dt">${fmtShort(phase.startDate)} – ${fmtShort(phase.endDate)} · ${phaseStatus(phase)}</span>
+  </button>`;
+}
+function phaseStatus(phase) {
+  return TODAY > phase.endDate ? '已结束' : TODAY < phase.startDate ? '未开始' : '进行中';
+}
+
+function renderPhase(phase) {
+  const list = phaseTasks(phase).filter(visible);
+  const all = phaseTasks(phase);
+  const done = all.filter((t) => t.status === 'completed').length;
+  const open = openPhases.has(phase.id);
+  const active = TODAY >= phase.startDate && TODAY <= phase.endDate;
+  const behind = all.filter((t) => t.date <= TODAY && t.status !== 'completed' && t.status !== 'skipped').length;
+  const chip = active && behind
+    ? `<span class="chip chip-gold">${done} / ${all.length} · 落后 ${behind}</span>`
+    : done === all.length && all.length
+      ? `<span class="chip chip-green">${done} / ${all.length} 完成</span>`
+      : `<span class="chip chip-grey">${done} / ${all.length}</span>`;
+
+  return `<section class="phase ${open ? 'open' : ''} ${active ? 'active' : ''}">
+    <button class="ph-head" data-phase="${phase.id}">
+      ${caret}
+      <span style="flex-grow:1;min-width:0">
+        <span class="ph-title"><h2>阶段 ${PHASES.indexOf(phase) + 1} · ${esc(phase.focus)}</h2><span class="rg">${fmtShort(phase.startDate)} – ${fmtShort(phase.endDate)} · ${weekIndex(phase.endDate) - weekIndex(phase.startDate) + 1} 周</span></span>
+        <span class="ph-goal">${esc(open ? phase.goal : phase.points.join(' · '))}</span>
+      </span>
+      <span class="ph-count">${chip}</span>
+    </button>
+    ${open ? `<div class="weeks">${renderWeeks(phase, list)}</div>` : ''}
+  </section>`;
+}
+
+function renderWeeks(phase, list) {
+  const buckets = new Map();
+  for (const task of list) {
+    const key = weekStart(task.date);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(task);
+  }
+  const keys = [...buckets.keys()].sort();
+  if (!keys.length) return '<p style="padding:14px 19px;font-size:13px;color:var(--muted)">这个阶段没有符合筛选条件的任务。</p>';
+
+  const rows = [];
+  let run = [];
+  const flushRun = () => {
+    if (!run.length) return;
+    const merged = run.flatMap(([, items]) => items);
+    const first = run[0][0];
+    const lastKey = run[run.length - 1][0];
+    const done = merged.filter((t) => t.status === 'completed').length;
+    const label = run.length === 1 ? `第 ${weekIndex(first)} 周` : `第 ${weekIndex(first)}–${weekIndex(lastKey)} 周`;
+    rows.push(`<div class="wk"><button class="wk-head" data-week="${first}">
+      <span class="wk-name">${label}</span>
+      <span class="wk-sum">${esc(summarize(merged))}</span>
+      <span class="wk-ct ${done === merged.length ? 'done' : ''}">${done} / ${merged.length}</span>
+    </button></div>`);
+    run = [];
+  };
+
+  for (const key of keys) {
+    const items = buckets.get(key).sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    const isNow = key === weekStart(TODAY);
+    const expanded = openWeeks.has(key) || (isNow && !openWeeks.has('!' + key));
+    if (!expanded) { run.push([key, items]); continue; }
+    flushRun();
+    const done = items.filter((t) => t.status === 'completed').length;
+    const late = items.filter((t) => t.date <= TODAY && t.status !== 'completed' && t.status !== 'skipped').length;
+    rows.push(`<div class="wk open ${isNow ? 'now' : ''}">
+      <button class="wk-head" data-week="${key}">
+        ${caret}
+        <span class="wk-name">第 ${weekIndex(key)} 周${isNow ? ' · 本周' : ''}</span>
+        <span class="wk-sum">${fmtShort(key)} – ${fmtShort(shiftDate(key, 6))} · 计划 ${items.reduce((s, t) => s + t.minutes, 0)} 分</span>
+        <span class="wk-ct ${late ? 'warn' : done === items.length ? 'done' : ''}">${done} / ${items.length}</span>
+      </button>
+      <div class="wk-body">${items.map(renderTask).join('')}</div>
+    </div>`);
+  }
+  flushRun();
+  return rows.join('');
+}
+
+function summarize(items) {
+  const byModule = new Map();
+  for (const task of items) {
+    if (!byModule.has(task.module)) byModule.set(task.module, new Set());
+    byModule.get(task.module).add(task.title.split(' ')[0]);
+  }
+  return [...byModule.entries()].map(([module, names]) => `${MODULE_LABEL[module]} ${[...names].slice(0, 3).join('、')}`).join(' · ');
+}
+
+function renderTask(task) {
+  const state = taskState(task);
+  const isSel = selected.has(task.id);
+  const rowCls = [isSel ? 'sel' : '', task.date === TODAY && !isSel ? 'today' : '', task.status === 'completed' ? 'done' : '', task.status === 'skipped' ? 'skipped' : ''].join(' ');
+  return `<div class="task ${rowCls}">
+      <button class="box ${isSel ? 'on' : ''}" data-select="${task.id}" aria-label="选择">${tick}</button>
+      <span class="dt">${fmtDay(task.date)}</span>
+      <span class="mod mod-${task.module}">${MODULE_LABEL[task.module]}</span>
+      <button class="ttl" style="border:none;background:none;padding:0;text-align:left;font:inherit;color:inherit" data-open="${task.id}">${esc(task.title)}</button>
+      <span class="min">${task.minutes} 分</span>
+      <span class="st ${state.cls}">${state.label}</span>
+    </div>`
+    + (activeRow === task.id ? `<div class="rowacts">
+      <button class="mini" data-act="today" data-id="${task.id}">移到今天</button>
+      <button class="mini" data-act="plus1" data-id="${task.id}">顺延 1 天</button>
+      <button class="mini" data-act="nextweek" data-id="${task.id}">移到下周</button>
+      <button class="mini" data-act="${task.status === 'completed' ? 'undone' : 'done'}" data-id="${task.id}">${task.status === 'completed' ? '标记未完成' : '标记完成'}</button>
+      <button class="mini warn" data-act="${task.status === 'skipped' ? 'restore' : 'skip'}" data-id="${task.id}">${task.status === 'skipped' ? '恢复' : '跳过'}</button>
+      <span class="hint">${esc(task.detail || '')}</span>
+    </div>` : '');
+}
+
+function renderBatch() {
+  const ids = [...selected];
+  const chosen = tasks.filter((t) => selected.has(t.id));
+  return `<div class="batch">
+    <span class="lbl">已选 ${ids.length} 项 · ${chosen.reduce((s, t) => s + t.minutes, 0)} 分</span>
+    <span class="acts">
+      <button class="primary" data-bact="plus3">整体顺延 3 天</button>
+      <button class="mini" style="height:36px" data-bact="spread">分摊到本周剩余日</button>
+      <button class="mini" style="height:36px" data-bact="nextweek">移到下周</button>
+      <button class="mini warn" style="height:36px" data-bact="skip">全部跳过</button>
+    </span>
+    <button class="ghost" data-bact="clear">取消选择</button>
+  </div>`;
+}
+
+function renderCalendar() {
+  const [year, month] = calMonth.split('-').map(Number);
+  const first = new Date(year, month - 1, 1);
+  const cells = Array.from({ length: (first.getDay() + 6) % 7 }, () => null);
+  const lastDay = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= lastDay; d += 1) cells.push(iso(new Date(year, month - 1, d)));
+  while (cells.length % 7) cells.push(null);
+  const dayTasks = tasks.filter((t) => t.date === calDay).sort((a, b) => a.id.localeCompare(b.id));
+
+  return `<div class="cal">
+    <section class="card pad">
+      <div class="cal-nav">
+        <button data-month="-1">‹</button>
+        <h2 style="font-size:15px;font-weight:600">${year} 年 ${month} 月</h2>
+        <button data-month="1">›</button>
+      </div>
+      <div class="cal-grid">
+        ${['一', '二', '三', '四', '五', '六', '日'].map((d) => `<div class="hd">${d}</div>`).join('')}
+        ${cells.map((date) => {
+          if (!date) return '<div class="dy empty"></div>';
+          const items = tasks.filter((t) => t.date === date);
+          const done = items.filter((t) => t.status === 'completed').length;
+          const late = items.some((t) => t.date < TODAY && t.status !== 'completed' && t.status !== 'skipped');
+          return `<button class="dy ${date === calDay ? 'sel' : ''} ${date === TODAY ? 'today' : ''}" data-day="${date}">
+            <span class="n">${Number(date.slice(-2))}</span>
+            ${items.length ? `<span class="c ${late ? 'warn' : ''}">${done}/${items.length}</span>` : ''}
+          </button>`;
+        }).join('')}
+      </div>
+    </section>
+    <aside class="card pad">
+      <p class="eyebrow">${fmtShort(calDay)} ${'周' + '日一二三四五六'[new Date(calDay + 'T00:00:00').getDay()]}</p>
+      <h2 style="margin-top:4px;font-size:17px;font-weight:600">${calDay === TODAY ? '今天的任务' : '当天任务'}</h2>
+      <div style="margin-top:12px">
+        ${dayTasks.length ? dayTasks.map(renderTask).join('') : '<p style="font-size:13px;color:var(--muted)">这一天没有安排。</p>'}
+      </div>
+    </aside>
+  </div>`;
+}
+
+function renderRunway() {
+  const m = metrics();
+  const span = daysBetween(PROFILE.startDate, PROFILE.examDate);
+  const nowPct = (daysBetween(PROFILE.startDate, TODAY) / span) * 100;
+  const donePct = m.total ? (m.done / m.total) * 100 : 0;
+  const duePct = m.total ? (m.due / m.total) * 100 : 0;
+  const weeks = [];
+  for (let i = 0; i < 10; i += 1) {
+    const start = shiftDate(weekStart(TODAY), (i - 7) * 7);
+    const items = tasks.filter((t) => t.date >= start && t.date <= shiftDate(start, 6));
+    weeks.push({
+      label: start === weekStart(TODAY) ? '本周' : `W${weekIndex(start)}`,
+      planned: items.reduce((s, t) => s + t.minutes, 0),
+      done: items.filter((t) => t.status === 'completed').reduce((s, t) => s + t.minutes, 0),
+      future: start > weekStart(TODAY),
+    });
+  }
+  const peak = Math.max(...weeks.map((w) => w.planned), 1);
+
+  return `<section class="card pad" style="margin-top:18px">
+    <div class="grid4">
+      <div class="metric"><p class="k">距离考试</p><p class="v">${m.daysLeft}<span style="font-size:15px;color:var(--muted);margin-left:4px">天</span></p><p class="s">${fmtShort(PROFILE.examDate)}</p></div>
+      <div class="metric"><p class="k">按配速应完成</p><p class="v" style="color:#7a807b">${m.due}</p><p class="s">共 ${m.total} 项</p></div>
+      <div class="metric"><p class="k">实际已完成</p><p class="v" style="color:var(--green)">${m.done}</p><p class="s">完成率 ${m.rate}%</p></div>
+      <div class="metric" style="border-radius:6px;background:#f8f1e2;padding:14px 16px">
+        <p class="k" style="color:#765c25">缺口</p>
+        <p class="v" style="color:#8a6420">${m.gap > 0 ? '-' + m.gap : '0'}</p>
+        <p class="s" style="color:#765c25">约 ${m.behindDays.toFixed(1)} 个学习日</p>
+      </div>
+    </div>
+
+    <div style="margin-top:26px">
+      <p style="font-size:13px;font-weight:600;color:var(--ink-soft)">${fmtShort(PROFILE.startDate)} 起跑 · ${fmtShort(PROFILE.examDate)} 考试</p>
+      <div class="runway">
+        <div class="segs">
+          ${PHASES.map((p, i) => {
+            const w = (daysBetween(p.startDate, p.endDate) / span) * 100;
+            const bg = ['#eef2ec', 'var(--surface-green)', 'var(--surface-alt)'][i];
+            const fg = ['#6b7670', 'var(--green)', '#7a807b'][i];
+            return `<div style="width:${w}%;background:${bg};color:${fg};border-left:${i ? '1px solid var(--line)' : 'none'}">${esc(p.focus)}</div>`;
+          }).join('')}
+        </div>
+        <div class="actual" style="width:${donePct}%"></div>
+        <div class="ghost" style="left:${duePct}%"></div>
+        <div class="ghost-l" style="left:${duePct}%">应到此处</div>
+        <div class="now" style="left:${nowPct}%"></div>
+        <div class="now-l" style="left:${nowPct}%">今天 ${fmtShort(TODAY)}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:26px">
+      <p style="font-size:13px;font-weight:600;color:var(--ink-soft)">每周节奏</p>
+      <p style="margin-top:4px;font-size:12px;color:var(--muted)">浅＝计划分钟，深＝已完成分钟</p>
+      <div class="weeksbar">
+        ${weeks.map((w) => `<div class="col">
+          <div class="track" style="height:${Math.max(6, (w.planned / peak) * 100)}%;${w.future ? 'background:#eef1ec;border:1px dashed #cfd8cf' : ''}">
+            ${w.future ? '' : `<span class="fill" style="height:${w.planned ? (w.done / w.planned) * 100 : 0}%"></span>`}
+          </div>
+          <span class="lb">${w.label}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderEmpty() {
+  return header('档案已填好，日程还没有。空态展示的是骨架，不是一句「暂无数据」。', '<span class="chip chip-gold">仅有档案</span>')
+    + `<div class="layout">
+      <aside class="card rail">
+        <p class="k">全程</p>
+        <p style="margin-top:4px;font-size:13px;font-weight:600">${fmtShort(PROFILE.startDate)} — ${fmtShort(PROFILE.examDate)}</p>
+        <p style="margin-top:8px;font-size:12px;color:var(--muted)">每周 ${PROFILE.studyDaysPerWeek} 天 · 每天 ${PROFILE.dailyMinutes} 分</p>
+        <div class="bar" style="margin-top:12px;background:#eef1ec;border:1px dashed #cfd8cf"></div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e9ede8">
+          <p class="k">教材</p>
+          ${Object.values(MATERIALS).map((title) => `<p style="margin-top:8px;font-size:12px;color:var(--ink-soft)">${title}</p>`).join('')}
+        </div>
+      </aside>
+      <div>
+        <section class="card pad">
+          <h2 style="font-size:16px;font-weight:600">让 agent 生成日程</h2>
+          <p style="margin-top:8px;font-size:13px;line-height:1.7;color:#5c675f">在 Codex 或其他 MCP 客户端里连上本地服务，读取档案与最近的练习记录，写回阶段与每日任务。</p>
+          <div class="empty-steps">
+            <p><strong style="color:var(--green)">1</strong>　<code>get_plan_generation_context</code>　读取档案、弱点、最近练习</p>
+            <p><strong style="color:var(--green)">2</strong>　切 2–5 个阶段，把教材章节铺到每一天</p>
+            <p><strong style="color:var(--green)">3</strong>　<code>save_generated_study_plan</code>　写回 phases 与 tasks</p>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+            <button class="primary" data-act="generate" style="height:40px;border:none;border-radius:6px;background:var(--green);padding:0 18px;font-size:13px;font-weight:600;color:#fff">模拟生成计划</button>
+            <button class="mini" style="height:40px">查看 MCP 连接方式</button>
+          </div>
+        </section>
+        <p style="margin-top:14px;font-size:12px;font-weight:600;color:var(--muted)">生成后大纲会长成这样</p>
+        ${PHASES.map((phase, i) => `<div class="skeleton" style="margin-top:10px">
+          <div style="display:flex;align-items:center;gap:13px">
+            <span style="flex-shrink:0;width:16px;height:16px;border-radius:3px;background:#e7ebe6"></span>
+            <span style="flex-grow:1;min-width:0">
+              <p style="font-size:14px;font-weight:600;color:var(--faint)">阶段 ${i + 1} · ${esc(phase.focus)}</p>
+              <p style="margin-top:5px;font-size:12px;color:#a3a8a1">${i === 1 ? '周与日会在这里展开' : '来自档案里的阶段思路'}</p>
+            </span>
+            <span style="flex-shrink:0;height:10px;width:64px;border-radius:5px;background:#e7ebe6"></span>
+          </div>
+          ${i === 1 ? `<div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-left:30px">
+            <span class="l" style="width:62%"></span><span class="l" style="width:48%"></span><span class="l" style="width:55%"></span>
+          </div>` : ''}
+        </div>`).join('')}
+        <div class="empty-hint">
+          <p class="t">档案里的阶段思路只是意图</p>
+          <p class="b">你在档案里写的那段阶段划分，是给 agent 的输入。真正被大纲、日历、跑道读取的，是 agent 写回的结构化 phases。两者不一致时以写回的为准。</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---------- events ---------- */
+function bind() {
+  app.querySelectorAll('[data-phase]').forEach((el) => el.addEventListener('click', () => {
+    const id = el.dataset.phase;
+    if (openPhases.has(id)) openPhases.delete(id); else openPhases.add(id);
+    render();
+  }));
+  app.querySelectorAll('[data-week]').forEach((el) => el.addEventListener('click', () => {
+    const key = el.dataset.week;
+    const isNow = key === weekStart(TODAY);
+    if (isNow) {
+      if (openWeeks.has('!' + key)) openWeeks.delete('!' + key); else openWeeks.add('!' + key);
+    } else if (openWeeks.has(key)) openWeeks.delete(key); else openWeeks.add(key);
+    render();
+  }));
+  app.querySelectorAll('[data-filter]').forEach((el) => el.addEventListener('click', () => { filter = el.dataset.filter; render(); }));
+  const only = app.querySelector('[data-only]');
+  if (only) only.addEventListener('click', () => { onlyOpen = !onlyOpen; render(); });
+  app.querySelectorAll('[data-select]').forEach((el) => el.addEventListener('click', () => {
+    const id = el.dataset.select;
+    if (selected.has(id)) selected.delete(id); else selected.add(id);
+    render();
+  }));
+  app.querySelectorAll('[data-open]').forEach((el) => el.addEventListener('click', () => {
+    activeRow = activeRow === el.dataset.open ? null : el.dataset.open;
+    render();
+  }));
+  app.querySelectorAll('[data-act]').forEach((el) => el.addEventListener('click', () => {
+    const id = el.dataset.id;
+    const act = el.dataset.act;
+    if (act === 'today') moveTo([id], TODAY);
+    else if (act === 'plus1') moveBy([id], 1);
+    else if (act === 'nextweek') moveTo([id], shiftDate(weekStart(TODAY), 7));
+    else if (act === 'done') setStatus([id], 'completed');
+    else if (act === 'undone') setStatus([id], 'pending');
+    else if (act === 'skip') setStatus([id], 'skipped');
+    else if (act === 'restore') setStatus([id], 'pending');
+    else if (act === 'reseed') { dirty = false; render(); }
+    else if (act === 'generate') { planState = 'ready'; syncSegs(); render(); }
+  }));
+  app.querySelectorAll('[data-bact]').forEach((el) => el.addEventListener('click', () => {
+    const ids = [...selected];
+    const act = el.dataset.bact;
+    if (act === 'plus3') moveBy(ids, 3);
+    else if (act === 'spread') spreadOverWeek(ids);
+    else if (act === 'nextweek') moveTo(ids, shiftDate(weekStart(TODAY), 7));
+    else if (act === 'skip') setStatus(ids, 'skipped');
+    if (act !== 'clear') selected.clear();
+    else { selected.clear(); render(); }
+    if (act !== 'clear') render();
+  }));
+  app.querySelectorAll('[data-day]').forEach((el) => el.addEventListener('click', () => { calDay = el.dataset.day; render(); }));
+  app.querySelectorAll('[data-month]').forEach((el) => el.addEventListener('click', () => {
+    const [y, m] = calMonth.split('-').map(Number);
+    const next = new Date(y, m - 1 + Number(el.dataset.month), 1);
+    calMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+    render();
+  }));
+}
+
+function syncSegs() {
+  document.querySelectorAll('#state-seg button').forEach((b) => b.classList.toggle('on', b.dataset.state === planState));
+}
+
+document.getElementById('view-seg').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  view = button.dataset.view;
+  document.querySelectorAll('#view-seg button').forEach((b) => b.classList.toggle('on', b === button));
+  render();
+});
+document.getElementById('state-seg').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  planState = button.dataset.state;
+  syncSegs();
+  render();
+});
+document.getElementById('size-seg').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  document.body.classList.toggle('mobile', button.dataset.size === 'mobile');
+  document.querySelectorAll('#size-seg button').forEach((b) => b.classList.toggle('on', b === button));
+});
+document.getElementById('reset').addEventListener('click', () => {
+  tasks = buildTasks(); dirty = false; selected.clear(); activeRow = null; openWeeks.clear(); openPhases = new Set(['phase-2']); render();
+});
+
+tasks = buildTasks();
+render();
+</script>
+</body>
+</html>

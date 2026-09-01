@@ -104,7 +104,10 @@ If a page contains more than three substantial content sections or more than fou
 On smaller screens:
 
 - give each screen one primary task instead of compressing the complete desktop workspace;
-- move global module navigation and search into separate full-screen panels;
+- keep the complete study-module navigation visible from 768px upward, even when browser zoom reduces the effective CSS viewport;
+- hide the full desktop search field below 1280px so navigation keeps priority and remains readable;
+- on phones, move global module navigation and search into separate full-screen white panels;
+- group the phone menu into Study and Management sections instead of presenting one undifferentiated list;
 - move study-mode switching and deck filters into separate focused panels;
 - show only the answer result on the practice screen, then route or focus into explanation content;
 - present review as a result list first and open one answer explanation at a time;
@@ -116,9 +119,10 @@ The mobile layout is not a narrower desktop layout. Preserve the same data and r
 
 ## Current Application Patterns
 
-- **Home:** combines the product purpose, a prominent capture entry, phase-aware exam countdown, compact learning status, direct module rows, and a short official-question-type preview. It does not contain detailed module business logic.
+- **Home:** is a learning dashboard. The current study plan and today's progress are the primary region; exam countdown, capture, mixed review, compact learning status, module rows, and the official-question-type preview remain secondary overview entries. Detailed calendar editing and plan generation stay on the Plan page.
 - **Capture:** contains one input form for unclear material. Category and context are optional metadata; history and generated exercises do not appear on the same screen.
-- **Data Management:** uses tabs for learning overview, captured inputs, and practice history. Rows expose status, date, and one relevant action; it is not a decorative dashboard.
+- **Data Management:** uses tabs for learning overview, captured inputs, practice history, and review drafts. Draft preview, annotations, and revision actions live in the Drafts tab instead of global navigation.
+- **Account navigation:** the current username is the direct Settings entry on desktop and mobile. Do not add a separate Settings label to the global module menu.
 - **Question types:** the main page is a sectioned row list. Each question type has an independent detail route where its full description and personal solving tip can be edited.
 - **Plan:** basic profile setup and calendar tracking are separate views. Calendar tasks are concise; detailed generation is delegated through MCP.
 - **Drafts:** the list selects a draft. Preview, annotations, and revision context belong to the selected draft workflow rather than every list item.

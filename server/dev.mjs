@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 
 const children = [
   spawn(process.execPath, ['server/api.mjs'], { stdio: 'inherit' }),
-  spawn('npx', ['vite', '--host', '0.0.0.0', '--port', '5191', '--strictPort'], { stdio: 'inherit' }),
+  spawn('npx', ['vite', '--host', '0.0.0.0', '--port', '5193', '--strictPort'], { stdio: 'inherit' }),
 ];
 
 function shutdown(signal) {

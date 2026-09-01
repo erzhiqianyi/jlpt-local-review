@@ -1,84 +1,34 @@
-import { ArrowRight, CalendarClock, Plus } from 'lucide-react';
-import { QuestionTypePreview } from '../question-types/QuestionTypePreview';
-import type { AppView, Locale } from '../../types';
+import { ArrowRight, BookOpen, Brain, CalendarDays, Check, CircleDot, Cloud, FileCheck2, Sparkles } from 'lucide-react';
+import { localDateString, tasksForDate } from '../../domain/studyPlan';
+import type { AppView, DailyPracticeSummary, Locale, StudyPlanDocument, StudyPlanTaskStatus } from '../../types';
 
 type Countdown = { days: number; hours: number; minutes: number };
 type HomeMetric = { label: string; value: string };
 type HomeModule = { view: AppView; title: string; body: string; count: number };
 
-export function HomeDashboard({ labels, locale, countdown, metrics, modules, onNavigate }: {
-  labels: Record<string, string>;
-  locale: Locale;
-  countdown: Countdown;
-  metrics: HomeMetric[];
-  modules: HomeModule[];
-  onNavigate: (view: AppView) => void;
+export function HomeDashboard({ locale, countdown, metrics, plan, dailyPractice, dailyPractices, onNavigate, onStartDailyPractice, onStartMemoryReview, onTaskStatus }: {
+  labels: Record<string, string>; locale: Locale; countdown: Countdown; metrics: HomeMetric[]; modules: HomeModule[];
+  plan: StudyPlanDocument; dailyPractice?: DailyPracticeSummary | null; dailyPractices: DailyPracticeSummary[];
+  onNavigate: (view: AppView) => void; onStartDailyPractice: (id?: string) => void; onCreateDailyPractice: () => void;
+  onStartMock: () => void; onStartMemoryReview: () => void; onTaskStatus: (id: string, status: StudyPlanTaskStatus) => void;
 }) {
-  const phase = countdown.days <= 30 ? 'final' : countdown.days <= 90 ? 'sprint' : countdown.days <= 180 ? 'build' : 'foundation';
-  const countdownTone = phase === 'final'
-    ? 'border-[#dfc4bd] bg-[#fbf1ee] text-[#70483f]'
-    : phase === 'sprint'
-      ? 'border-[#dfd1ae] bg-[#faf6e9] text-[#725d2d]'
-      : phase === 'build'
-        ? 'border-[#c9d8dc] bg-[#eff6f7] text-[#3f626a]'
-        : 'border-[#cddbcf] bg-[#f0f6f0] text-[#46644e]';
+  const today = localDateString(new Date());
+  const todayTasks = tasksForDate(plan.tasks, today);
+  const completed = todayTasks.filter((task) => task.status === 'completed').length;
+  const memoryCount = Math.max(Number(metrics[1]?.value ?? 0), 0);
+  const practice = dailyPractice?.date === today ? dailyPractice : dailyPractices.find((entry) => entry.date === today) ?? null;
+  const dateLabel = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }).format(new Date());
+  const totalItems = memoryCount + todayTasks.length + (practice?.questionCount ?? 0);
+  const totalMinutes = todayTasks.reduce((sum, task) => sum + task.minutes, 0) + Math.max(8, memoryCount) + (practice?.minutes ?? 0);
 
-  return (
-    <div className="mx-auto w-full max-w-6xl min-w-0 px-4 py-5 md:px-8 md:py-8 lg:px-10">
-      <section className="grid gap-7 border-b border-[#d7dfd6] pb-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-        <div className="flex min-h-full items-center">
-          <div className="flex w-full flex-col gap-3 border-l-2 border-[#8aa797] pl-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-[#27312c]">{labels.homeCaptureTitle}</h2>
-              <p className="mt-1 text-sm leading-6 text-[#68716b]">{labels.homeCaptureBody}</p>
-            </div>
-            <button type="button" onClick={() => onNavigate('capture')} className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-[#31564c] px-4 text-sm font-semibold text-white">
-              <Plus size={17} /> {labels.homeCaptureAction}
-            </button>
-          </div>
-        </div>
-
-        <aside className={`border p-5 ${countdownTone}`}>
-          <div className="flex items-center gap-2 text-sm font-semibold"><CalendarClock size={17} /> {labels.countdownTitle}</div>
-          <p className="mt-3 text-lg font-semibold">{labels.countdownDate}</p>
-          <p className="mt-1 text-3xl font-semibold">{countdown.days} <span className="text-sm">{labels.days}</span></p>
-          <p className="mt-3 text-sm leading-6">{labels[`countdownPhaseBody_${phase}`]}</p>
-        </aside>
-      </section>
-
-      <section className="grid grid-cols-2 border-b border-[#d7dfd6] py-5 sm:grid-cols-5">
-        {metrics.map((metric, index) => <Metric key={metric.label} metric={metric} first={index === 0} />)}
-      </section>
-
-      <section className="pt-7">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold text-[#7d6032]">{labels.homeStudyArea}</p>
-            <h2 className="mt-1 text-xl font-semibold text-[#27312c]">{labels.homeModulesTitle}</h2>
-          </div>
-          <button type="button" onClick={() => onNavigate('mixed')} className="hidden min-h-10 text-sm font-semibold text-[#31564c] hover:underline sm:block">{labels.reviewStart} →</button>
-        </div>
-        <div className="mt-4 divide-y divide-[#dfe5df] border-y border-[#dfe5df]">
-          {modules.map((module) => (
-            <button key={module.view} type="button" onClick={() => onNavigate(module.view)} className="flex min-h-16 w-full items-center gap-4 py-3 text-left hover:bg-[#f8faf7]">
-              <span className="min-w-0 flex-1">
-                <span className="block text-base font-semibold text-[#34413b]">{module.title}</span>
-                <span className="mt-1 block truncate text-sm text-[#707a74]">{module.body}</span>
-              </span>
-              <span className="shrink-0 text-sm font-semibold text-[#52645c]">{module.count}</span>
-              <ArrowRight size={18} className="shrink-0 text-[#758079]" />
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="pt-8">
-        <QuestionTypePreview labels={labels} locale={locale} />
-      </div>
+  return <div className="ledger-today">
+    <header className="ledger-page-heading"><div><p>首页&nbsp; / &nbsp;今天</p><h1>{dateLabel}</h1></div><div className="ledger-sync-note"><Cloud size={17}/><span><strong>昨日整理</strong><small>学习记录已同步 · 06:00</small></span></div></header>
+    <section className="ledger-day-strip"><div><CalendarDays size={18}/><strong>今天</strong><span>约 {totalMinutes} 分钟</span></div><div className="ledger-day-progress"><i style={{width: totalItems ? `${Math.round((completed / totalItems) * 100)}%` : '0%'}} /></div><p><b>{completed}</b> / {totalItems}<span>记忆卡 {memoryCount} · 待办 {todayTasks.length} · 练习 {practice?.questionCount ?? 0}</span></p></section>
+    <div className="ledger-today-grid">
+      <section className="ledger-section ledger-memory-entry"><header><span className="ledger-step">1</span><div><h2>记忆卡复习</h2><p>词汇与语法 · 到期 {memoryCount} 张</p></div><span className="ledger-count">{memoryCount}</span></header><button type="button" className="ledger-memory-preview" onClick={onStartMemoryReview}><div><span>今日卡组</span><h3>{memoryCount ? `${memoryCount} 张待复习` : '今天没有到期卡片'}</h3><p>单词正面 · 读音、释义、例句背面</p></div><span className="ledger-round-action"><BookOpen size={20}/></span></button><button type="button" className="ledger-text-action" onClick={onStartMemoryReview}>{memoryCount ? '进入专注复习' : '查看记忆库'}<ArrowRight size={16}/></button></section>
+      <section className="ledger-section ledger-todos"><header><div><h2>今日待办</h2><p>教材计划</p></div><strong>{completed} / {todayTasks.length}</strong></header><div className="ledger-task-list">{todayTasks.length ? todayTasks.map((task) => { const done = task.status === 'completed'; return <label key={task.id} className={done ? 'is-done' : ''}><button type="button" aria-label={done ? '设为未完成' : '完成任务'} onClick={() => onTaskStatus(task.id, done ? 'pending' : 'completed')}><Check size={15}/></button><span><strong>{task.title}</strong><small>{task.sourceLabel || task.module} · {task.minutes} 分钟</small></span></label>; }) : <div className="ledger-empty"><CircleDot size={22}/><p>今天没有教材任务</p></div>}</div><button type="button" className="ledger-text-action" onClick={() => onNavigate('plan')}>查看完整计划<ArrowRight size={16}/></button></section>
+      <section className="ledger-section ledger-agent-practice"><header><span className="ledger-step is-outline">2</span><div><h2>针对题目练习</h2><p>外部 Agent 通过 MCP 写回</p></div>{practice ? <span className="ledger-status">已接收</span> : <span className="ledger-status is-waiting">等待中</span>}</header>{practice ? <><div className="ledger-practice-summary"><Sparkles size={22}/><div><h3>{practice.title}</h3><p>{practice.questionCount} 题 · {practice.minutes} 分钟</p></div></div><dl><div><dt>依据</dt><dd>{practice.strategy || '近期学习记录与错题'}</dd></div><div><dt>同步</dt><dd>Agent 已通过 MCP 写回</dd></div></dl><button type="button" className="ledger-primary-button" onClick={() => onStartDailyPractice(practice.id)}>查看练习<ArrowRight size={17}/></button></> : <div className="ledger-agent-empty"><Brain size={30}/><h3>等待今日练习</h3><p>应用不会自行生成题目；外部 Agent 读取昨日记录后写回。</p><button type="button" onClick={() => onNavigate('insights')}>查看 Agent 同步</button></div>}</section>
     </div>
-  );
-}
-
-function Metric({ metric, first }: { metric: HomeMetric; first: boolean }) {
-  return <div className={`min-w-0 px-3 py-2 sm:py-0 ${first ? '' : 'border-l border-[#dfe5df]'}`}><p className="truncate text-xs text-[#707a74]">{metric.label}</p><p className="mt-1 text-xl font-semibold text-[#27312c]">{metric.value}</p></div>;
+    <footer className="ledger-exam-footer"><FileCheck2 size={17}/><span>目标 JLPT N1</span><strong>{countdown.days} 天后考试</strong></footer>
+  </div>;
 }

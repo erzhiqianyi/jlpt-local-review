@@ -8,6 +8,8 @@ export type OfficialModuleSample = {
   module: OfficialSampleModule;
   questionTypeId: string;
   officialName: string;
+  sourceKind?: 'original' | 'local_official';
+  sourceLabel?: Localized;
   title: Localized;
   summary: Localized;
   estimatedMinutes: number;
@@ -18,6 +20,16 @@ export type OfficialModuleSample = {
   answerIndex: number;
   explanation: Localized;
   ttsText?: string;
+  audioUrl?: string;
+  questionPdfUrl?: string;
+  answerPdfUrl?: string;
+  transcriptPdfUrl?: string;
+  subQuestions?: Array<{
+    id: string;
+    label: string;
+    choices: string[];
+    answerIndex: number;
+  }>;
 };
 
 export type OfficialModuleMeta = {
