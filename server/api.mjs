@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -58,6 +58,7 @@ const port = Number(process.env.JLPT_API_PORT ?? 8791);
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const localOfficialRoot = join(rootDir, '.local', 'official-jlpt');
 const localMockRoot = join(rootDir, '.local', 'mock-exams');
+const localNewsRoot = resolve(process.env.JLPT_NEWS_SOURCE_DIR ?? '/Users/itsuki/AI/knowledge-base/personal-knowledge/sources/jlpt-news');
 
 const server = createServer(async (req, res) => {
   try {
@@ -81,6 +82,21 @@ const server = createServer(async (req, res) => {
         return json(res, 403, { error: 'Local mock exams are only available from localhost' });
       }
       return readLocalMockExamManifest(res);
+    }
+
+    if (req.method === 'GET' && url.pathname === '/api/local-news-cycle') {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local news practice is only available from localhost' });
+      }
+      return json(res, 200, readLocalNewsCycle());
+    }
+
+    const localNewsAudioMatch = /^\/api\/local-news-audio\/(\d{4}-\d{2}-\d{2})\/(.+)$/.exec(url.pathname);
+    if (req.method === 'GET' && localNewsAudioMatch) {
+      if (!isLoopbackRequest(req)) {
+        return json(res, 403, { error: 'Local news audio is only available from localhost' });
+      }
+      return streamLocalFile(res, localNewsRoot, `${localNewsAudioMatch[1]}/media/${localNewsAudioMatch[2]}`, 'Local news audio not found');
     }
 
     const localMockExamMatch = /^\/api\/local-mock-exams\/([^/]+)$/.exec(url.pathname);
@@ -521,6 +537,50 @@ function readLocalMockExamManifest(res) {
     return json(res, 200, { exams: [] });
   }
   return json(res, 200, JSON.parse(readFileSync(manifestPath, 'utf8')));
+}
+
+function readLocalNewsCycle() {
+  if (!existsSync(localNewsRoot)) return { days: [] };
+  let summary;
+  const weeklyRoot = join(localNewsRoot, 'weekly');
+  if (existsSync(weeklyRoot)) {
+    const cycles = readdirSync(weeklyRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    const latest = cycles.at(-1);
+    const summaryPath = latest ? join(weeklyRoot, latest, 'cycle-summary.json') : '';
+    if (summaryPath && existsSync(summaryPath)) summary = JSON.parse(readFileSync(summaryPath, 'utf8'));
+  }
+  const dates = readdirSync(localNewsRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(entry.name))
+    .map((entry) => entry.name)
+    .filter((date) => !summary?.range || (date >= summary.range.from && date <= summary.range.to))
+    .sort();
+  const days = dates.flatMap((date) => {
+    const questionsPath = join(localNewsRoot, date, 'questions.json');
+    if (!existsSync(questionsPath)) return [];
+    const payload = JSON.parse(readFileSync(questionsPath, 'utf8'));
+    const questions = (Array.isArray(payload.questions) ? payload.questions : []).map((question) => ({
+      ...question,
+      audio: question.audio?.fileName
+        ? { ...question.audio, previewUrl: `/api/local-news-audio/${date}/${encodeURIComponent(question.audio.fileName)}` }
+        : question.audio,
+    }));
+    const moduleCounts = { vocabulary: 0, grammar: 0, listening: 0, reading: 0 };
+    for (const question of questions) {
+      if (question.module in moduleCounts) moduleCounts[question.module] += 1;
+    }
+    return [{
+      date,
+      questionCount: questions.length,
+      audioCount: questions.filter((question) => question.audio?.previewUrl).length,
+      sourceCount: new Set(questions.map((question) => question.source_id)).size,
+      moduleCounts,
+      questions,
+    }];
+  });
+  return { summary, days };
 }
 
 function streamLocalFile(res, root, relativePath, notFoundMessage) {

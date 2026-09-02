@@ -19,6 +19,7 @@ import { StudyPlanPanel } from './features/plan/StudyPlanPanel';
 import { MixedEntryIndexPanel, MixedPracticeHub } from './features/practice/MixedPracticeHub';
 import { MockExamCatalog } from './features/practice/MockExamCatalog';
 import { MockExamPanel } from './features/practice/MockExamPanel';
+import { NewsCyclePanel } from './features/news/NewsCyclePanel';
 import { PracticePanel, PracticeReviewPanel, WordDetailPanel, WordbookManagerPanel, WordIndexPanel } from './features/practice/StudyPanels';
 import { QuestionTypeGuide } from './features/question-types/QuestionTypeGuide';
 import { QuestionTypeDetail } from './features/question-types/QuestionTypeDetail';
@@ -1243,6 +1244,14 @@ export default function App() {
             {activeView === 'mock-exams' ? (
               route.itemId ? <MockExamPanel key={route.itemId} examId={route.itemId} locale={locale} onBack={() => openMockExam()} /> : <MockExamCatalog locale={locale} onOpen={openMockExam} />
             ) : null}
+            {activeView === 'news-cycle' ? (
+              <NewsCyclePanel
+                locale={locale}
+                activeDate={route.itemId}
+                onOpen={(date) => { window.location.hash = routeHash('news-cycle', 'questions', date); }}
+                onBack={() => navigateTo('news-cycle')}
+              />
+            ) : null}
             {activeView === 'question-types' ? (
               route.itemId ? (
                 <QuestionTypeDetail id={route.itemId} labels={labels} locale={locale} customTip={settings.questionTypeTips[route.itemId]} customTipEntry={settings.customQuestionTypeTips.find((entry) => entry.id === route.itemId)} onBack={() => navigateTo('question-types')} onUpdateTip={updateQuestionTypeTip} onUpdateCustomTip={updateCustomQuestionTypeTip} onDeleteCustomTip={deleteCustomQuestionTypeTip} />
@@ -1363,7 +1372,7 @@ export default function App() {
                 onReview={() => navigateTo('reading', 'review')}
               />
             ) : null}
-	            {studyPage !== 'samples' && studyPage !== 'tips' && studyPage !== 'mock' && !(activeView === 'mixed' && studyPage === 'words') && activeView !== 'capture' && activeView !== 'captures' && activeView !== 'history' && activeView !== 'insights' && activeView !== 'mistakes' && activeView !== 'memory' && activeView !== 'data' && activeView !== 'mcp' && activeView !== 'about' && activeView !== 'plan' && activeView !== 'question-types' && activeView !== 'mock-exams' && activeView !== 'drafts' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
+	            {studyPage !== 'samples' && studyPage !== 'tips' && studyPage !== 'mock' && !(activeView === 'mixed' && studyPage === 'words') && activeView !== 'capture' && activeView !== 'captures' && activeView !== 'history' && activeView !== 'insights' && activeView !== 'mistakes' && activeView !== 'memory' && activeView !== 'data' && activeView !== 'mcp' && activeView !== 'about' && activeView !== 'plan' && activeView !== 'question-types' && activeView !== 'mock-exams' && activeView !== 'news-cycle' && activeView !== 'drafts' && activeView !== 'settings' && activeView !== 'listening' && activeView !== 'reading' ? (
               studyPage === 'questions' ? (
                 <PracticePanel
                   activeQuestion={activeQuestion}
@@ -1482,6 +1491,9 @@ function routeFromHash(hash: string): AppRoute {
   if (view === 'mock-exams') {
     return { view, page: 'questions', itemId: pageValue ? decodeURIComponent(pageValue) : undefined };
   }
+  if (view === 'news-cycle') {
+    return { view, page: 'questions', itemId: pageValue ? decodeURIComponent(pageValue) : undefined };
+  }
   if (view === 'about') {
     return { view, page: 'questions', itemId: pageValue ? decodeURIComponent(pageValue) : undefined };
   }
@@ -1512,6 +1524,9 @@ function routeHash(view: AppView, page: StudyPage, itemId?: string) {
   if (view === 'mock-exams') {
     return itemId ? `#/mock-exams/${encodeURIComponent(itemId)}` : '#/mock-exams';
   }
+  if (view === 'news-cycle') {
+    return itemId ? `#/news-cycle/${encodeURIComponent(itemId)}` : '#/news-cycle';
+  }
   if (view === 'about') {
     return itemId ? `#/about/${encodeURIComponent(itemId)}` : '#/about';
   }
@@ -1541,7 +1556,7 @@ function isOfficialSampleModule(view: AppView): view is OfficialSampleModule {
 }
 
 function isAppView(value: string): value is AppView {
-  return ['capture', 'captures', 'home', 'memory-review', 'history', 'mistakes', 'memory', 'data', 'mcp', 'insights', 'plan', 'question-types', 'vocabulary', 'grammar', 'listening', 'reading', 'mixed', 'daily-practice', 'mock-exams', 'drafts', 'about', 'settings'].includes(value);
+  return ['capture', 'captures', 'home', 'memory-review', 'history', 'mistakes', 'memory', 'data', 'mcp', 'insights', 'plan', 'question-types', 'vocabulary', 'grammar', 'listening', 'reading', 'mixed', 'daily-practice', 'mock-exams', 'news-cycle', 'drafts', 'about', 'settings'].includes(value);
 }
 
 function nextIndex(index: number, total: number) {
@@ -1905,6 +1920,7 @@ function desktopSidebarNavItems(labels: Record<string, string>): AppRouteNavItem
     { view: 'question-types' as const, label: labels.navQuestionTypes, group: 'study' },
     { view: 'mixed' as const, label: '综合练习', group: 'review' },
     { view: 'mock-exams' as const, label: labels.navMockExams, group: 'review' },
+    { view: 'news-cycle' as const, label: '新闻练习', group: 'review' },
     { view: 'drafts' as const, label: '复习草稿', group: 'review' },
     { view: 'plan' as const, label: labels.navPlan, group: 'review' },
     { view: 'captures' as const, label: 'Agent 同步', group: 'record' },
@@ -1950,6 +1966,9 @@ function mobileAppTitle(route: AppRoute, labels: Record<string, string>, activeD
   if (activeView === 'mock-exams') {
     return labels.navMockExams;
   }
+  if (activeView === 'news-cycle') {
+    return '新闻练习';
+  }
   return navItems(labels).find((item) => item.view === activeView)?.label ?? labels.brand;
 }
 
@@ -1968,6 +1987,12 @@ function mobileBackRoute(route: AppRoute): AppRoute {
     return { view: 'mock-exams', page: 'questions' };
   }
   if (route.view === 'mock-exams') {
+    return { view: 'home', page: 'questions' };
+  }
+  if (route.view === 'news-cycle' && route.itemId) {
+    return { view: 'news-cycle', page: 'questions' };
+  }
+  if (route.view === 'news-cycle') {
     return { view: 'home', page: 'questions' };
   }
   if (route.view === 'mixed' && route.page !== 'tips') {
@@ -2021,6 +2046,9 @@ function desktopBackRoute(route: AppRoute): AppRoute | null {
   if (route.view === 'mock-exams') {
     return { view: 'home', page: 'questions' };
   }
+  if (route.view === 'news-cycle') {
+    return route.itemId ? { view: 'news-cycle', page: 'questions' } : { view: 'home', page: 'questions' };
+  }
   if (['history', 'drafts', 'settings'].includes(route.view)) {
     return { view: 'insights', page: 'questions' };
   }
@@ -2051,6 +2079,12 @@ function routeBreadcrumbs(route: AppRoute, labels: Record<string, string>, activ
 
   if (route.view === 'mock-exams') {
     crumbs.push({ label: labels.navMockExams });
+    return crumbs;
+  }
+
+  if (route.view === 'news-cycle') {
+    crumbs.push({ label: '新闻练习', route: route.itemId ? { view: 'news-cycle', page: 'questions' } : undefined });
+    if (route.itemId) crumbs.push({ label: route.itemId });
     return crumbs;
   }
 
@@ -2091,6 +2125,8 @@ function moduleLabelFor(view: AppView, labels: Record<string, string>) {
       return labels.navMixed;
     case 'daily-practice':
       return labels.dailyPracticeTitle;
+    case 'news-cycle':
+      return '新闻练习';
     case 'plan':
       return labels.navPlan;
     case 'capture':

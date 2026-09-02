@@ -1,7 +1,7 @@
 export type Deck = 'n1_vocab' | 'name_reading' | 'grammar_expression';
 export type QuestionKind = 'grammar' | 'moji_goi' | 'meaning' | 'kana_to_kanji' | 'kanji_to_kana';
 export type Locale = 'zh-CN' | 'ja' | 'en';
-export type AppView = 'capture' | 'captures' | 'home' | 'memory-review' | 'history' | 'mistakes' | 'memory' | 'data' | 'mcp' | 'insights' | 'plan' | 'question-types' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'daily-practice' | 'mock-exams' | 'drafts' | 'about' | 'settings';
+export type AppView = 'capture' | 'captures' | 'home' | 'memory-review' | 'history' | 'mistakes' | 'memory' | 'data' | 'mcp' | 'insights' | 'plan' | 'question-types' | 'vocabulary' | 'grammar' | 'listening' | 'reading' | 'mixed' | 'daily-practice' | 'mock-exams' | 'news-cycle' | 'drafts' | 'about' | 'settings';
 export type StudyPage = 'tips' | 'questions' | 'words' | 'wordbooks' | 'review' | 'samples' | 'mock';
 export type AppRoute = { view: AppView; page: StudyPage; itemId?: string };
 export type AnswerRecord = { selected: string; correct: boolean; answeredAt?: string; elapsedMs?: number; attemptId?: string };
@@ -241,6 +241,52 @@ export type LocalMockExamManifest = {
   verification_status: 'unverified';
   level_confidence: 'medium';
   exams: LocalMockExamSummary[];
+};
+
+export type NewsCycleModule = 'vocabulary' | 'grammar' | 'listening' | 'reading';
+export type NewsCycleQuestion = {
+  id: string;
+  date: string;
+  level: string;
+  module: NewsCycleModule;
+  official_type: string;
+  source_id: string;
+  source_url: string;
+  verification_status: string;
+  prompt: string;
+  question?: string;
+  passage?: string;
+  target?: string;
+  choices: string[];
+  answerIndex: number;
+  explanation_zh: string;
+  source_rewrite?: boolean;
+  composition_note?: string;
+  audio?: {
+    duration?: string | null;
+    timecode?: string | null;
+    fileName?: string | null;
+    previewUrl?: string;
+    import_ready?: boolean;
+  };
+};
+export type NewsCycleDay = {
+  date: string;
+  questionCount: number;
+  audioCount: number;
+  sourceCount: number;
+  moduleCounts: Record<NewsCycleModule, number>;
+  questions: NewsCycleQuestion[];
+};
+export type NewsCycleData = {
+  summary?: {
+    range?: { from: string; to: string };
+    total_questions?: number;
+    direct_audio_question_count?: number;
+    needs_audio_review_count?: number;
+    status?: string;
+  };
+  days: NewsCycleDay[];
 };
 
 export type StudyPlanModule = 'grammar' | 'reading' | 'listening' | 'vocabulary' | 'other';

@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Filter, House, LogOut, Menu, Search, Shuffle, SlidersHorizontal, UserRound, X } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Filter, House, LogOut, Menu, Newspaper, Search, Shuffle, SlidersHorizontal, UserRound, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { AppRoute, AppView, Deck, StudyPage, Wordbook } from '../../types';
 
@@ -531,6 +531,8 @@ function mobileNavIcon(view: AppView) {
       return CalendarDays;
     case 'mock-exams':
       return SlidersHorizontal;
+    case 'news-cycle':
+      return Newspaper;
     case 'insights':
       return UserRound;
     default:
